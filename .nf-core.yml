@@ -17,7 +17,7 @@ lint:
     - assets/email_template.txt
 
 template:
-  org: nf-core
+  org: AlexsLemonade
   name: metafactory
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
     RNA-sequencing samples
