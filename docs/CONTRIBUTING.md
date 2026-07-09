@@ -51,8 +51,6 @@ For more detail, see the the [blog post](https://nf-co.re/blog/2026/statement-on
 
 For further information and help, see the [nf-core/metafactory documentation](https://nf-co.re/metafactory/usage) or ask on the nf-core [#metafactory](https://nfcore.slack.com/channels/metafactory) Slack channel ([join our Slack here](https://nf-co.re/join/slack)).
 
-
-
 ### Testing
 
 Once you have made your changes, run the pipeline with nf-test to test them locally.
