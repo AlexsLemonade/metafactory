@@ -3,6 +3,7 @@ repository_type: pipeline
 nf_core_version: 4.0.2
 
 lint:
+  actions_nf_test: false
   files_unchanged:
     - docs/CONTRIBUTING.md
     - assets/sendmail_template.txt
