@@ -100,9 +100,9 @@ workflow PIPELINE_INITIALISATION {
     // Check that all provided unique ids are in fact unique
     //
 
-    def samplesheet = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
+    def samplesheet_list = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
 
-    def ids = samplesheet.collect { unique_id, group_id, h5ad_file -> unique_id }
+    def ids = samplesheet_list.collect { unique_id, group_id, h5ad_file -> unique_id }
     def duplicates = ids
         .countBy { unique_id ->
             unique_id
@@ -119,7 +119,7 @@ workflow PIPELINE_INITIALISATION {
     // Create channel samplesheet of [unique_id, group_id, h5ad_file]
     //
 
-    ch_samplesheet = channel.fromList(samplesheet)
+    ch_samplesheet = channel.fromList(samplesheet_list)
         .map { unique_id, group_id, h5ad_file ->
             // if the input file is not found at the given path, use the input directory
             // this is helpful if relative paths are used in the samplesheet instead of full paths/uris
