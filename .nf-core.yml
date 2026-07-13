@@ -33,4 +33,4 @@ template:
     - fastqc
     - codespaces
     - email
-  is_nfcore: true
+  is_nfcore: false
