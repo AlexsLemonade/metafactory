@@ -3,6 +3,7 @@ repository_type: pipeline
 nf_core_version: 4.0.2
 
 lint:
+  actions_nf_test: false
   files_unchanged:
     - docs/CONTRIBUTING.md
     - assets/sendmail_template.txt
@@ -17,7 +18,7 @@ lint:
     - assets/email_template.txt
 
 template:
-  org: nf-core
+  org: AlexsLemonade
   name: metafactory
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
     RNA-sequencing samples
