@@ -16,6 +16,7 @@ lint:
     - assets/email_template.html
     - assets/sendmail_template.txt
     - assets/email_template.txt
+    - assets/nf-core-metafactory_logo_light.png
 
 template:
   org: AlexsLemonade
