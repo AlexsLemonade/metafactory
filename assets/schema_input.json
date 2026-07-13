@@ -9,21 +9,15 @@
         "properties": {
             "unique_id": {
                 "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Unique ID must be provided and cannot contain spaces",
-                "meta": ["id"]
+                "errorMessage": "Unique ID must be provided and cannot contain spaces"
             },
             "group_id": {
                 "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Group ID must be provided and cannot contain spaces",
-                "meta": ["id"]
+                "errorMessage": "Group ID must be provided and cannot contain spaces"
             },
             "h5ad_file": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.h5ad$",
+                "pattern": "\\.h5ad$",
                 "errorMessage": "H5AD file cannot contain spaces and must have extension '.h5ad'"
             }
         },
