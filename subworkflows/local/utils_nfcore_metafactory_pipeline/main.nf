@@ -146,10 +146,15 @@ workflow PIPELINE_COMPLETION {
 def validateInputSamplesheet(samplesheet_list) {
 
     // validate that all unique_ids are non-empty strings
-    samplesheet_list.each { unique_id, group_id, h5ad_file ->
-        if (!unique_id || unique_id.trim() == "") {
-            error("Empty unique_id found in samplesheet row: ${[unique_id, group_id, h5ad_file]}")
-        }
+    def emptyRows = samplesheet_list.findAll { unique_id, _group_id, _h5ad_file ->
+        !unique_id || unique_id.toString().trim() == ""
+    }
+
+    // If any were found, report them all together
+    if (emptyRows) {
+        error(
+            "Empty unique_id found in the following samplesheet row(s):\n" + emptyRows.join("\n")
+        )
     }
 
     // check for duplicate ids, unique_id must be unique across all rows
@@ -158,6 +163,7 @@ def validateInputSamplesheet(samplesheet_list) {
         .countBy { id -> id }
         .findAll { _id, count -> count > 1 }
         .keySet()
+
     if (duplicates) {
         error("Duplicate unique_id values found in samplesheet: ${duplicates.join(', ')}")
     }
