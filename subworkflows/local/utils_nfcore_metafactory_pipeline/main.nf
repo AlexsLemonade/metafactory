@@ -102,18 +102,8 @@ workflow PIPELINE_INITIALISATION {
 
     def samplesheet_list = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
 
-    def ids = samplesheet_list.collect { unique_id, group_id, h5ad_file -> unique_id }
-    def duplicates = ids
-        .countBy { unique_id ->
-            unique_id
-        }
-        .findAll { id, count ->
-            count > 1
-        }
-        .keySet()
-    if (duplicates) {
-        error("Duplicate unique_id values found in samplesheet: ${duplicates.join(', ')}")
-    }
+    // Validate samplesheet channels
+    validateSamplesheetChannels(samplesheet_list)
 
     //
     // Create channel samplesheet of [unique_id, group_id, h5ad_file]
@@ -121,15 +111,20 @@ workflow PIPELINE_INITIALISATION {
 
     ch_samplesheet = channel.fromList(samplesheet_list)
         .map { unique_id, group_id, h5ad_file ->
-            // if the input file is not found at the given path, use the input directory
-            // this is helpful if relative paths are used in the samplesheet instead of full paths/uris
-            if (!file(h5ad_file).exists()) {
+            // If the path isn't already a full URI (s3://) or absolute path (/),
+            // treat it as relative to the input directory
+            if (!(h5ad_file.startsWith("s3://") || h5ad_file.startsWith("/"))) {
+                if (!params.input_dir) {
+                    error("Relative path '${h5ad_file}' given but params.input_dir is not set.")
+                }
                 h5ad_file = "${params.input_dir}/${h5ad_file}"
             }
-            // if it still doesn't exist, throw an error
+
+            // Final check that the file actually exists
             if (!file(h5ad_file).exists()) {
                 error("Input file does not exist: ${h5ad_file}")
             }
+
             [unique_id, group_id, h5ad_file]
         }
 
@@ -168,6 +163,32 @@ workflow PIPELINE_COMPLETION {
     FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+//
+// Validate channels from input samplesheet
+//
+def validateSamplesheetChannels(samplesheet_list) {
+
+    // validate that all unique_ids are non-empty strings
+    samplesheet_list.each { unique_id, group_id, h5ad_file ->
+        if (!unique_id || unique_id.trim() == "") {
+            error("Empty unique_id found in samplesheet row: ${[unique_id, group_id, h5ad_file]}")
+        }
+    }
+
+    // check for duplicate ids, unique_id must be unique across all rows
+    def duplicates = samplesheet_list
+        .collect { unique_id, group_id, h5ad_file -> unique_id }
+        .countBy { unique_id ->
+            unique_id
+        }
+        .findAll { id, count ->
+            count > 1
+        }
+        .keySet()
+    if (duplicates) {
+        error("Duplicate unique_id values found in samplesheet: ${duplicates.join(', ')}")
+    }
+}
 //
 // Generate methods description
 //
