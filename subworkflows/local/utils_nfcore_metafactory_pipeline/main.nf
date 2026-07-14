@@ -103,7 +103,7 @@ workflow PIPELINE_INITIALISATION {
     def samplesheet_list = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
 
     // Validate samplesheet channels
-    validateSamplesheetChannels(samplesheet_list)
+    validateInputSamplesheet(samplesheet_list)
 
     //
     // Create channel samplesheet of [unique_id, group_id, h5ad_file]
@@ -113,7 +113,7 @@ workflow PIPELINE_INITIALISATION {
         .map { unique_id, group_id, h5ad_file ->
             // If the path isn't already a full URI (s3://) or absolute path (/),
             // treat it as relative to the input directory
-            if (!(h5ad_file.startsWith("s3://") || h5ad_file.startsWith("/"))) {
+            if (!(h5ad_file.startsWith("/") || h5ad_file =~ /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
                 if (!params.input_dir) {
                     error("Relative path '${h5ad_file}' given but params.input_dir is not set.")
                 }
@@ -178,12 +178,8 @@ def validateSamplesheetChannels(samplesheet_list) {
     // check for duplicate ids, unique_id must be unique across all rows
     def duplicates = samplesheet_list
         .collect { unique_id, group_id, h5ad_file -> unique_id }
-        .countBy { unique_id ->
-            unique_id
-        }
-        .findAll { id, count ->
-            count > 1
-        }
+        .countBy { id -> id }
+        .findAll { _id, count -> count > 1 }
         .keySet()
     if (duplicates) {
         error("Duplicate unique_id values found in samplesheet: ${duplicates.join(', ')}")
