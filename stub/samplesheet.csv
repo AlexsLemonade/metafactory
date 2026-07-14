@@ -1,0 +1,3 @@
+unique_id,group_id,h5ad_file
+STUB01,GROUP01,stub/data/STUB01.h5ad
+STUB02,GROUP01,stub/data/STUB02.h5ad

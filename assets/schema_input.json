@@ -1,33 +1,28 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://raw.githubusercontent.com/nf-core/metafactory/master/assets/schema_input.json",
-    "title": "nf-core/metafactory pipeline - params.input schema",
+    "title": "AlexsLemonade/metafactory pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {
         "type": "object",
         "properties": {
-            "sample": {
+            "unique_id": {
                 "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
-                "meta": ["id"]
+                "errorMessage": "Unique ID must be provided and cannot contain spaces"
             },
-            "fastq_1": {
+            "group_id": {
+                "type": "string",
+                "errorMessage": "Group ID must be provided and cannot contain spaces"
+            },
+            "h5ad_file": {
                 "type": "string",
                 "format": "file-path",
+                "pattern": "\\.h5ad$",
                 "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
-            },
-            "fastq_2": {
-                "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "errorMessage": "H5AD file cannot contain spaces and must have extension '.h5ad'"
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["unique_id", "group_id", "h5ad_file"]
     }
 }

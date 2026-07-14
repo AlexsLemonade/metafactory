@@ -8,13 +8,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { UTILS_NFSCHEMA_PLUGIN     } from '../../nf-core/utils_nfschema_plugin'
-include { paramsSummaryMap          } from 'plugin/nf-schema'
-include { samplesheetToList         } from 'plugin/nf-schema'
-include { paramsHelp                } from 'plugin/nf-schema'
-include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
-include { UTILS_NFCORE_PIPELINE     } from '../../nf-core/utils_nfcore_pipeline'
-include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipeline'
+include { UTILS_NFSCHEMA_PLUGIN   } from '../../nf-core/utils_nfschema_plugin'
+include { paramsSummaryMap        } from 'plugin/nf-schema'
+include { samplesheetToList       } from 'plugin/nf-schema'
+include { paramsHelp              } from 'plugin/nf-schema'
+include { completionSummary       } from '../../nf-core/utils_nfcore_pipeline'
+include { UTILS_NFCORE_PIPELINE   } from '../../nf-core/utils_nfcore_pipeline'
+include { UTILS_NEXTFLOW_PIPELINE } from '../../nf-core/utils_nextflow_pipeline'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -23,17 +23,16 @@ include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipelin
 */
 
 workflow PIPELINE_INITIALISATION {
-
     take:
-    version           // boolean: Display version and exit
-    validate_params   // boolean: Boolean whether to validate parameters against the schema at runtime
-    monochrome_logs   // boolean: Do not use coloured log outputs
+    version // boolean: Display version and exit
+    validate_params // boolean: Boolean whether to validate parameters against the schema at runtime
+    monochrome_logs // boolean: Do not use coloured log outputs
     nextflow_cli_args //   array: List of positional nextflow CLI args
-    outdir            //  string: The output directory where the results will be saved
-    input             //  string: Path to input samplesheet
-    help              // boolean: Display help message and exit
-    help_full         // boolean: Show the full help message
-    show_hidden       // boolean: Show hidden parameters in the help message
+    outdir //  string: The output directory where the results will be saved
+    input //  string: Path to input samplesheet
+    help // boolean: Display help message and exit
+    help_full // boolean: Show the full help message
+    show_hidden // boolean: Show hidden parameters in the help message
 
     main:
 
@@ -42,11 +41,11 @@ workflow PIPELINE_INITIALISATION {
     //
     // Print version and exit if required and dump pipeline parameters to JSON file
     //
-    UTILS_NEXTFLOW_PIPELINE (
+    UTILS_NEXTFLOW_PIPELINE(
         version,
         true,
         outdir,
-        workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1
+        workflow.profile.tokenize(',').intersect(['conda', 'mamba']).size() >= 1,
     )
 
     //
@@ -62,15 +61,15 @@ workflow PIPELINE_INITIALISATION {
 \033[0;34m  |\\ | |__  __ /  ` /  \\ |__) |__         \033[0;33m}  {\033[0m
 \033[0;34m  | \\| |       \\__, \\__/ |  \\ |___     \033[0;32m\\`-._,-`-,\033[0m
                                         \033[0;32m`._,._,\'\033[0m
-\033[0;35m  nf-core/metafactory ${workflow.manifest.version}\033[0m
+\033[0;35m  AlexsLemonade/metafactory ${workflow.manifest.version}\033[0m
 -\033[2m----------------------------------------------------\033[0m-
 """
-    after_text = """${workflow.manifest.doi ? "\n* The pipeline\n" : ""}${workflow.manifest.doi.tokenize(",").collect { doi -> "    https://doi.org/${doi.trim().replace('https://doi.org/','')}"}.join("\n")}${workflow.manifest.doi ? "\n" : ""}
+    after_text = """${workflow.manifest.doi ? "\n* The pipeline\n" : ""}${workflow.manifest.doi.tokenize(",").collect { doi -> "    https://doi.org/${doi.trim().replace('https://doi.org/', '')}" }.join("\n")}${workflow.manifest.doi ? "\n" : ""}
 * The nf-core framework
     https://doi.org/10.1038/s41587-020-0439-x
 
 * Software dependencies
-    https://github.com/nf-core/metafactory/blob/master/CITATIONS.md
+    https://github.com/AlexsLemonade/metafactory/blob/master/CITATIONS.md
 """
     if (monochrome_logs) {
         before_text = before_text.replaceAll(/\033\[[0-9;]*m/, '')
@@ -78,7 +77,7 @@ workflow PIPELINE_INITIALISATION {
 
     command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --outdir <OUTDIR>"
 
-    UTILS_NFSCHEMA_PLUGIN (
+    UTILS_NFSCHEMA_PLUGIN(
         workflow,
         validate_params,
         null,
@@ -87,39 +86,24 @@ workflow PIPELINE_INITIALISATION {
         show_hidden,
         before_text,
         after_text,
-        command
+        command,
     )
 
     //
     // Check config provided to the pipeline
     //
-    UTILS_NFCORE_PIPELINE (
+    UTILS_NFCORE_PIPELINE(
         nextflow_cli_args
     )
 
-    //
-    // Create channel from input file provided through params.input
-    //
+    // Validate samplesheet input, ensuring all ids exist and unique ids are unique
+    def samplesheet_list = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
+    validateInputSamplesheet(samplesheet_list)
 
-    channel
-        .fromList(samplesheetToList(input, "${projectDir}/assets/schema_input.json"))
-        .map {
-            meta, fastq_1, fastq_2 ->
-                if (!fastq_2) {
-                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
-                } else {
-                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
-                }
-        }
-        .groupTuple()
-        .map { samplesheet ->
-            validateInputSamplesheet(samplesheet)
-        }
-        .map {
-            meta, fastqs ->
-                return [ meta, fastqs.flatten() ]
-        }
-        .set { ch_samplesheet }
+    //
+    // Create channel samplesheet of [unique_id, group_id, h5ad_file]
+    //
+    ch_samplesheet = channel.fromList(samplesheet_list)
 
     emit:
     samplesheet = ch_samplesheet
@@ -133,7 +117,6 @@ workflow PIPELINE_INITIALISATION {
 */
 
 workflow PIPELINE_COMPLETION {
-
     take:
     monochrome_logs // boolean: Disable ANSI colour codes in log output
 
@@ -145,11 +128,10 @@ workflow PIPELINE_COMPLETION {
     workflow.onComplete {
 
         completionSummary(monochrome_logs)
-
     }
 
     workflow.onError {
-        log.error "Pipeline failed. Please refer to troubleshooting docs for common issues: https://nf-co.re/docs/running/troubleshooting"
+        log.error("Pipeline failed. Please refer to troubleshooting docs for common issues: https://nf-co.re/docs/running/troubleshooting")
     }
 }
 
@@ -158,32 +140,42 @@ workflow PIPELINE_COMPLETION {
     FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
 //
 // Validate channels from input samplesheet
 //
-def validateInputSamplesheet(input) {
-    def (metas, fastqs) = input[1..2]
+def validateInputSamplesheet(samplesheet_list) {
 
-    // Check that multiple runs of the same sample are of the same datatype i.e. single-end / paired-end
-    def endedness_ok = metas.collect{ meta -> meta.single_end }.unique().size == 1
-    if (!endedness_ok) {
-        error("Please check input samplesheet -> Multiple runs of a sample must be of the same datatype i.e. single-end or paired-end: ${metas[0].id}")
+    // validate that all unique_ids are non-empty strings
+    def emptyRows = samplesheet_list.findAll { unique_id, _group_id, _h5ad_file ->
+        !unique_id || unique_id.toString().trim() == ""
     }
 
-    return [ metas[0], fastqs ]
+    // If any were found, report them all together
+    if (emptyRows) {
+        error(
+            "Empty unique_id found in the following samplesheet row(s):\n" + emptyRows.join("\n")
+        )
+    }
+
+    // check for duplicate ids, unique_id must be unique across all rows
+    def duplicates = samplesheet_list
+        .collect { unique_id, group_id, h5ad_file -> unique_id }
+        .countBy { id -> id }
+        .findAll { _id, count -> count > 1 }
+        .keySet()
+
+    if (duplicates) {
+        error("Duplicate unique_id values found in samplesheet: ${duplicates.join(', ')}")
+    }
 }
 //
-// Generate methods description for MultiQC
+// Generate methods description
 //
 def toolCitationText() {
     // TODO nf-core: Optionally add in-text citation tools to this list.
     // Can use ternary operators to dynamically construct based conditions, e.g. params["run_xyz"] ? "Tool (Foo et al. 2023)" : "",
     // Uncomment function in methodsDescriptionText to render in MultiQC report
-    def citation_text = [
-            "Tools used in the workflow included:",
-            "."
-        ].join(' ').trim()
+    def citation_text = ["Tools used in the workflow included:", "."].join(' ').trim()
 
     return citation_text
 }
@@ -192,8 +184,7 @@ def toolBibliographyText() {
     // TODO nf-core: Optionally add bibliographic entries to this list.
     // Can use ternary operators to dynamically construct based conditions, e.g. params["run_xyz"] ? "<li>Author (2023) Pub name, Journal, DOI</li>" : "",
     // Uncomment function in methodsDescriptionText to render in MultiQC report
-    def reference_text = [
-        ].join(' ').trim()
+    def reference_text = [].join(' ').trim()
 
     return reference_text
 }
@@ -215,7 +206,10 @@ def methodsDescriptionText(mqc_methods_yaml) {
             temp_doi_ref += "(doi: <a href=\'https://doi.org/${doi_ref.replace("https://doi.org/", "").replace(" ", "")}\'>${doi_ref.replace("https://doi.org/", "").replace(" ", "")}</a>), "
         }
         meta["doi_text"] = temp_doi_ref.substring(0, temp_doi_ref.length() - 2)
-    } else meta["doi_text"] = ""
+    }
+    else {
+        meta["doi_text"] = ""
+    }
     meta["nodoi_text"] = meta.manifest_map.doi ? "" : "<li>If available, make sure to update the text to include the Zenodo DOI of version of the pipeline used. </li>"
 
     // Tool references
@@ -229,7 +223,7 @@ def methodsDescriptionText(mqc_methods_yaml) {
 
     def methods_text = mqc_methods_yaml.text
 
-    def engine =  new groovy.text.SimpleTemplateEngine()
+    def engine = new groovy.text.SimpleTemplateEngine()
     def description_html = engine.createTemplate(methods_text).make(meta)
 
     return description_html.toString()
