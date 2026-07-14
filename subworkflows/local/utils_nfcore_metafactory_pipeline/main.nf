@@ -125,7 +125,7 @@ workflow PIPELINE_INITIALISATION {
                 error("Input file does not exist: ${h5ad_file}")
             }
 
-            [unique_id, group_id, h5ad_file]
+            [unique_id, group_id, file(h5ad_file)]
         }
 
     emit:
