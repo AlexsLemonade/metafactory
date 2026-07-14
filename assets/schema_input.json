@@ -17,6 +17,7 @@
             },
             "h5ad_file": {
                 "type": "string",
+                "format": "file-path",
                 "pattern": "\\.h5ad$",
                 "errorMessage": "H5AD file cannot contain spaces and must have extension '.h5ad'"
             }
