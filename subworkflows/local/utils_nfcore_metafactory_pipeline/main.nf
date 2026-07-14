@@ -96,37 +96,14 @@ workflow PIPELINE_INITIALISATION {
         nextflow_cli_args
     )
 
-    //
-    // Check that all provided unique ids are in fact unique
-    //
-
+    // Validate samplesheet input, ensuring all ids exist and unique ids are unique
     def samplesheet_list = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
-
-    // Validate samplesheet channels
     validateInputSamplesheet(samplesheet_list)
 
     //
     // Create channel samplesheet of [unique_id, group_id, h5ad_file]
     //
-
     ch_samplesheet = channel.fromList(samplesheet_list)
-        .map { unique_id, group_id, h5ad_file ->
-            // If the path isn't already a full URI (s3://) or absolute path (/),
-            // treat it as relative to the input directory
-            if (!(h5ad_file.startsWith("/") || h5ad_file =~ /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
-                if (!params.input_dir) {
-                    error("Relative path '${h5ad_file}' given but params.input_dir is not set.")
-                }
-                h5ad_file = "${params.input_dir}/${h5ad_file}"
-            }
-
-            // Final check that the file actually exists
-            if (!file(h5ad_file).exists()) {
-                error("Input file does not exist: ${h5ad_file}")
-            }
-
-            [unique_id, group_id, file(h5ad_file)]
-        }
 
     emit:
     samplesheet = ch_samplesheet
@@ -166,7 +143,7 @@ workflow PIPELINE_COMPLETION {
 //
 // Validate channels from input samplesheet
 //
-def validateSamplesheetChannels(samplesheet_list) {
+def validateInputSamplesheet(samplesheet_list) {
 
     // validate that all unique_ids are non-empty strings
     samplesheet_list.each { unique_id, group_id, h5ad_file ->
