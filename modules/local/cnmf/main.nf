@@ -19,30 +19,10 @@ process CNMF {
 
     output:
     tuple val(unique_id), val(group_id), path("${unique_id}/"), emit: results
-    path "versions.yml", emit: versions
+    path "versions.yml",                                        emit: versions
 
     script:
-    def annotations_col_arg = annotations_column ? "--annotations_column '${annotations_column}'" : ''
-    def celltype_val_arg = celltype_value ? "--celltype_value '${celltype_value}'" : ''
-    """
-    cnmf.py \
-        --h5ad_file "${h5ad_file}" \
-        --unique_id "${unique_id}" \
-        --output_dir . \
-        --k_components_lower ${cnmf_k_lower} \
-        --k_components_upper ${cnmf_k_upper} \
-        --k_step_size ${cnmf_k_step_size} \
-        --jobs ${task.cpus} \
-        ${annotations_col_arg} \
-        ${celltype_val_arg}
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        python: \$(python --version | sed 's/Python //')
-        anndata: \$(python -c "import anndata; print(anndata.__version__)")
-        cnmf: \$(python -c "import importlib.metadata; print(importlib.metadata.version('cnmf'))")
-    END_VERSIONS
-    """
+    template 'cnmf.py'
 
     stub:
     """
