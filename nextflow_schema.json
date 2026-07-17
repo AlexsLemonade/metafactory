@@ -79,6 +79,42 @@
                 }
             }
         },
+        "cnmf_options": {
+            "title": "cNMF options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for running cNMF to identify consensus gene expression programs.",
+            "properties": {
+                "cnmf_k_lower": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Lower boundary for the number of components (k) to test in cNMF.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "cnmf_k_upper": {
+                    "type": "integer",
+                    "default": 15,
+                    "description": "Upper boundary for the number of components (k) to test in cNMF.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "cnmf_k_step_size": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Step size for the range of k components tested in cNMF.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "annotations_column": {
+                    "type": "string",
+                    "description": "Column name in adata.obs containing cell type annotations used to subset cells for cNMF. If not provided, all cells are used.",
+                    "fa_icon": "fas fa-tag"
+                },
+                "celltype_value": {
+                    "type": "string",
+                    "description": "Cell type value(s) in the annotations column to keep for cNMF. Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant'). Required when annotations_column is provided.",
+                    "fa_icon": "fas fa-tag"
+                }
+            }
+        },
         "generic_options": {
             "title": "Generic options",
             "type": "object",
@@ -145,6 +181,9 @@
     "allOf": [
         {
             "$ref": "#/$defs/input_output_options"
+        },
+        {
+            "$ref": "#/$defs/cnmf_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"
