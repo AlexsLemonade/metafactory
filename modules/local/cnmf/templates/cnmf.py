@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run cNMF on a processed AnnData object to identify consensus gene expression programs."""
 
-import importlib.metadata
+from importlib.metadata import version
 import sys
 from pathlib import Path
 
@@ -110,7 +110,7 @@ def main():
         fh.write(f'"{process_name}":\n')
         fh.write(f"    python: {python_version}\n")
         fh.write(f"    anndata: {anndata.__version__}\n")
-        fh.write(f'    cnmf: {importlib.metadata.version("cnmf")}\n')
+        fh.write(f'    cnmf: {version("cnmf")}\n')
 
 
 if __name__ == "__main__":
