@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Run cNMF on a processed AnnData object to identify consensus gene expression programs."""
 
 from importlib.metadata import version
@@ -107,10 +107,10 @@ def main():
 
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     with open("versions.yml", "w") as fh:
-        fh.write(f'"{process_name}":\n')
-        fh.write(f"    python: {python_version}\n")
-        fh.write(f"    anndata: {anndata.__version__}\n")
-        fh.write(f'    cnmf: {version("cnmf")}\n')
+        fh.write(f" {process_name}:\\n")
+        fh.write(f"    python: {python_version}\\n")
+        fh.write(f"    anndata: {anndata.__version__}\\n")
+        fh.write(f'    cnmf: {version("cnmf")}\\n')
 
 
 if __name__ == "__main__":
