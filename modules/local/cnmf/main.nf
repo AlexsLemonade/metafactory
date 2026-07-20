@@ -5,8 +5,8 @@ process CNMF {
     conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-            ? 'oras://community.wave.seqera.io/library/cnmf:44abf3ada957f74e'
-            : 'community.wave.seqera.io/library/cnmf:7238a13d519b57af'
+            ? 'oras://community.wave.seqera.io/library/cnmf:2bfd10b26312d44a'
+            : 'community.wave.seqera.io/library/cnmf:3a21b0c95745bea0'
     }
 
     input:
@@ -19,10 +19,10 @@ process CNMF {
 
     output:
     tuple val(unique_id), val(group_id), path("${unique_id}/"), emit: results
-    path "versions.yml",                                        emit: versions
+    path "versions.yml", emit: versions
 
     script:
-    template 'cnmf.py'
+    template('cnmf.py')
 
     stub:
     """
