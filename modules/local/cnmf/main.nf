@@ -19,7 +19,7 @@ process CNMF {
 
     output:
     tuple val(unique_id), val(group_id), path("${unique_id}/"), emit: results
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     script:
     template('cnmf.py')
@@ -30,9 +30,7 @@ process CNMF {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: \$(python --version | sed 's/Python //')
-        anndata: \$(python -c "import anndata; print(anndata.__version__)")
-        cnmf: \$(python -c "import importlib.metadata; print(importlib.metadata.version('cnmf'))")
+        stub: x.y.z
     END_VERSIONS
     """
 }

@@ -60,7 +60,7 @@ workflow METAFACTORY {
         .mix(topic_versions_string)
         .collectFile(
             storeDir: "${outdir}/pipeline_info",
-            name: 'nf_core_' + 'metafactory_software_' + 'versions.yml',
+            name: 'metafactory_software_' + 'versions.yml',
             sort: true,
             newLine: true,
         )

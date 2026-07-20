@@ -16,8 +16,8 @@ unique_id          = "${unique_id}"
 k_lower            = int(${cnmf_k_lower})
 k_upper            = int(${cnmf_k_upper})
 k_step_size        = int(${cnmf_k_step_size})
-annotations_column = "${annotations_column}" or None
-celltype_value     = "${celltype_value}" or None
+annotations_column = "${annotations_column}"
+celltype_value     = "${celltype_value}"
 n_jobs             = int(${task.cpus})
 process_name       = "${task.process}"
 
@@ -50,7 +50,7 @@ def main():
     adata = anndata.read_h5ad(h5ad_file)
 
     # Subset to requested cell type(s) if an annotations column is provided
-    if annotations_column is not None:
+    if annotations_column:
         if annotations_column not in adata.obs.columns:
             raise KeyError(
                 f"Annotations column '{annotations_column}' not found in adata.obs. "
