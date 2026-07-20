@@ -72,10 +72,10 @@ def write_versions(process_name):
     """
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     with open("versions.yml", "w") as fh:
-        fh.write(f'"{process_name}":\n')
-        fh.write(f"    python: {python_version}\n")
-        fh.write(f"    anndata: {version('anndata')}\n")
-        fh.write(f"    cnmf: {version('cnmf')}\n")
+        fh.write(f'"{process_name}":\\n')
+        fh.write(f"    python: {python_version}\\n")
+        fh.write(f"    anndata: {version('anndata')}\\n")
+        fh.write(f"    cnmf: {version('cnmf')}\\n")
 
 
 def main():
