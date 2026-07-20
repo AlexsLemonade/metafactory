@@ -108,7 +108,7 @@
                     "description": "Column name in adata.obs containing cell type annotations used to subset cells for cNMF. If not provided, all cells are used.",
                     "fa_icon": "fas fa-tag"
                 },
-                "celltype_value": {
+                "celltypes_to_keep": {
                     "type": "string",
                     "description": "Cell type value(s) in the annotations column to keep for cNMF. Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant'). Required when annotations_column is provided.",
                     "fa_icon": "fas fa-tag"

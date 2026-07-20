@@ -48,7 +48,7 @@ input:
   - - annotations_column:
         type: string
         description: Column name in adata.obs containing cell type annotations used to subset cells before running cNMF. Set to null to use all cells.
-  - - celltype_value:
+  - - celltypes_to_keep:
         type: string
         description: Cell type value(s) in the annotations column to keep. Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant'). Required when annotations_column is provided.
 

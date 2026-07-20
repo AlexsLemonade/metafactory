@@ -32,7 +32,7 @@ workflow METAFACTORY {
         params.cnmf_k_upper,
         params.cnmf_k_step_size,
         params.annotations_column,
-        params.celltype_value,
+        params.celltypes_to_keep,
     )
     ch_versions = ch_versions.mix(CNMF.out.versions.first())
 
