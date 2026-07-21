@@ -122,7 +122,7 @@ def main():
     anndata_file = "anndata.h5ad"
     cnmf_input.write_h5ad(anndata_file)
 
-    cnmf_obj = cnmf.cNMF(output_dir=".", name=f"cnmf_{unique_id}")
+    cnmf_obj = cnmf.cNMF(output_dir=".", name=f"{unique_id}_cnmf")
     cnmf_obj.prepare(
         counts_fn=anndata_file,
         components=k_range,

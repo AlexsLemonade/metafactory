@@ -18,7 +18,7 @@ process CNMF {
     val analysis_celltypes
 
     output:
-    tuple val(unique_id), val(group_id), path("cnmf_${unique_id}"), emit: results
+    tuple val(unique_id), val(group_id), path("${unique_id}_cnmf"), emit: results
     path "versions.yml", emit: versions, topic: versions
 
     script:
@@ -26,7 +26,7 @@ process CNMF {
 
     stub:
     """
-    mkdir -p "cnmf_${unique_id}"
+    mkdir -p "${unique_id}_cnmf"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
