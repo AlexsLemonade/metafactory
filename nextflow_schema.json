@@ -103,9 +103,9 @@
                     "description": "Step size for the range of k components tested in cNMF.",
                     "fa_icon": "fas fa-hashtag"
                 },
-                "annotations_column": {
+                "celltype_annotation_column": {
                     "type": "string",
-                    "description": "Column name in adata.obs containing cell type annotations used to subset cells for cNMF. If not provided, all cells are used.",
+                    "description": "Column name in adata.obs containing cell type annotations used to subset cells for analysis. If not provided, all cells are used.",
                     "fa_icon": "fas fa-tag"
                 },
                 "celltypes_to_keep": {

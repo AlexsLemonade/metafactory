@@ -34,7 +34,6 @@ workflow METAFACTORY {
         params.annotations_column,
         params.celltypes_to_keep,
     )
-    ch_versions = ch_versions.mix(CNMF.out.versions.first())
 
     //
     // Collate and save software versions
@@ -66,5 +65,5 @@ workflow METAFACTORY {
         )
 
     emit:
-    versions = ch_versions // channel: [ path(versions.yml) ]
+    versions = ch_collated_versions
 }

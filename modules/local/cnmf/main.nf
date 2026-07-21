@@ -18,7 +18,7 @@ process CNMF {
     val celltypes_to_keep
 
     output:
-    tuple val(unique_id), val(group_id), path("${unique_id}-cnmf/"), emit: results
+    tuple val(unique_id), val(group_id), path("cnmf_${unique_id}"), emit: results
     path "versions.yml", emit: versions, topic: versions
 
     script:
