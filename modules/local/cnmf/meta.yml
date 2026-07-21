@@ -45,12 +45,12 @@ input:
   - - cnmf_k_step_size:
         type: integer
         description: Step size for the range of k components tested in cNMF.
-  - - annotations_column:
+  - - celltype_annotation_column:
         type: string
-        description: Column name in adata.obs containing cell type annotations used to subset cells before running cNMF. Set to null to use all cells.
-  - - celltypes_to_keep:
+        description: Column name in adata.obs containing cell type annotations used to subset cells before running cNMF. Set to empty string to use all cells.
+  - - analysis_celltypes:
         type: string
-        description: Cell type value(s) in the annotations column to keep. Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant'). Required when annotations_column is provided.
+        description: Cell type value(s) in the annotations column to keep. Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant'). Required when celltype_annotation_column is provided.
 
 output:
   - results:

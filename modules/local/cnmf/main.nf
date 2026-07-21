@@ -14,8 +14,8 @@ process CNMF {
     val cnmf_k_lower
     val cnmf_k_upper
     val cnmf_k_step_size
-    val annotations_column
-    val celltypes_to_keep
+    val celltype_annotation_column
+    val analysis_celltypes
 
     output:
     tuple val(unique_id), val(group_id), path("cnmf_${unique_id}"), emit: results
@@ -26,7 +26,7 @@ process CNMF {
 
     stub:
     """
-    mkdir -p "${unique_id}-cnmf"
+    mkdir -p "cnmf_${unique_id}"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

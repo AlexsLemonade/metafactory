@@ -11,15 +11,15 @@ import numpy
 import scipy.sparse
 
 # Nextflow input variables — values are interpolated by the template engine before execution
-h5ad_file          = Path("${h5ad_file}")
-unique_id          = "${unique_id}"
-k_lower            = int(${cnmf_k_lower})
-k_upper            = int(${cnmf_k_upper})
-k_step_size        = int(${cnmf_k_step_size})
-annotations_column = "${annotations_column}"
-celltypes_to_keep     = "${celltypes_to_keep}"
-n_jobs             = int(${task.cpus})
-process_name       = "${task.process}"
+h5ad_file                  = Path("${h5ad_file}")
+unique_id                  = "${unique_id}"
+k_lower                    = int(${cnmf_k_lower})
+k_upper                    = int(${cnmf_k_upper})
+k_step_size                = int(${cnmf_k_step_size})
+celltype_annotation_column = "${celltype_annotation_column}"
+analysis_celltypes         = "${analysis_celltypes}"
+n_jobs                     = int(${task.cpus})
+process_name               = "${task.process}"
 
 # Fixed cNMF parameters
 N_ITER            = 100
@@ -28,16 +28,16 @@ DENSITY_THRESHOLD = 0.1
 SEED              = 2025
 
 
-def subset_cells(adata, annotations_column, celltypes_to_keep):
+def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     """Subset an AnnData object to cells matching the requested cell type(s).
 
     Parameters
     ----------
     adata:
         AnnData object to subset.
-    annotations_column:
+    celltype_annotation_column:
         Column in adata.obs containing cell type labels.
-    celltypes_to_keep:
+    analysis_celltypes:
         Comma-separated string of cell type values to retain.
 
     Returns
@@ -45,18 +45,18 @@ def subset_cells(adata, annotations_column, celltypes_to_keep):
     anndata.AnnData
         AnnData object containing only the requested cells.
     """
-    if annotations_column not in adata.obs.columns:
+    if celltype_annotation_column not in adata.obs.columns:
         raise KeyError(
-            f"Annotations column '{annotations_column}' not found in adata.obs. "
+            f"Annotations column '{celltype_annotation_column}' not found in adata.obs. "
             f"Available columns: {list(adata.obs.columns)}"
         )
 
-    celltypes_to_keeps = [v.strip() for v in celltypes_to_keep.split(",")]
-    cell_mask = adata.obs[annotations_column].isin(celltypes_to_keeps)
+    celltype_list = [v.strip() for v in analysis_celltypes.split(",")]
+    cell_mask = adata.obs[celltype_annotation_column].isin(celltype_list)
 
     if not cell_mask.any():
         raise ValueError(
-            f"No cells match '{celltypes_to_keep}' in column '{annotations_column}'."
+            f"No cells match '{analysis_celltypes}' in column '{celltype_annotation_column}'."
         )
 
     return adata[cell_mask].copy()
@@ -87,10 +87,10 @@ def main():
         )
 
     # Both annotation arguments must be provided together or not at all
-    if annotations_column and not celltypes_to_keep:
-        raise ValueError("celltypes_to_keep is required when annotations_column is provided.")
-    if celltypes_to_keep and not annotations_column:
-        raise ValueError("annotations_column is required when celltypes_to_keep is provided.")
+    if celltype_annotation_column and not analysis_celltypes:
+        raise ValueError("analysis_celltypes is required when celltype_annotation_column is provided.")
+    if analysis_celltypes and not celltype_annotation_column:
+        raise ValueError("celltype_annotation_column is required when analysis_celltypes is provided.")
 
     if k_lower >= k_upper:
         raise ValueError("cnmf_k_lower must be less than cnmf_k_upper.")
@@ -99,8 +99,8 @@ def main():
 
     adata = anndata.read_h5ad(h5ad_file)
 
-    if annotations_column:
-        adata = subset_cells(adata, annotations_column, celltypes_to_keep)
+    if celltype_annotation_column:
+        adata = subset_cells(adata, celltype_annotation_column, analysis_celltypes)
 
     # adata.X contains normalized values when adata.raw is set; replace with raw counts
     if adata.raw is not None:
@@ -122,7 +122,7 @@ def main():
     anndata_file = "anndata.h5ad"
     cnmf_input.write_h5ad(anndata_file)
 
-    cnmf_obj = cnmf.cNMF(output_dir=".", name=f"{unique_id}-cnmf")
+    cnmf_obj = cnmf.cNMF(output_dir=".", name=f"cnmf_{unique_id}")
     cnmf_obj.prepare(
         counts_fn=anndata_file,
         components=k_range,

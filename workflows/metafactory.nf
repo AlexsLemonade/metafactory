@@ -31,8 +31,8 @@ workflow METAFACTORY {
         params.cnmf_k_lower,
         params.cnmf_k_upper,
         params.cnmf_k_step_size,
-        params.annotations_column,
-        params.celltypes_to_keep,
+        params.celltype_annotation_column,
+        params.analysis_celltypes,
     )
 
     //
