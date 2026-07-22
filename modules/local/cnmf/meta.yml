@@ -1,0 +1,79 @@
+name: cnmf
+description: |
+  Run consensus Non-negative Matrix Factorization (cNMF) on a processed AnnData object
+  to identify consensus gene expression programs. Cells can optionally be subset to a
+  specific cell type using a column in the AnnData object's cell metadata (adata.obs).
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+tools:
+  - cnmf:
+      description: |
+        cNMF is a method for identifying consensus gene expression programs from
+        single-cell RNA-sequencing data using non-negative matrix factorization.
+      homepage: https://github.com/dylkob/cnmf
+      documentation: https://github.com/dylkob/cnmf
+      doi: "10.7554/eLife.43803"
+      license: ["MIT"]
+  - anndata:
+      description: |
+        AnnData is a Python package for handling annotated data matrices in memory
+        and on disk, commonly used for single-cell genomics data.
+      homepage: https://anndata.readthedocs.io
+      documentation: https://anndata.readthedocs.io
+      license: ["BSD-3-Clause"]
+
+input:
+  - - unique_id:
+        type: string
+        description: Unique identifier for the sample. Used as the output subdirectory name.
+    - group_id:
+        type: string
+        description: Group identifier for the sample (e.g. project or cohort ID).
+    - h5ad_file:
+        type: file
+        description: Processed AnnData object in H5AD format. adata.X must contain raw integer counts, or raw counts must be stored in adata.raw.
+        pattern: "*.h5ad"
+  - - cnmf_k_lower:
+        type: integer
+        description: Lower boundary for the number of components (k) to test in cNMF.
+  - - cnmf_k_upper:
+        type: integer
+        description: Upper boundary for the number of components (k) to test in cNMF.
+  - - cnmf_k_step_size:
+        type: integer
+        description: Step size for the range of k components tested in cNMF.
+  - - celltype_annotation_column:
+        type: string
+        description: Column name in adata.obs containing cell type annotations used to subset cells before running cNMF. Set to empty string to use all cells.
+  - - analysis_celltypes:
+        type: string
+        description: Cell type value(s) in the annotations column to keep. Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant'). Required when celltype_annotation_column is provided.
+
+output:
+  - results:
+      - unique_id:
+          type: string
+          description: Unique identifier for the sample.
+      - group_id:
+          type: string
+          description: Group identifier for the sample.
+      - "*/":
+          type: directory
+          description: |
+            Directory of cNMF output files for the sample, named by unique_id. Contains
+            factorization results, consensus spectra, and usage matrices for each tested
+            value of k.
+          pattern: "*/"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"

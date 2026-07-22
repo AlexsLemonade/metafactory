@@ -4,6 +4,9 @@
     "title": "nf-core/metafactory pipeline parameters",
     "description": "Nextflow pipeline for identifying metaprograms across single-cell/nuclei RNA-sequencing samples",
     "type": "object",
+    "dependentRequired": {
+        "analysis_celltypes": ["celltype_annotation_column"]
+    },
     "$defs": {
         "input_output_options": {
             "title": "Input/output options",
@@ -28,6 +31,16 @@
                     "format": "directory-path",
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
                     "fa_icon": "fas fa-folder-open"
+                },
+                "celltype_annotation_column": {
+                    "type": "string",
+                    "description": "Column name in adata.obs containing cell type annotations used to subset cells for analysis. If not provided, all cells are used.",
+                    "fa_icon": "fas fa-tag"
+                },
+                "analysis_celltypes": {
+                    "type": "string",
+                    "description": "Cell type value(s) in the annotations column to keep for cNMF. Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant'). Required when celltype_annotation_column is provided.",
+                    "fa_icon": "fas fa-tag"
                 }
             }
         },
@@ -76,6 +89,32 @@
                     "description": "Institutional config URL link.",
                     "hidden": true,
                     "fa_icon": "fas fa-users-cog"
+                }
+            }
+        },
+        "cnmf_options": {
+            "title": "cNMF options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Parameters for running cNMF to identify consensus gene expression programs.",
+            "properties": {
+                "cnmf_k_lower": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Lower boundary for the number of components (k) to test in cNMF.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "cnmf_k_upper": {
+                    "type": "integer",
+                    "default": 15,
+                    "description": "Upper boundary for the number of components (k) to test in cNMF.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "cnmf_k_step_size": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Step size for the range of k components tested in cNMF.",
+                    "fa_icon": "fas fa-hashtag"
                 }
             }
         },
@@ -148,6 +187,9 @@
         },
         {
             "$ref": "#/$defs/institutional_config_options"
+        },
+        {
+            "$ref": "#/$defs/cnmf_options"
         },
         {
             "$ref": "#/$defs/generic_options"
