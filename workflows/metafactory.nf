@@ -7,6 +7,7 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
 include { CNMF                   } from '../modules/local/cnmf/main'
+include { GENERATE_METAPROGRAMS  } from '../modules/local/generate-metaprograms/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,6 +34,35 @@ workflow METAFACTORY {
         params.cnmf_k_step_size,
         params.celltype_annotation_column,
         params.analysis_celltypes,
+        params.seed,
+    )
+
+    //
+    // MODULE: Generate metaprograms for each group of samples across all values of n_metaprograms
+    //
+
+    // group cNMF results from all unique_ids that share the same group_id
+    def ch_cnmf_by_group = CNMF.out.results.groupTuple(by: 0)
+    // group id
+
+    // parse the comma separated list of k values to test into a list of integers
+    def n_metaprograms_list = params.n_metaprograms
+        .split(',')
+        *.trim()
+        *.toInteger()
+
+    // build one task per group_id/n_metaprograms combination
+    def ch_metaprogram_input = ch_cnmf_by_group.combine(channel.fromList(n_metaprograms_list))
+
+    GENERATE_METAPROGRAMS(
+        ch_metaprogram_input,
+        params.n_top_genes,
+        params.filter_spectra,
+        params.orphan_cutoff,
+        params.cnmf_k_lower,
+        params.cnmf_k_upper,
+        params.cnmf_k_step_size,
+        params.seed,
     )
 
     //

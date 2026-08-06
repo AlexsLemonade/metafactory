@@ -20,12 +20,12 @@ celltype_annotation_column = "${celltype_annotation_column}"
 analysis_celltypes         = "${analysis_celltypes}"
 n_jobs                     = int(${task.cpus})
 process_name               = "${task.process}"
+SEED                       = int(${seed})
 
 # Fixed cNMF parameters
 N_ITER            = 100
 MAX_NMF_ITER      = 2000
 DENSITY_THRESHOLD = 0.1
-SEED              = 2025
 
 
 def subset_cells(adata, celltype_annotation_column, analysis_celltypes):

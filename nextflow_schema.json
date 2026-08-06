@@ -92,6 +92,20 @@
                 }
             }
         },
+        "general_options": {
+            "title": "General options",
+            "type": "object",
+            "fa_icon": "fas fa-sliders-h",
+            "description": "Parameters shared across multiple analysis modules.",
+            "properties": {
+                "seed": {
+                    "type": "integer",
+                    "default": 2025,
+                    "description": "Random seed used across analysis modules (e.g. cNMF, generate metaprograms) for reproducibility.",
+                    "fa_icon": "fas fa-hashtag"
+                }
+            }
+        },
         "cnmf_options": {
             "title": "cNMF options",
             "type": "object",
@@ -114,6 +128,39 @@
                     "type": "integer",
                     "default": 5,
                     "description": "Step size for the range of k components tested in cNMF.",
+                    "fa_icon": "fas fa-hashtag"
+                }
+            }
+        },
+        "metaprogram_options": {
+            "title": "Metaprogram options",
+            "type": "object",
+            "fa_icon": "fas fa-layer-group",
+            "description": "Parameters for generating metaprograms from cNMF results.",
+            "properties": {
+                "n_metaprograms": {
+                    "type": "string",
+                    "default": "8,9,10,11",
+                    "pattern": "^\\s*\\d+\\s*(,\\s*\\d+\\s*){3,}$",
+                    "description": "Comma-separated list of numbers of metaprograms (k) to generate. At least four values must be provided. Used across multiple modules.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "n_top_genes": {
+                    "type": "integer",
+                    "default": 200,
+                    "description": "Number of top genes to use for calculating scores and running ORA. Used across multiple modules.",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "filter_spectra": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to filter out orphan spectra before generating metaprograms. Only used by the generate metaprograms module.",
+                    "fa_icon": "fas fa-filter"
+                },
+                "orphan_cutoff": {
+                    "type": "number",
+                    "default": 0.3,
+                    "description": "Minimum cross sample maximum correlation required to keep a spectra when --filter_spectra is used. Only used by the generate metaprograms module.",
                     "fa_icon": "fas fa-hashtag"
                 }
             }
@@ -189,7 +236,13 @@
             "$ref": "#/$defs/institutional_config_options"
         },
         {
+            "$ref": "#/$defs/general_options"
+        },
+        {
             "$ref": "#/$defs/cnmf_options"
+        },
+        {
+            "$ref": "#/$defs/metaprogram_options"
         },
         {
             "$ref": "#/$defs/generic_options"

@@ -16,9 +16,11 @@ process CNMF {
     val cnmf_k_step_size
     val celltype_annotation_column
     val analysis_celltypes
+    val seed
 
     output:
-    tuple val(unique_id), val(group_id), path("${unique_id}_cnmf"), emit: results
+    // switch the order of group_id and unique_id in the output tuple so we can group results easily
+    tuple val(group_id), val(unique_id), path("${unique_id}_cnmf"), emit: results
     path "versions.yml", emit: versions, topic: versions
 
     script:
