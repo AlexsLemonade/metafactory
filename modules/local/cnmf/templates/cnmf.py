@@ -79,11 +79,6 @@ def write_versions(process_name):
 
 def main():
     """Subset cells (optionally), filter genes, and run cNMF factorization."""
-    if not h5ad_file.is_file() or h5ad_file.suffix != ".h5ad":
-        raise ValueError(
-            f"H5AD file not found or has wrong extension: {h5ad_file}. "
-            "Please ensure the file exists and has a '.h5ad' extension."
-        )
 
     # Both annotation arguments must be provided together or not at all
     if celltype_annotation_column and not analysis_celltypes:
