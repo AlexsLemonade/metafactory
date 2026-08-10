@@ -3,7 +3,6 @@
 
 from importlib.metadata import version
 import sys
-from pathlib import Path
 
 import anndata
 import cnmf
@@ -11,7 +10,7 @@ import numpy
 import scipy.sparse
 
 # Nextflow input variables — values are interpolated by the template engine before execution
-h5ad_file                  = Path("${h5ad_file}")
+h5ad_file                  = "${h5ad_file}"
 unique_id                  = "${unique_id}"
 k_lower                    = int(${cnmf_k_lower})
 k_upper                    = int(${cnmf_k_upper})
