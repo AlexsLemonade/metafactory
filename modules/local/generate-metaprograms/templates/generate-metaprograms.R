@@ -25,11 +25,11 @@ build_spectra_mtx <- function(spectra_files){
   # rows are genes and each column is a spectra
   # any genes that are not present in a spectra will have NA
   spectra_mtx <- purrr::imap(
-    spectra_files, \(file, id) {
+    spectra_files, function(file, id) {
 
       # extract k value to use for labeling columns
-      k_value <- stringr::str_extract(file, pattern = "k_\\d+") |>
-        stringr::str_extract("\\d+") |>
+      k_value <- stringr::str_extract(file, pattern = "k_[0-9]+") |>
+        stringr::str_extract("[0-9]+") |>
         as.integer()
 
       k_value <- sprintf("k%02d", k_value)
@@ -128,7 +128,7 @@ set.seed(seed)
 stopifnot(
   "Not all cNMF results directories exist" = all(dir.exists(cnmf_results_dirs)),
   "orphan cutoff should be between -1 and 1" = dplyr::between(orphan_cutoff, -1, 1),
-  "Output file must end in .rds" = stringr::str_detect(output_file, "\\.rds$")
+  "Output file must end in .rds" = endsWith(output_file, ".rds")
 )
 
 dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
@@ -144,8 +144,8 @@ spectra_files <- fs::dir_ls(
   recurse = TRUE
 ) |>
   # only keep files that have the values of k that we want to keep
-  purrr::keep(\(file){
-    k <- stringr::str_match(file, "k_(\\d+)")[ ,2] |>
+  purrr::keep(function(file){
+    k <- stringr::str_match(file, "k_([0-9]+)")[ ,2] |>
       as.integer()
     k %in% k_range || length(k_range) == 0
   })
@@ -202,7 +202,7 @@ names(mp_cluster_list) <- sprintf("MP%02d",seq(1, length(mp_cluster_list)))
 # each MP is a list of gene weights where weights are averaged across all spectra
 # names of each list correspond to ensembl gene id
 mp_list <- mp_cluster_list |>
-  purrr::map(\(cluster_spectra){
+  purrr::map(function(cluster_spectra){
     rowMeans(spectra_mtx[, cluster_spectra, drop = FALSE], na.rm = TRUE)
   })
 
@@ -226,7 +226,7 @@ shuffled_mps <- replicate(nreps, {
   mp_list <- asplit(mp_mtx, MARGIN = 2)
   # now return the named list of weights, names are genes
   mp_top_list <- mp_list |>
-    purrr::map(\(scores){
+    purrr::map(function(scores){
       scores |>
         sort(decreasing = TRUE) |>
         head(n = n_top_genes)
