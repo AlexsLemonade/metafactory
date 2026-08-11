@@ -101,9 +101,12 @@ workflow PIPELINE_INITIALISATION {
     validateInputSamplesheet(samplesheet_list)
 
     //
-    // Create channel samplesheet of [unique_id, group_id, h5ad_file]
+    // Create channel samplesheet of [unique_id, group_id, file(h5ad_file)]
     //
     ch_samplesheet = channel.fromList(samplesheet_list)
+        .map { unique_id, group_id, h5ad_file ->
+            [unique_id, group_id, file(h5ad_file)]
+        }
 
     emit:
     samplesheet = ch_samplesheet
