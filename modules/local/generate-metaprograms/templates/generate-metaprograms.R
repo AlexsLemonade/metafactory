@@ -1,5 +1,3 @@
-#!/usr/bin/env Rscript
-
 # This script is used to generate metaprograms using cNMF results across all samples in a group
 # Outputs an RDS file with a list of:
 
