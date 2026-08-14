@@ -103,5 +103,5 @@ workflow METAFACTORY {
         )
 
     emit:
-    ch_collated_versions
+    versions = ch_collated_versions
 }
