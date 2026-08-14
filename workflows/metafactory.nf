@@ -25,6 +25,14 @@ workflow METAFACTORY {
     def ch_versions = channel.empty()
 
     //
+    // Create channel samplesheet of [unique_id, group_id, file(h5ad_file)]
+    //
+    ch_samplesheet = ch_samplesheet.map { unique_id, group_id, h5ad_file ->
+        [unique_id, group_id, file(h5ad_file)]
+    }
+
+
+    //
     // MODULE: Run cNMF on each sample
     //
     CNMF(
@@ -95,5 +103,5 @@ workflow METAFACTORY {
         )
 
     emit:
-    versions = ch_collated_versions
+    ch_collated_versions
 }
