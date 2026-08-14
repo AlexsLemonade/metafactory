@@ -31,7 +31,7 @@ process GENERATE_METAPROGRAMS {
     output_file = "${output_subdir}/k-${n_metaprograms}_metaprograms.rds"
     def n = (cnmf_k_upper - cnmf_k_lower).intdiv(cnmf_k_step_size)
     def cnmf_k_range_list = (0..n).collect { cnmf_k_lower + it * cnmf_k_step_size }
-    def cnmf_k_range = cnmf_k_range_list.join(',')
+    cnmf_k_range = cnmf_k_range_list.join(',')
     template('generate-metaprograms.R')
 
     stub:
