@@ -109,7 +109,7 @@ remove_orphan_spectra <- function(spectra_mtx, cor_matrix, orphan_cutoff){
 # Nextflow input variables — values are interpolated by the template engine before execution
 cnmf_results_dirs <- strsplit("${cnmf_dirs_string}", ",")[[1]]
 n_metaprograms     <- as.integer(${n_metaprograms})
-do_filter_spectra  <- as.logical("${filter_spectra}")
+do_filter_spectra  <- tolower("${filter_spectra}") == "true"
 orphan_cutoff      <- as.double(${orphan_cutoff})
 n_top_genes        <- as.integer(${n_top_genes})
 output_file        <- "${output_file}"
@@ -177,8 +177,8 @@ if (do_filter_spectra) {
   keep_spectra <- remove_orphan_spectra(spectra_mtx, cor_mtx, orphan_cutoff)
 
   # filter spectra mtx and cor mtx
-  spectra_mtx <- spectra_mtx[, keep_spectra]
-  cor_mtx <- cor_mtx[keep_spectra, keep_spectra]
+  spectra_mtx <- spectra_mtx[, keep_spectra, drop = FALSE]
+  cor_mtx <- cor_mtx[keep_spectra, keep_spectra, drop = FALSE]
 
 }
 
