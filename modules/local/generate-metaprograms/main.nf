@@ -24,7 +24,7 @@ process GENERATE_METAPROGRAMS {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-    def cnmf_dirs_string = cnmf_output_dirs.join(',')
+    cnmf_dirs_string = cnmf_output_dirs.join(',')
     def filter_label = filter_spectra ? 'filtered' : 'unfiltered'
     def orphan_label = filter_spectra ? "_${orphan_cutoff}" : ''
     def output_subdir = "${group_id}/k-${n_metaprograms}_${filter_label}${orphan_label}"
