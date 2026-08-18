@@ -25,10 +25,11 @@ workflow METAFACTORY {
     def ch_versions = channel.empty()
 
     //
-    // Create channel samplesheet of [unique_id, group_id, file(h5ad_file)]
+    // Create channel samplesheet of [meta, file(h5ad_file)]
     //
     ch_samplesheet = ch_samplesheet.map { unique_id, group_id, h5ad_file ->
-        [unique_id, group_id, file(h5ad_file)]
+        def meta = [unique_id: unique_id, group_id: group_id]
+        [meta, file(h5ad_file)]
     }
 
 
@@ -37,12 +38,14 @@ workflow METAFACTORY {
     //
     CNMF(
         ch_samplesheet,
-        params.cnmf_k_lower,
-        params.cnmf_k_upper,
-        params.cnmf_k_step_size,
-        params.celltype_annotation_column,
-        params.analysis_celltypes,
-        params.seed,
+        [
+            cnmf_k_lower: params.cnmf_k_lower,
+            cnmf_k_upper: params.cnmf_k_upper,
+            cnmf_k_step_size: params.cnmf_k_step_size,
+            celltype_annotation_column: params.celltype_annotation_column,
+            analysis_celltypes: params.analysis_celltypes,
+            seed: params.seed,
+        ],
     )
 
     //
@@ -50,8 +53,11 @@ workflow METAFACTORY {
     //
 
     // group cNMF results from all unique_ids that share the same group_id
-    def ch_cnmf_by_group = CNMF.out.results.groupTuple(by: 0)
-    // group id
+    def ch_cnmf_by_group = CNMF.out.results
+        .map { meta, cnmf_output ->
+            [meta.group_id, meta.unique_id, cnmf_output]
+        }
+        .groupTuple(by: 0)
 
     // parse the comma separated list of k values to test into a list of integers
     def n_metaprograms_list = params.n_metaprograms
@@ -60,17 +66,24 @@ workflow METAFACTORY {
         *.toInteger()
 
     // build one task per group_id/n_metaprograms combination
-    def ch_metaprogram_input = ch_cnmf_by_group.combine(channel.fromList(n_metaprograms_list))
+    def ch_metaprogram_input = ch_cnmf_by_group
+        .combine(channel.fromList(n_metaprograms_list))
+        .map { group_id, unique_ids, cnmf_output_dirs, n_metaprograms ->
+            def meta = [group_id: group_id, n_metaprograms: n_metaprograms, unique_ids: unique_ids]
+            [meta, cnmf_output_dirs]
+        }
 
     GENERATE_METAPROGRAMS(
         ch_metaprogram_input,
-        params.n_top_genes,
-        params.filter_spectra,
-        params.orphan_cutoff,
-        params.cnmf_k_lower,
-        params.cnmf_k_upper,
-        params.cnmf_k_step_size,
-        params.seed,
+        [
+            n_top_genes: params.n_top_genes,
+            filter_spectra: params.filter_spectra,
+            orphan_cutoff: params.orphan_cutoff,
+            cnmf_k_lower: params.cnmf_k_lower,
+            cnmf_k_upper: params.cnmf_k_upper,
+            cnmf_k_step_size: params.cnmf_k_step_size,
+            seed: params.seed,
+        ],
     )
 
     //
