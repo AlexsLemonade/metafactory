@@ -33,6 +33,13 @@ input:
     - n_metaprograms:
         type: integer
         description: Number of metaprograms (k) to generate for this group.
+    - metaprograms_publish_dir:
+        type: string
+        description: |
+          Subdirectory that all output for this metaprogram set is written to, of the form
+          `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once in
+          the workflow and shared with downstream modules so that all output for a metaprogram set
+          is written to the same place.
   - - n_top_genes:
         type: integer
         description: Number of top genes to extract from each metaprogram when generating shuffled metaprograms for permutation testing.
@@ -66,10 +73,13 @@ output:
       - unique_ids:
           type: list
           description: List of unique sample identifiers whose cNMF results were included in this group.
+      - metaprograms_publish_dir:
+          type: string
+          description: Subdirectory that the metaprograms were written to, shared with downstream modules.
       - "k-*_metaprograms.rds":
           type: file
           description: |
-            RDS file, at `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]/k-<n_metaprograms>_metaprograms.rds`,
+            RDS file, at `<metaprograms_publish_dir>/k-<n_metaprograms>_metaprograms.rds`,
             holding the generated metaprograms and associated parameters.
           pattern: "k-*_metaprograms.rds"
       - "k-*_metaprograms.tsv.gz":

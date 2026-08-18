@@ -31,14 +31,11 @@ process GENERATE_METAPROGRAMS {
     // define input file string for R script
     cnmf_dirs_string = cnmf_output_dirs.join(',')
 
-    // define output file using filter label and orphan cutoff
-    def filter_label = filter_spectra ? 'filtered' : 'unfiltered'
-    def orphan_label = filter_spectra ? "_${orphan_cutoff}" : ''
-    def output_subdir = "${meta.group_id}/k-${n_metaprograms}_${filter_label}${orphan_label}"
-    output_file = "${output_subdir}/k-${n_metaprograms}_metaprograms.rds"
+    // define output file in the publish directory for this metaprogram set
+    output_file = "${meta.metaprograms_publish_dir}/k-${n_metaprograms}_metaprograms.rds"
 
     // define a python readable export of the metaprogram gene weights, written alongside the RDS file
-    mp_export_file = "${output_subdir}/k-${n_metaprograms}_metaprograms.tsv.gz"
+    mp_export_file = "${meta.metaprograms_publish_dir}/k-${n_metaprograms}_metaprograms.tsv.gz"
 
     // parse the range of k values to test into a list of integers
     def n = (cnmf_k_upper - cnmf_k_lower).intdiv(cnmf_k_step_size)
@@ -48,13 +45,10 @@ process GENERATE_METAPROGRAMS {
     template('generate-metaprograms.R')
 
     stub:
-    def filter_label = options.filter_spectra ? 'filtered' : 'unfiltered'
-    def orphan_label = options.filter_spectra ? "_${options.orphan_cutoff}" : ''
-    def output_subdir = "${meta.group_id}/k-${meta.n_metaprograms}_${filter_label}${orphan_label}"
-    output_file = "${output_subdir}/k-${meta.n_metaprograms}_metaprograms.rds"
-    mp_export_file = "${output_subdir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
+    output_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.rds"
+    mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
     """
-    mkdir -p "${output_subdir}"
+    mkdir -p "${meta.metaprograms_publish_dir}"
     touch "${output_file}"
     touch "${mp_export_file}"
 

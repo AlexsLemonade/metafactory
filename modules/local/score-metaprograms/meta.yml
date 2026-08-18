@@ -1,0 +1,118 @@
+name: score_metaprograms
+description: |
+  Score every cell in a library against each metaprogram generated for that library's group.
+  Cells are subset to the cell type(s) that were used for cNMF, matching the annotation exactly
+  as cNMF does, the expression matrix is subset to the metaprogram gene universe and quantile
+  normalized across cells, and each cell is scored for each metaprogram as the weighted dot
+  product of the metaprogram's top gene weights and the normalized expression of those genes.
+  One task is run per metaprogram set (group_id/n_metaprograms combination) per library.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - scoring
+tools:
+  - anndata:
+      description: |
+        AnnData is a Python package for handling annotated data matrices in memory
+        and on disk, commonly used for single-cell genomics data.
+      homepage: https://anndata.readthedocs.io
+      documentation: https://anndata.readthedocs.io
+      license: ["BSD-3-Clause"]
+  - numpy:
+      description: |
+        NumPy is the fundamental package for array computing with Python.
+      homepage: https://numpy.org
+      documentation: https://numpy.org/doc/stable/
+      license: ["BSD-3-Clause"]
+  - pandas:
+      description: |
+        pandas is a fast, powerful and flexible open source data analysis and manipulation tool.
+      homepage: https://pandas.pydata.org
+      documentation: https://pandas.pydata.org/docs/
+      license: ["BSD-3-Clause"]
+  - scipy:
+      description: |
+        SciPy is an open-source software for mathematics, science, and engineering, providing
+        the sparse matrix routines used to subset the expression matrix.
+      homepage: https://scipy.org
+      documentation: https://docs.scipy.org/doc/scipy/
+      license: ["BSD-3-Clause"]
+
+input:
+  - - unique_id:
+        type: string
+        description: Unique identifier for the library being scored.
+    - group_id:
+        type: string
+        description: Group identifier shared by all libraries used to generate the metaprograms.
+    - n_metaprograms:
+        type: integer
+        description: Number of metaprograms (k) in the metaprogram set being scored against.
+    - metaprograms_publish_dir:
+        type: string
+        description: |
+          Subdirectory that all output for this metaprogram set is written to, of the form
+          `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once in
+          the workflow and shared with the generate metaprograms module so that the scores are
+          written alongside the metaprograms they were scored against.
+    - metaprograms_file:
+        type: file
+        description: |
+          Gzipped long format TSV of metaprogram gene weights (columns `metaprogram`, `gene_id`,
+          `weight`) from the generate metaprograms module. Gene IDs are Ensembl gene IDs and the
+          gene universe is derived as the union of gene IDs across all metaprograms.
+        pattern: "*_metaprograms.tsv.gz"
+    - h5ad_file:
+        type: file
+        description: Processed AnnData object in H5AD format. adata.X must contain log normalized counts.
+        pattern: "*.h5ad"
+  - - celltype_annotation_column:
+        type: string
+        description: Column name in adata.obs containing cell type annotations used to subset cells before scoring. Set to empty string to score all cells.
+  - - analysis_celltypes:
+        type: string
+        description: |
+          Cell type value(s) in the annotations column to keep. Multiple values can be supplied as a
+          comma-separated string (e.g. 'tumor,malignant'). Values must match the annotation exactly.
+          Required when celltype_annotation_column is provided.
+  - - n_top_genes:
+        type: integer
+        description: Number of top weighted genes from each metaprogram to use when scoring cells.
+  - - seed:
+        type: integer
+        description: Random seed, set for reproducibility and parity with the other modules.
+
+output:
+  - results:
+      - unique_id:
+          type: string
+          description: Unique identifier for the library that was scored.
+      - group_id:
+          type: string
+          description: Group identifier shared by all libraries used to generate the metaprograms.
+      - n_metaprograms:
+          type: integer
+          description: Number of metaprograms (k) in the metaprogram set that was scored against.
+      - metaprograms_publish_dir:
+          type: string
+          description: Subdirectory that the scores were written to, shared with the generate metaprograms module.
+      - "*_metaprogram_scores.tsv.gz":
+          type: file
+          description: |
+            Gzipped long format TSV, at
+            `<metaprograms_publish_dir>/<unique_id>_metaprogram_scores.tsv.gz`, with one row per
+            cell per metaprogram (columns: `metaprogram`, `barcodes`, `mp_score`, `unique_id`).
+          pattern: "*_metaprogram_scores.tsv.gz"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"

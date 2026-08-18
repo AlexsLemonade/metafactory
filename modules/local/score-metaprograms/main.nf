@@ -1,0 +1,46 @@
+process SCORE_METAPROGRAMS {
+    tag "${meta.unique_id}-k${meta.n_metaprograms}"
+    label 'process_medium'
+
+    conda "${moduleDir}/environment.yml"
+    container {
+        workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
+            ? 'oras://community.wave.seqera.io/library/score-metaprograms:b56b3072bf90b2e1'
+            : 'community.wave.seqera.io/library/score-metaprograms:05fc3e6c00bb5221'
+    }
+
+    input:
+    tuple val(meta), path(metaprograms_file), path(h5ad_file)
+    val options
+
+    output:
+    tuple val(meta), path(output_file), emit: results
+    path "versions.yml", emit: versions, topic: versions
+
+    script:
+    // define options
+    celltype_annotation_column = options.celltype_annotation_column
+    analysis_celltypes = options.analysis_celltypes
+    n_top_genes = options.n_top_genes
+    seed = options.seed
+
+    // define values from meta used by the python script
+    unique_id = meta.unique_id
+
+    // write scores to the publish directory for the metaprogram set they were scored against
+    output_file = "${meta.metaprograms_publish_dir}/${unique_id}_metaprogram_scores.tsv.gz"
+
+    template('score-metaprograms.py')
+
+    stub:
+    output_file = "${meta.metaprograms_publish_dir}/${meta.unique_id}_metaprogram_scores.tsv.gz"
+    """
+    mkdir -p "${meta.metaprograms_publish_dir}"
+    touch "${output_file}"
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        stub: x.y.z
+    END_VERSIONS
+    """
+}

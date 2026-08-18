@@ -8,6 +8,7 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
 include { CNMF                   } from '../modules/local/cnmf/main'
 include { GENERATE_METAPROGRAMS  } from '../modules/local/generate-metaprograms/main'
+include { SCORE_METAPROGRAMS     } from '../modules/local/score-metaprograms/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,11 +66,22 @@ workflow METAFACTORY {
         *.trim()
         *.toInteger()
 
+    // labels used to identify the spectra filtering settings the metaprograms were built with
+    def filter_label = params.filter_spectra ? 'filtered' : 'unfiltered'
+    def orphan_label = params.filter_spectra ? "_${params.orphan_cutoff}" : ''
+
     // build one task per group_id/n_metaprograms combination
+    // metaprograms_publish_dir is the subdirectory that all output for a metaprogram set is
+    // written to, and is passed through meta so that every module writes to the same place
     def ch_metaprogram_input = ch_cnmf_by_group
         .combine(channel.fromList(n_metaprograms_list))
         .map { group_id, unique_ids, cnmf_output_dirs, n_metaprograms ->
-            def meta = [group_id: group_id, n_metaprograms: n_metaprograms, unique_ids: unique_ids]
+            def meta = [
+                group_id: group_id,
+                n_metaprograms: n_metaprograms,
+                unique_ids: unique_ids,
+                metaprograms_publish_dir: "${group_id}/k-${n_metaprograms}_${filter_label}${orphan_label}".toString(),
+            ]
             [meta, cnmf_output_dirs]
         }
 
@@ -82,6 +94,44 @@ workflow METAFACTORY {
             cnmf_k_lower: params.cnmf_k_lower,
             cnmf_k_upper: params.cnmf_k_upper,
             cnmf_k_step_size: params.cnmf_k_step_size,
+            seed: params.seed,
+        ],
+    )
+
+    //
+    // MODULE: Score every library in a group against each set of metaprograms generated for that group
+    //
+
+    // channel of [group_id, unique_id, h5ad_file] to combine with each group's metaprograms
+    // pull out the group id from meta so we can easily combine with the metaprograms channel
+    def ch_h5ad_by_group = ch_samplesheet.map { meta, h5ad_file ->
+        [meta.group_id, meta.unique_id, h5ad_file]
+    }
+
+    // build one task per metaprogram set/library combination
+    // only the python readable export of the metaprograms is needed for scoring, so the RDS
+    // file is dropped here and left in the generate metaprograms channel for its other consumers
+    def ch_score_input = GENERATE_METAPROGRAMS.out.results
+        .map { meta, _metaprograms_file, metaprograms_export_file ->
+            [meta.group_id, meta, metaprograms_export_file]
+        }
+        .combine(ch_h5ad_by_group, by: 0)
+        .map { group_id, metaprogram_meta, metaprograms_export_file, unique_id, h5ad_file ->
+            def meta = [
+                unique_id: unique_id,
+                group_id: group_id,
+                n_metaprograms: metaprogram_meta.n_metaprograms,
+                metaprograms_publish_dir: metaprogram_meta.metaprograms_publish_dir,
+            ]
+            [meta, metaprograms_export_file, h5ad_file]
+        }
+
+    SCORE_METAPROGRAMS(
+        ch_score_input,
+        [
+            celltype_annotation_column: params.celltype_annotation_column,
+            analysis_celltypes: params.analysis_celltypes,
+            n_top_genes: params.n_top_genes,
             seed: params.seed,
         ],
     )
