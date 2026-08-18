@@ -18,6 +18,21 @@
 # unique_ids: Vector of unique IDs associated with the MPs
 # removed_unique_ids: Vector of unique IDs that are removed when filtering the spectra
 
+# Input variables --------------------------------------------------------------
+# Nextflow input variables — values are interpolated by the template engine before execution
+cnmf_results_dirs <- strsplit("${cnmf_dirs_string}", ",")[[1]]
+n_metaprograms     <- as.integer(${n_metaprograms})
+do_filter_spectra  <- tolower("${filter_spectra}") == "true"
+orphan_cutoff      <- as.double(${orphan_cutoff})
+n_top_genes        <- as.integer(${n_top_genes})
+output_file        <- "${output_file}"
+process_name       <- "${task.process}"
+cnmf_k_range       <- "${cnmf_k_range}"
+seed               <- as.integer(${seed})
+
+# Fixed parameters
+nreps <- 1000
+
 # Functions --------------------------------------------------------------------
 
 # helper to read in a list of files with spectra from cNMF and create a single mtx
@@ -107,20 +122,6 @@ remove_orphan_spectra <- function(spectra_mtx, cor_matrix, orphan_cutoff){
 
   return(keep_spectra)
 }
-
-# Nextflow input variables — values are interpolated by the template engine before execution
-cnmf_results_dirs <- strsplit("${cnmf_dirs_string}", ",")[[1]]
-n_metaprograms     <- as.integer(${n_metaprograms})
-do_filter_spectra  <- tolower("${filter_spectra}") == "true"
-orphan_cutoff      <- as.double(${orphan_cutoff})
-n_top_genes        <- as.integer(${n_top_genes})
-output_file        <- "${output_file}"
-process_name       <- "${task.process}"
-cnmf_k_range       <- "${cnmf_k_range}"
-seed               <- as.integer(${seed})
-
-# Fixed parameters
-nreps <- 1000
 
 # Set up -----------------------------------------------------------------------
 
