@@ -1,4 +1,4 @@
-name: metafactory
+name: generate-metaprograms
 channels:
   - conda-forge
   - nodefaults
