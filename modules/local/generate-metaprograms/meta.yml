@@ -72,6 +72,14 @@ output:
             RDS file, at `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]/k-<n_metaprograms>_metaprograms.rds`,
             holding the generated metaprograms and associated parameters.
           pattern: "k-*_metaprograms.rds"
+      - "k-*_metaprograms.tsv.gz":
+          type: file
+          description: |
+            Gzipped long format TSV, written alongside the RDS file, with one row per gene per
+            metaprogram (columns: `metaprogram`, `gene_id`, `weight`). Holds the same gene weights
+            as the `metaprogram_list` slot of the RDS file, in a format that can be read by
+            downstream python modules.
+          pattern: "k-*_metaprograms.tsv.gz"
   - versions:
       - "versions.yml":
           type: file

@@ -14,7 +14,7 @@ process GENERATE_METAPROGRAMS {
     val options
 
     output:
-    tuple val(meta), path(output_file), emit: results
+    tuple val(meta), path(output_file), path(mp_export_file), emit: results
     path "versions.yml", emit: versions, topic: versions
 
     script:
@@ -37,6 +37,9 @@ process GENERATE_METAPROGRAMS {
     def output_subdir = "${meta.group_id}/k-${n_metaprograms}_${filter_label}${orphan_label}"
     output_file = "${output_subdir}/k-${n_metaprograms}_metaprograms.rds"
 
+    // define a python readable export of the metaprogram gene weights, written alongside the RDS file
+    mp_export_file = "${output_subdir}/k-${n_metaprograms}_metaprograms.tsv.gz"
+
     // parse the range of k values to test into a list of integers
     def n = (cnmf_k_upper - cnmf_k_lower).intdiv(cnmf_k_step_size)
     def cnmf_k_range_list = (0..n).collect { cnmf_k_lower + it * cnmf_k_step_size }
@@ -49,9 +52,11 @@ process GENERATE_METAPROGRAMS {
     def orphan_label = options.filter_spectra ? "_${options.orphan_cutoff}" : ''
     def output_subdir = "${meta.group_id}/k-${meta.n_metaprograms}_${filter_label}${orphan_label}"
     output_file = "${output_subdir}/k-${meta.n_metaprograms}_metaprograms.rds"
+    mp_export_file = "${output_subdir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
     """
     mkdir -p "${output_subdir}"
     touch "${output_file}"
+    touch "${mp_export_file}"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
