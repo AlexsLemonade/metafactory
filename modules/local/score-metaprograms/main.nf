@@ -5,8 +5,8 @@ process SCORE_METAPROGRAMS {
     conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-            ? 'oras://community.wave.seqera.io/library/score-metaprograms:b56b3072bf90b2e1'
-            : 'community.wave.seqera.io/library/score-metaprograms:05fc3e6c00bb5221'
+            ? 'oras://community.wave.seqera.io/library/score-metaprograms:e26abd9f451bb888'
+            : 'community.wave.seqera.io/library/score-metaprograms:ece0ac8762f9a4b1'
     }
 
     input:

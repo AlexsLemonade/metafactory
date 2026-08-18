@@ -33,6 +33,13 @@ tools:
       homepage: https://pandas.pydata.org
       documentation: https://pandas.pydata.org/docs/
       license: ["BSD-3-Clause"]
+  - qnorm:
+      description: |
+        qnorm is a python implementation of quantile normalization that reproduces the results
+        of R's preprocessCore, including its handling of tied values.
+      homepage: https://github.com/Maarten-vd-Sande/qnorm
+      documentation: https://github.com/Maarten-vd-Sande/qnorm
+      license: ["MIT"]
   - scipy:
       description: |
         SciPy is an open-source software for mathematics, science, and engineering, providing
@@ -67,7 +74,9 @@ input:
         pattern: "*_metaprograms.tsv.gz"
     - h5ad_file:
         type: file
-        description: Processed AnnData object in H5AD format. adata.X must contain log normalized counts.
+        description: |
+          Processed AnnData object in H5AD format. Log normalized counts must be in adata.X when
+          adata.raw is set, or in a 'logcounts' layer otherwise.
         pattern: "*.h5ad"
   - - celltype_annotation_column:
         type: string

@@ -7,4 +7,5 @@ dependencies:
   - conda-forge::anndata
   - conda-forge::numpy
   - conda-forge::pandas
+  - conda-forge::qnorm
   - conda-forge::scipy
