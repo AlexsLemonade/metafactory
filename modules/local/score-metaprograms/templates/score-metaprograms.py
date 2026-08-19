@@ -230,12 +230,12 @@ def main():
             "no 'logcounts' layer."
         )
 
-    # if no cells were filtered out the matrix is still on disk, so read it in before subsetting
+    # subset the genes while the matrix is still on disk / sparse, before it is densified below
+    expr = expr[:, gene_positions]
+
+    # materialize into memory if we're still holding a backed-on-disk object
     if not (isinstance(expr, numpy.ndarray) or scipy.sparse.issparse(expr)):
         expr = expr[:]
-
-    # subset the genes while the matrix is still sparse, before it is densified below
-    expr = expr[:, gene_positions]
     del adata
 
     # densify only the gene x cell submatrix that is scored, transposing sparse data is free
