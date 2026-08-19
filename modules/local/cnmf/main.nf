@@ -1,5 +1,5 @@
 process CNMF {
-    tag "${unique_id}"
+    tag "${meta.unique_id}"
     label 'process_high'
 
     conda "${moduleDir}/environment.yml"
@@ -10,15 +10,11 @@ process CNMF {
     }
 
     input:
-    tuple val(unique_id), val(group_id), path(h5ad_file)
-    val cnmf_k_lower
-    val cnmf_k_upper
-    val cnmf_k_step_size
-    val celltype_annotation_column
-    val analysis_celltypes
+    tuple val(meta), path(h5ad_file)
+    val options
 
     output:
-    tuple val(unique_id), val(group_id), path("${unique_id}_cnmf"), emit: results
+    tuple val(meta), path("${meta.unique_id}_cnmf"), emit: results
     path "versions.yml", emit: versions, topic: versions
 
     script:
@@ -26,7 +22,7 @@ process CNMF {
 
     stub:
     """
-    mkdir -p "${unique_id}_cnmf"
+    mkdir -p "${meta.unique_id}_cnmf"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

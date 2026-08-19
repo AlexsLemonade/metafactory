@@ -1,0 +1,84 @@
+name: generate_metaprograms
+description: |
+  Cluster cNMF gene expression spectra from all samples in a group into a specified
+  number of metaprograms (MPs) based on spectra correlation. Optionally filters out
+  "orphan" spectra that do not correlate well with spectra from other samples before
+  clustering. Also generates permuted (gene-shuffled) versions of each metaprogram
+  for later use in permutation-based significance testing.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+tools:
+  - r-base:
+      description: |
+        R is a language and environment for statistical computing and graphics.
+      homepage: https://www.r-project.org/
+      documentation: https://www.r-project.org/other-docs.html
+      license: ["GPL-2", "GPL-3"]
+
+input:
+  - - group_id:
+        type: string
+        description: Group identifier shared by all samples used as input. Used as the output subdirectory name.
+    - unique_ids:
+        type: list
+        description: List of unique sample identifiers whose cNMF results are included in this group.
+    - cnmf_output_dirs:
+        type: directory
+        description: List of per-sample cNMF output directories (one per unique_id in the group) containing gene spectra score files.
+        pattern: "*/"
+    - n_metaprograms:
+        type: integer
+        description: Number of metaprograms (k) to generate for this group.
+  - - n_top_genes:
+        type: integer
+        description: Number of top genes to extract from each metaprogram when generating shuffled metaprograms for permutation testing.
+  - - filter_spectra:
+        type: boolean
+        description: Whether to filter out orphan spectra (spectra that do not correlate well with any spectra from other samples) before generating metaprograms.
+  - - orphan_cutoff:
+        type: double
+        description: Minimum cross-sample maximum correlation required to keep a spectra when filter_spectra is used.
+  - - cnmf_k_lower:
+        type: integer
+        description: Lower boundary for the number of components (k) tested in cNMF. Used to restrict which cNMF k values are considered when generating metaprograms.
+  - - cnmf_k_upper:
+        type: integer
+        description: Upper boundary for the number of components (k) tested in cNMF. Used to restrict which cNMF k values are considered when generating metaprograms.
+  - - cnmf_k_step_size:
+        type: integer
+        description: Step size for the range of k components tested in cNMF. Used to restrict which cNMF k values are considered when generating metaprograms.
+  - - seed:
+        type: integer
+        description: Random seed used when clustering and shuffling metaprograms, for reproducibility.
+
+output:
+  - results:
+      - group_id:
+          type: string
+          description: Group identifier shared by all samples used as input.
+      - n_metaprograms:
+          type: integer
+          description: Number of metaprograms (k) generated for this group.
+      - unique_ids:
+          type: list
+          description: List of unique sample identifiers whose cNMF results were included in this group.
+      - "k-*_metaprograms.rds":
+          type: file
+          description: |
+            RDS file, at `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]/k-<n_metaprograms>_metaprograms.rds`,
+            holding the generated metaprograms and associated parameters.
+          pattern: "k-*_metaprograms.rds"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"

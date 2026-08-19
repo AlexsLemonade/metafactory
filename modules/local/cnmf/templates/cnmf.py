@@ -3,7 +3,6 @@
 
 from importlib.metadata import version
 import sys
-from pathlib import Path
 
 import anndata
 import cnmf
@@ -11,21 +10,21 @@ import numpy
 import scipy.sparse
 
 # Nextflow input variables — values are interpolated by the template engine before execution
-h5ad_file                  = Path("${h5ad_file}")
-unique_id                  = "${unique_id}"
-k_lower                    = int(${cnmf_k_lower})
-k_upper                    = int(${cnmf_k_upper})
-k_step_size                = int(${cnmf_k_step_size})
-celltype_annotation_column = "${celltype_annotation_column}"
-analysis_celltypes         = "${analysis_celltypes}"
+h5ad_file                  = "${h5ad_file}"
+unique_id                  = "${meta.unique_id}"
+k_lower                    = int(${options.cnmf_k_lower})
+k_upper                    = int(${options.cnmf_k_upper})
+k_step_size                = int(${options.cnmf_k_step_size})
+celltype_annotation_column = "${options.celltype_annotation_column}"
+analysis_celltypes         = "${options.analysis_celltypes}"
 n_jobs                     = int(${task.cpus})
 process_name               = "${task.process}"
+SEED                       = int(${options.seed})
 
 # Fixed cNMF parameters
 N_ITER            = 100
 MAX_NMF_ITER      = 2000
 DENSITY_THRESHOLD = 0.1
-SEED              = 2025
 
 
 def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
@@ -80,11 +79,6 @@ def write_versions(process_name):
 
 def main():
     """Subset cells (optionally), filter genes, and run cNMF factorization."""
-    if not h5ad_file.is_file() or h5ad_file.suffix != ".h5ad":
-        raise ValueError(
-            f"H5AD file not found or has wrong extension: {h5ad_file}. "
-            "Please ensure the file exists and has a '.h5ad' extension."
-        )
 
     # Both annotation arguments must be provided together or not at all
     if celltype_annotation_column and not analysis_celltypes:
