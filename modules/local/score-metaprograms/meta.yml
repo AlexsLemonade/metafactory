@@ -49,22 +49,20 @@ tools:
       license: ["BSD-3-Clause"]
 
 input:
-  - - unique_id:
-        type: string
-        description: Unique identifier for the library being scored.
-    - group_id:
-        type: string
-        description: Group identifier shared by all libraries used to generate the metaprograms.
-    - n_metaprograms:
-        type: integer
-        description: Number of metaprograms (k) in the metaprogram set being scored against.
-    - metaprograms_publish_dir:
-        type: string
+  - - meta:
+        type: map
         description: |
-          Subdirectory that all output for this metaprogram set is written to, of the form
-          `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once in
-          the workflow and shared with the generate metaprograms module so that the scores are
-          written alongside the metaprograms they were scored against.
+          Groovy Map containing library and metaprogram set information, one map per metaprogram
+          set/library combination. Required keys:
+          - `unique_id`: Unique identifier for the library being scored.
+          - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
+          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set being scored
+            against.
+          - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
+            written to, of the form
+            `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
+            in the workflow and shared with the generate metaprograms module so that the scores
+            are written alongside the metaprograms they were scored against.
     - metaprograms_file:
         type: file
         description: |
@@ -96,18 +94,9 @@ input:
 
 output:
   - results:
-      - unique_id:
-          type: string
-          description: Unique identifier for the library that was scored.
-      - group_id:
-          type: string
-          description: Group identifier shared by all libraries used to generate the metaprograms.
-      - n_metaprograms:
-          type: integer
-          description: Number of metaprograms (k) in the metaprogram set that was scored against.
-      - metaprograms_publish_dir:
-          type: string
-          description: Subdirectory that the scores were written to, shared with the generate metaprograms module.
+      - meta:
+          type: map
+          description: Groovy Map of library and metaprogram set information, passed through unchanged from the input channel.
       - "*_metaprogram_scores.tsv.gz":
           type: file
           description: |

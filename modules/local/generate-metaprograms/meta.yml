@@ -20,26 +20,25 @@ tools:
       license: ["GPL-2", "GPL-3"]
 
 input:
-  - - group_id:
-        type: string
-        description: Group identifier shared by all samples used as input. Used as the output subdirectory name.
-    - unique_ids:
-        type: list
-        description: List of unique sample identifiers whose cNMF results are included in this group.
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
+          combination. Required keys:
+          - `group_id`: Group identifier shared by all samples used as input. Used as the output
+            subdirectory name.
+          - `unique_ids`: List of unique sample identifiers whose cNMF results are included in
+            this group.
+          - `n_metaprograms`: Number of metaprograms (k) to generate for this group.
+          - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
+            written to, of the form
+            `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
+            in the workflow and shared with downstream modules so that all output for a
+            metaprogram set is written to the same place.
     - cnmf_output_dirs:
         type: directory
         description: List of per-sample cNMF output directories (one per unique_id in the group) containing gene spectra score files.
         pattern: "*/"
-    - n_metaprograms:
-        type: integer
-        description: Number of metaprograms (k) to generate for this group.
-    - metaprograms_publish_dir:
-        type: string
-        description: |
-          Subdirectory that all output for this metaprogram set is written to, of the form
-          `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once in
-          the workflow and shared with downstream modules so that all output for a metaprogram set
-          is written to the same place.
   - - n_top_genes:
         type: integer
         description: Number of top genes to extract from each metaprogram when generating shuffled metaprograms for permutation testing.
@@ -64,18 +63,9 @@ input:
 
 output:
   - results:
-      - group_id:
-          type: string
-          description: Group identifier shared by all samples used as input.
-      - n_metaprograms:
-          type: integer
-          description: Number of metaprograms (k) generated for this group.
-      - unique_ids:
-          type: list
-          description: List of unique sample identifiers whose cNMF results were included in this group.
-      - metaprograms_publish_dir:
-          type: string
-          description: Subdirectory that the metaprograms were written to, shared with downstream modules.
+      - meta:
+          type: map
+          description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.
       - "k-*_metaprograms.rds":
           type: file
           description: |
