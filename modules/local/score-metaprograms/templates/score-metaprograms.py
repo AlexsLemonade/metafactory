@@ -22,7 +22,7 @@ celltype_annotation_column = "${options.celltype_annotation_column}"
 analysis_celltypes         = "${options.analysis_celltypes}"
 unique_id                  = "${meta.unique_id}"
 n_top_genes                = int(${options.n_top_genes})
-output_file                = "${output_file}"
+output_path                = pathlib.Path("${output_file}")
 n_jobs                     = int(${task.cpus})
 process_name               = "${task.process}"
 SEED                       = int(${options.seed})
@@ -216,7 +216,6 @@ def main():
     )
     scores_df["unique_id"] = unique_id
 
-    output_path = pathlib.Path(output_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     scores_df.to_csv(output_path, sep="\\t", index=False)
 
