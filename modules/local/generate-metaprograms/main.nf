@@ -32,9 +32,8 @@ process GENERATE_METAPROGRAMS {
     cnmf_dirs_string = cnmf_output_dirs.join(',')
 
     // define output file using filter label and orphan cutoff
-    def filter_label = filter_spectra ? 'filtered' : 'unfiltered'
-    def orphan_label = filter_spectra ? "_${orphan_cutoff}" : ''
-    def output_subdir = "${meta.group_id}/k-${n_metaprograms}_${filter_label}${orphan_label}"
+    def filter_label = filter_spectra ? "filtered_${orphan_cutoff}" : 'unfiltered'
+    def output_subdir = "${meta.group_id}/k-${n_metaprograms}_${filter_label}"
     output_file = "${output_subdir}/k-${n_metaprograms}_metaprograms.rds"
 
     // parse the range of k values to test into a list of integers

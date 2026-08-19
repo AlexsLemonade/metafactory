@@ -20,7 +20,7 @@
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
-cnmf_results_dirs <- strsplit("${cnmf_dirs_string}", ",")[[1]]
+cnmf_results_dirs <- stringr::str_split_1("${cnmf_dirs_string}", ",")
 n_metaprograms     <- as.integer(${n_metaprograms})
 do_filter_spectra  <- tolower("${filter_spectra}") == "true"
 orphan_cutoff      <- as.double(${orphan_cutoff})
@@ -226,9 +226,9 @@ shuffled_mps <- replicate(nreps, {
 
   # extract top genes for each mp
   # first turn matrix into a list of vector weights where the names are gene ids
-  mp_list <- asplit(mp_mtx, MARGIN = 2)
+  sampled_mp_list <- asplit(mp_mtx, MARGIN = 2)
   # now return the named list of weights, names are genes
-  mp_top_list <- mp_list |>
+  mp_top_list <- sampled_mp_list |>
     purrr::map(function(scores){
       scores |>
         sort(decreasing = TRUE) |>
