@@ -40,7 +40,7 @@
                     "pattern": "^\\S+\\.tsv$",
                     "default": "${projectDir}/assets/msigdb-gene-sets.tsv",
                     "description": "Path to a tab-separated file listing the MSigDB gene set collections to use for annotating metaprograms.",
-                    "help_text": "The file must have a header row with the columns `name`, `collection`, `subcollection`, and `geneset`. Use `NA` for `subcollection` when a collection has none, and `all` for `geneset` to include every gene set in that (sub)collection. See `assets/README.md` for a full description of each column. Defaults to the `assets/msigdb-gene-sets.tsv` file bundled with the pipeline.",
+                    "help_text": "The file must have a header row with the columns `name`, `collection`, `subcollection`, and `geneset`. Use `NA` for `subcollection` when a collection has none or to use all subcollections, and `all` for `geneset` to include every gene set in that (sub)collection. See `assets/README.md` for a full description of each column. Defaults to the `assets/msigdb-gene-sets.tsv` file bundled with the pipeline.",
                     "fa_icon": "fas fa-list"
                 },
                 "celltype_annotation_column": {

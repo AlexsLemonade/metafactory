@@ -16,7 +16,7 @@ It is referenced from the `input` parameter in `nextflow_schema.json`, and is ap
 ## `msigdb-gene-sets.tsv`
 
 The default value of `--msigdb_gene_sets`.
-This is a tab-separated file listing which [MSigDB](https://www.gsea-msigdb.org/gsea/msigdb) gene sets are used to when running over representation analysis on each set of metaprograms.
+This is a tab-separated file listing which [MSigDB](https://www.gsea-msigdb.org/gsea/msigdb) gene sets are used to when running overrepresentation analysis on each set of metaprograms.
 Each row selects either an entire (sub)collection or a single named gene set.
 
 | Column          | Description                                                                                                                                                  |
