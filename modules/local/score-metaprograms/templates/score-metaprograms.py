@@ -18,69 +18,14 @@ import scipy.sparse
 # Nextflow input variables — values are interpolated by the template engine before execution
 h5ad_file                  = "${h5ad_file}"
 metaprograms_file          = "${metaprograms_file}"
-celltype_annotation_column = "${celltype_annotation_column}"
-analysis_celltypes         = "${analysis_celltypes}"
-unique_id                  = "${unique_id}"
-n_top_genes                = int(${n_top_genes})
+celltype_annotation_column = "${options.celltype_annotation_column}"
+analysis_celltypes         = "${options.analysis_celltypes}"
+unique_id                  = "${meta.unique_id}"
+n_top_genes                = int(${options.n_top_genes})
 output_file                = "${output_file}"
 n_jobs                     = int(${task.cpus})
 process_name               = "${task.process}"
-SEED                       = int(${seed})
-
-
-def read_metaprograms(metaprograms_file):
-    """Read the metaprogram gene weights exported by the generate metaprograms module.
-
-    Parameters
-    ----------
-    metaprograms_file:
-        Path to the gzipped long format TSV of metaprogram gene weights, with columns
-        `metaprogram`, `gene_id`, and `weight`. This holds the same data as the
-        `metaprogram_list` slot of the RDS file written by the same module.
-
-    Returns
-    -------
-    dict
-        Mapping of metaprogram name to a pandas Series of gene weights indexed by
-        Ensembl gene ID.
-    """
-    mp_df = pandas.read_csv(
-        metaprograms_file,
-        sep="\\t",
-        usecols=["metaprogram", "gene_id", "weight"],
-        dtype={"metaprogram": str, "gene_id": str, "weight": numpy.float32},
-    )
-
-    # genes with no data in any of the spectra assigned to a metaprogram have a missing weight
-    mp_df = mp_df[numpy.isfinite(mp_df["weight"])]
-
-    if mp_df.empty:
-        raise ValueError(f"No metaprogram gene weights found in {metaprograms_file}.")
-
-    return {
-        mp_name: group.set_index("gene_id")["weight"]
-        for mp_name, group in mp_df.groupby("metaprogram", sort=True)
-    }
-
-
-def get_gene_universe(mp_dict):
-    """Derive the gene universe as the union of the genes across all metaprograms.
-
-    Parameters
-    ----------
-    mp_dict:
-        Mapping of metaprogram name to a Series of gene weights indexed by gene ID.
-
-    Returns
-    -------
-    pandas.Index
-        All gene IDs used by at least one metaprogram.
-    """
-    gene_universe = pandas.Index([], dtype=object)
-    for gene_weights in mp_dict.values():
-        gene_universe = gene_universe.union(gene_weights.index)
-
-    return gene_universe
+SEED                       = int(${options.seed})
 
 
 def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
@@ -122,7 +67,7 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     return adata[cell_mask]
 
 
-def score_metaprogram(gene_weights, gene_ids, norm_expr, n_top_genes):
+def score_metaprogram(gene_weights, scored_genes, norm_expr, n_top_genes):
     """Score every cell for a single metaprogram.
 
     The score for a cell is the dot product of the metaprogram's top gene weights and the
@@ -132,8 +77,8 @@ def score_metaprogram(gene_weights, gene_ids, norm_expr, n_top_genes):
     ----------
     gene_weights:
         Series of gene weights for one metaprogram, indexed by gene ID.
-    gene_ids:
-        Index of gene IDs corresponding to the rows of norm_expr.
+    scored_genes:
+        Index of the gene IDs in norm_expr, in the same order as its rows.
     norm_expr:
         Quantile normalized gene x cell expression matrix.
     n_top_genes:
@@ -144,18 +89,15 @@ def score_metaprogram(gene_weights, gene_ids, norm_expr, n_top_genes):
     numpy.ndarray
         Score for each cell, in the column order of norm_expr.
     """
-    top_weights = gene_weights.nlargest(n_top_genes)
-
-    # only consider genes that are present in the AnnData object
-    gene_positions = gene_ids.get_indexer(top_weights.index)
-    found_genes = gene_positions >= 0
+    # align the top weights to the rows of norm_expr, leaving NaN wherever a gene of the
+    # metaprogram is not present in the AnnData object
+    top_weights = gene_weights.nlargest(n_top_genes).reindex(scored_genes)
+    found_genes = top_weights.notna().to_numpy()
 
     if not found_genes.any():
         raise ValueError("None of the top genes for this metaprogram are present in the object.")
 
-    weights = top_weights.to_numpy()[found_genes]
-
-    return weights @ norm_expr[gene_positions[found_genes], :]
+    return top_weights.to_numpy()[found_genes] @ norm_expr[found_genes, :]
 
 
 def write_versions(process_name):
@@ -183,14 +125,8 @@ def main():
     # the scoring below is deterministic, the seed is set for parity with the other modules
     numpy.random.seed(SEED)
 
-    if not pathlib.Path(h5ad_file).exists():
-        raise FileNotFoundError(f"H5AD file does not exist: {h5ad_file}")
-    if not pathlib.Path(metaprograms_file).exists():
-        raise FileNotFoundError(f"Metaprograms file does not exist: {metaprograms_file}")
     if not output_file.endswith((".tsv", ".tsv.gz")):
         raise ValueError("Output file must end in .tsv or .tsv.gz")
-    if n_top_genes < 1:
-        raise ValueError("n_top_genes must be a positive integer.")
 
     # both annotation arguments must be provided together or not at all
     if celltype_annotation_column and not analysis_celltypes:
@@ -198,10 +134,23 @@ def main():
     if analysis_celltypes and not celltype_annotation_column:
         raise ValueError("celltype_annotation_column is required when analysis_celltypes is provided.")
 
-    mp_dict = read_metaprograms(metaprograms_file)
-    gene_universe = get_gene_universe(mp_dict)
+    # read in the metaprograms file and build a dictionary of gene weights for each metaprogram
+    mp_df = pandas.read_csv(
+        metaprograms_file,
+        sep="\\t",
+        usecols=["metaprogram", "gene_id", "weight"],
+        dtype={"metaprogram": str, "gene_id": str, "weight": numpy.float32},
+    )
 
-    # read in backed mode so that only the cells being scored are read from disk
+    mp_dict = {
+        mp_name: group.set_index("gene_id")["weight"]
+        for mp_name, group in mp_df.groupby("metaprogram", sort=True)
+    }
+
+    # define the gene universe based on the union of all genes in metaprograms
+    gene_universe = mp_df["gene_id"].unique()
+
+    # read in backed mode so that only the cells and genes being scored are read from disk
     adata = anndata.read_h5ad(h5ad_file, backed="r")
 
     if adata.var_names.has_duplicates:
@@ -211,13 +160,13 @@ def main():
     if celltype_annotation_column:
         adata = subset_cells(adata, celltype_annotation_column, analysis_celltypes)
 
-    # only genes that are in the gene universe and present in this object can be scored
-    gene_positions = numpy.where(adata.var_names.isin(gene_universe))[0]
-    if gene_positions.size == 0:
-        raise ValueError("None of the metaprogram genes are present in the AnnData object.")
-
+    # cells and genes to score; scored_genes is the row order of the matrix scored below
     barcodes = adata.obs_names.to_numpy()
-    gene_ids = adata.var_names[gene_positions]
+    gene_positions = adata.var_names.isin(gene_universe)
+    scored_genes = adata.var_names[gene_positions]
+
+    if not gene_positions.any():
+        raise ValueError("None of the metaprogram genes are present in the AnnData object.")
 
     # adata.X contains normalized values when adata.raw is set, otherwise they are in the logcounts layer
     if adata.raw is not None:
@@ -230,12 +179,14 @@ def main():
             "no 'logcounts' layer."
         )
 
-    # subset the genes while the matrix is still on disk / sparse, before it is densified below
+    # subset the genes while the matrix is still sparse, before it is densified below
     expr = expr[:, gene_positions]
 
-    # materialize into memory if we're still holding a backed-on-disk object
+    # if the subset was not materialized by the indexing above the matrix is still on disk,
+    # so read it in before the file handle is released with adata
     if not (isinstance(expr, numpy.ndarray) or scipy.sparse.issparse(expr)):
         expr = expr[:]
+
     del adata
 
     # densify only the gene x cell submatrix that is scored, transposing sparse data is free
@@ -243,7 +194,7 @@ def main():
     if scipy.sparse.issparse(expr):
         expr = expr.T.toarray()
     else:
-        expr = numpy.ascontiguousarray(expr.T, dtype=numpy.float32)
+        expr = numpy.ascontiguousarray(expr.T)
 
     # quantile normalize across cells, matching preprocessCore::normalize.quantiles()
     # axis=1 normalizes each column, which is one cell in this gene x cell matrix
@@ -256,7 +207,7 @@ def main():
                 {
                     "metaprogram": mp_name,
                     "barcodes": barcodes,
-                    "mp_score": score_metaprogram(gene_weights, gene_ids, norm_expr, n_top_genes),
+                    "mp_score": score_metaprogram(gene_weights, scored_genes, norm_expr, n_top_genes),
                 }
             )
             for mp_name, gene_weights in mp_dict.items()
