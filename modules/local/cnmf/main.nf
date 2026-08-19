@@ -18,7 +18,6 @@ process CNMF {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-
     template('cnmf.py')
 
     stub:
