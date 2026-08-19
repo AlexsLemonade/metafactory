@@ -18,14 +18,6 @@ process CNMF {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-    // define options
-    cnmf_k_lower = options.cnmf_k_lower
-    cnmf_k_upper = options.cnmf_k_upper
-    cnmf_k_step_size = options.cnmf_k_step_size
-    celltype_annotation_column = options.celltype_annotation_column
-    analysis_celltypes = options.analysis_celltypes
-    seed = options.seed
-    unique_id = meta.unique_id
 
     template('cnmf.py')
 
