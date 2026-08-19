@@ -4,6 +4,11 @@ nf_core_version: 4.0.2
 
 lint:
   actions_nf_test: false
+  nextflow_config:
+    # the default is built from ${projectDir}, so the resolved value in
+    # nextflow.config can never match the literal string in nextflow_schema.json
+    - config_defaults:
+        - params.msigdb_gene_sets
   files_unchanged:
     - docs/CONTRIBUTING.md
     - assets/sendmail_template.txt
