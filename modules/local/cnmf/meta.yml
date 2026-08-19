@@ -26,12 +26,13 @@ tools:
       license: ["BSD-3-Clause"]
 
 input:
-  - - unique_id:
-        type: string
-        description: Unique identifier for the sample. Used as the output subdirectory name.
-    - group_id:
-        type: string
-        description: Group identifier for the sample (e.g. project or cohort ID).
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information, e.g. `[ unique_id:'sample1', group_id:'project1' ]`.
+          Required keys:
+          - `unique_id`: Unique identifier for the sample. Used as the output subdirectory name.
+          - `group_id`: Group identifier for the sample (e.g. project or cohort ID).
     - h5ad_file:
         type: file
         description: Processed AnnData object in H5AD format. adata.X must contain raw integer counts, or raw counts must be stored in adata.raw.
@@ -57,12 +58,9 @@ input:
 
 output:
   - results:
-      - unique_id:
-          type: string
-          description: Unique identifier for the sample.
-      - group_id:
-          type: string
-          description: Group identifier for the sample.
+      - meta:
+          type: map
+          description: Groovy Map of sample information, passed through unchanged from the input channel.
       - "*/":
           type: directory
           description: |

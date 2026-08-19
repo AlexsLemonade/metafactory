@@ -14,27 +14,27 @@ process GENERATE_METAPROGRAMS {
     val options
 
     output:
-    tuple val(meta), path(output_file), emit: results
+    tuple val(meta), path(output_file), path(mp_export_file), emit: results
     path "versions.yml", emit: versions, topic: versions
 
     script:
     // define input file string for R script
     cnmf_dirs_string = cnmf_output_dirs.join(',')
 
-    // define output file using filter label and orphan cutoff
-    def filter_label = options.filter_spectra ? "filtered_${options.orphan_cutoff}" : 'unfiltered'
-    def output_subdir = "${meta.group_id}/k-${meta.n_metaprograms}_${filter_label}"
-    output_file = "${output_subdir}/k-${meta.n_metaprograms}_metaprograms.rds"
+    // define output file in the publish directory for this metaprogram set
+    output_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.rds"
 
+    // define a python readable export of the metaprogram gene weights, written alongside the RDS file
+    mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
     template('generate-metaprograms.R')
 
     stub:
-    def filter_label = options.filter_spectra ? "filtered_${options.orphan_cutoff}" : 'unfiltered'
-    def output_subdir = "${meta.group_id}/k-${meta.n_metaprograms}_${filter_label}"
-    output_file = "${output_subdir}/k-${meta.n_metaprograms}_metaprograms.rds"
+    output_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.rds"
+    mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
     """
-    mkdir -p "${output_subdir}"
+    mkdir -p "${meta.metaprograms_publish_dir}"
     touch "${output_file}"
+    touch "${mp_export_file}"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

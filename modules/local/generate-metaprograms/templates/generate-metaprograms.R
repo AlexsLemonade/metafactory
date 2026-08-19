@@ -1,7 +1,14 @@
 #!/usr/bin/env Rscript
 
 # This script is used to generate metaprograms using cNMF results across all samples in a group
-# Outputs an RDS file with a list of:
+# Outputs two files:
+
+# 1. An RDS file with a list of the items described below
+# 2. A gzipped long format TSV with one row per gene per metaprogram
+# (columns: metaprogram, gene_id, weight). This holds the same gene weights as
+# `metaprogram_list` in the RDS file, but in a format that can be read by python modules.
+
+# Items in the RDS file:
 
 # metaprogram_list: List of gene weights for each MP
 # clusters: original vector of cluster assignments for each spectra
@@ -26,6 +33,7 @@ do_filter_spectra  <- tolower("${options.filter_spectra}") == "true"
 orphan_cutoff      <- as.double(${orphan_cutoff})
 n_top_genes        <- as.integer(${options.n_top_genes})
 output_file        <- "${output_file}"
+mp_export_file     <- "${mp_export_file}"
 process_name       <- "${task.process}"
 cnmf_k_lower       <- as.integer(${options.cnmf_k_lower})
 cnmf_k_upper       <- as.integer(${options.cnmf_k_upper})
@@ -133,7 +141,8 @@ set.seed(seed)
 stopifnot(
   "Not all cNMF results directories exist" = all(dir.exists(cnmf_results_dirs)),
   "orphan cutoff should be between -1 and 1" = dplyr::between(orphan_cutoff, -1, 1),
-  "Output file must end in .rds" = endsWith(output_file, ".rds")
+  "Output file must end in .rds" = endsWith(output_file, ".rds"),
+  "Metaprogram export file must end in .tsv or .tsv.gz" = stringr::str_detect(mp_export_file, "\\.tsv$|\\.tsv\\.gz$")
 )
 
 dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
@@ -259,6 +268,22 @@ mp_info_list <- list(
 )
 
 readr::write_rds(mp_info_list, output_file, compress = "bz2")
+
+# also export the metaprogram gene weights as a gzipped long format TSV
+# this is the same data as `metaprogram_list` above, but in a format that can be read by
+# downstream python modules that cannot read RDS files
+# the full gene universe can be recovered as the union of the gene ids across metaprograms
+mp_export_df <- mp_list |>
+  purrr::imap(function(gene_weights, mp_name) {
+    tibble::tibble(
+      metaprogram = mp_name,
+      gene_id = names(gene_weights),
+      weight = as.numeric(gene_weights)
+    )
+  }) |>
+  purrr::list_rbind()
+
+readr::write_tsv(mp_export_df, mp_export_file)
 
 # Versions ----------------------------------------------------------------------
 
