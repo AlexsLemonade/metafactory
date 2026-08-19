@@ -18,17 +18,8 @@ process SCORE_METAPROGRAMS {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-    // define options
-    celltype_annotation_column = options.celltype_annotation_column
-    analysis_celltypes = options.analysis_celltypes
-    n_top_genes = options.n_top_genes
-    seed = options.seed
-
-    // define values from meta used by the python script
-    unique_id = meta.unique_id
-
     // write scores to the publish directory for the metaprogram set they were scored against
-    output_file = "${meta.metaprograms_publish_dir}/${unique_id}_metaprogram_scores.tsv.gz"
+    output_file = "${meta.metaprograms_publish_dir}/${meta.unique_id}_metaprogram_scores.tsv.gz"
 
     template('score-metaprograms.py')
 

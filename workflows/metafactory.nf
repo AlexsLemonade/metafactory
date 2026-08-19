@@ -67,8 +67,8 @@ workflow METAFACTORY {
         *.toInteger()
 
     // labels used to identify the spectra filtering settings the metaprograms were built with
-    def filter_label = params.filter_spectra ? 'filtered' : 'unfiltered'
-    def orphan_label = params.filter_spectra ? "_${params.orphan_cutoff}" : ''
+    def filter_label = params.metaprograms_filter_spectra ? 'filtered' : 'unfiltered'
+    def orphan_label = params.metaprograms_filter_spectra ? "_${params.metaprograms_orphan_cutoff}" : ''
 
     // build one task per group_id/n_metaprograms combination
     // metaprograms_publish_dir is the subdirectory that all output for a metaprogram set is
