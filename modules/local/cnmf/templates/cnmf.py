@@ -11,15 +11,15 @@ import scipy.sparse
 
 # Nextflow input variables — values are interpolated by the template engine before execution
 h5ad_file                  = "${h5ad_file}"
-unique_id                  = "${unique_id}"
-k_lower                    = int(${cnmf_k_lower})
-k_upper                    = int(${cnmf_k_upper})
-k_step_size                = int(${cnmf_k_step_size})
-celltype_annotation_column = "${celltype_annotation_column}"
-analysis_celltypes         = "${analysis_celltypes}"
+unique_id                  = "${meta.unique_id}"
+k_lower                    = int(${options.cnmf_k_lower})
+k_upper                    = int(${options.cnmf_k_upper})
+k_step_size                = int(${options.cnmf_k_step_size})
+celltype_annotation_column = "${options.celltype_annotation_column}"
+analysis_celltypes         = "${options.analysis_celltypes}"
 n_jobs                     = int(${task.cpus})
 process_name               = "${task.process}"
-SEED                       = int(${seed})
+SEED                       = int(${options.seed})
 
 # Fixed cNMF parameters
 N_ITER            = 100

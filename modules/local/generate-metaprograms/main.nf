@@ -18,30 +18,14 @@ process GENERATE_METAPROGRAMS {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-    // define options
-    n_metaprograms = meta.n_metaprograms
-    n_top_genes = options.n_top_genes
-    filter_spectra = options.filter_spectra
-    orphan_cutoff = options.orphan_cutoff
-    cnmf_k_lower = options.cnmf_k_lower
-    cnmf_k_upper = options.cnmf_k_upper
-    cnmf_k_step_size = options.cnmf_k_step_size
-    seed = options.seed
-
     // define input file string for R script
     cnmf_dirs_string = cnmf_output_dirs.join(',')
 
     // define output file in the publish directory for this metaprogram set
-    output_file = "${meta.metaprograms_publish_dir}/k-${n_metaprograms}_metaprograms.rds"
+    output_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.rds"
 
     // define a python readable export of the metaprogram gene weights, written alongside the RDS file
-    mp_export_file = "${meta.metaprograms_publish_dir}/k-${n_metaprograms}_metaprograms.tsv.gz"
-
-    // parse the range of k values to test into a list of integers
-    def n = (cnmf_k_upper - cnmf_k_lower).intdiv(cnmf_k_step_size)
-    def cnmf_k_range_list = (0..n).collect { cnmf_k_lower + it * cnmf_k_step_size }
-    cnmf_k_range = cnmf_k_range_list.join(',')
-
+    mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
     template('generate-metaprograms.R')
 
     stub:

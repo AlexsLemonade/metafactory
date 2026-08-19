@@ -27,16 +27,18 @@
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
-cnmf_results_dirs <- strsplit("${cnmf_dirs_string}", ",")[[1]]
-n_metaprograms     <- as.integer(${n_metaprograms})
-do_filter_spectra  <- tolower("${filter_spectra}") == "true"
+cnmf_results_dirs <- stringr::str_split_1("${cnmf_dirs_string}", ",")
+n_metaprograms     <- as.integer(${meta.n_metaprograms})
+do_filter_spectra  <- tolower("${options.filter_spectra}") == "true"
 orphan_cutoff      <- as.double(${orphan_cutoff})
-n_top_genes        <- as.integer(${n_top_genes})
+n_top_genes        <- as.integer(${options.n_top_genes})
 output_file        <- "${output_file}"
 mp_export_file     <- "${mp_export_file}"
 process_name       <- "${task.process}"
-cnmf_k_range       <- "${cnmf_k_range}"
-seed               <- as.integer(${seed})
+cnmf_k_lower       <- as.integer(${options.cnmf_k_lower})
+cnmf_k_upper       <- as.integer(${options.cnmf_k_upper})
+cnmf_k_step_size    <- as.integer(${options.cnmf_k_step_size})
+seed               <- as.integer(${options.seed})
 
 # Fixed parameters
 nreps <- 1000
@@ -146,8 +148,7 @@ stopifnot(
 dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
 
 # define k range
-k_range <- stringr::str_split_1(cnmf_k_range, ",") |>
-    as.integer()
+k_range <- seq(cnmf_k_lower, cnmf_k_upper, by = cnmf_k_step_size)
 
 # get all the spectra files
 spectra_files <- fs::dir_ls(
@@ -235,9 +236,9 @@ shuffled_mps <- replicate(nreps, {
 
   # extract top genes for each mp
   # first turn matrix into a list of vector weights where the names are gene ids
-  mp_list <- asplit(mp_mtx, MARGIN = 2)
+  sampled_mp_list <- asplit(mp_mtx, MARGIN = 2)
   # now return the named list of weights, names are genes
-  mp_top_list <- mp_list |>
+  mp_top_list <- sampled_mp_list |>
     purrr::map(function(scores){
       scores |>
         sort(decreasing = TRUE) |>
