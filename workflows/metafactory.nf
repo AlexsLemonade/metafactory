@@ -77,8 +77,8 @@ workflow METAFACTORY {
         ch_metaprogram_input,
         [
             n_top_genes: params.n_top_genes,
-            filter_spectra: params.filter_spectra,
-            orphan_cutoff: params.orphan_cutoff,
+            filter_spectra: params.metaprograms_filter_spectra,
+            orphan_cutoff: params.metaprograms_orphan_cutoff,
             cnmf_k_lower: params.cnmf_k_lower,
             cnmf_k_upper: params.cnmf_k_upper,
             cnmf_k_step_size: params.cnmf_k_step_size,

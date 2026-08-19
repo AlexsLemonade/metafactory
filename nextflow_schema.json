@@ -162,16 +162,16 @@
                     "description": "Number of top genes to use for calculating scores and running ORA. Used across multiple modules.",
                     "fa_icon": "fas fa-hashtag"
                 },
-                "filter_spectra": {
+                "metaprograms_filter_spectra": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to filter out orphan spectra before generating metaprograms. Only used by the generate metaprograms module.",
                     "fa_icon": "fas fa-filter"
                 },
-                "orphan_cutoff": {
+                "metaprograms_orphan_cutoff": {
                     "type": "number",
                     "default": 0.3,
-                    "description": "Minimum cross sample maximum correlation required to keep a spectra when --filter_spectra is used. Only used by the generate metaprograms module.",
+                    "description": "Minimum cross sample maximum correlation required to keep a spectra when --metaprograms_filter_spectra is used. Only used by the generate metaprograms module.",
                     "fa_icon": "fas fa-hashtag"
                 }
             }
