@@ -200,11 +200,13 @@ def summarize_scores(scores):
         The number of cells, the mean score, and the sum of squared deviations from that mean.
     """
     mean_score = scores.mean(dtype=numpy.float64)
+    diff = scores.astype(numpy.float64, copy=False) - mean_score
+    M2 = numpy.dot(diff, diff)
 
     return {
         "num_cells": scores.size,
         "mean_mp_score": mean_score,
-        "M2": ((scores - mean_score) ** 2).sum(dtype=numpy.float64),
+        "M2": M2,
     }
 
 
