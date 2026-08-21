@@ -39,27 +39,27 @@ input:
         type: directory
         description: List of per-sample cNMF output directories (one per unique_id in the group) containing gene spectra score files.
         pattern: "*/"
-  - - n_top_genes:
-        type: integer
-        description: Number of top genes to extract from each metaprogram when generating shuffled metaprograms for permutation testing.
-  - - filter_spectra:
-        type: boolean
-        description: Whether to filter out orphan spectra (spectra that do not correlate well with any spectra from other samples) before generating metaprograms.
-  - - orphan_cutoff:
-        type: double
-        description: Minimum cross-sample maximum correlation required to keep a spectra when filter_spectra is used.
-  - - cnmf_k_lower:
-        type: integer
-        description: Lower boundary for the number of components (k) tested in cNMF. Used to restrict which cNMF k values are considered when generating metaprograms.
-  - - cnmf_k_upper:
-        type: integer
-        description: Upper boundary for the number of components (k) tested in cNMF. Used to restrict which cNMF k values are considered when generating metaprograms.
-  - - cnmf_k_step_size:
-        type: integer
-        description: Step size for the range of k components tested in cNMF. Used to restrict which cNMF k values are considered when generating metaprograms.
-  - - seed:
-        type: integer
-        description: Random seed used when clustering and shuffling metaprograms, for reproducibility.
+  - - options:
+        type: map
+        description: |
+          Groovy Map of the options used to generate the metaprograms, supplied as a single value
+          rather than one input per option. Required keys:
+          - `n_top_genes` (integer): Number of top genes to extract from each metaprogram when
+            generating shuffled metaprograms for permutation testing.
+          - `filter_spectra` (boolean): Whether to filter out orphan spectra (spectra that do not
+            correlate well with any spectra from other samples) before generating metaprograms.
+          - `orphan_cutoff` (double): Minimum cross-sample maximum correlation required to keep a
+            spectra when filter_spectra is used.
+          - `cnmf_k_lower` (integer): Lower boundary for the number of components (k) tested in
+            cNMF. Used to restrict which cNMF k values are considered when generating
+            metaprograms.
+          - `cnmf_k_upper` (integer): Upper boundary for the number of components (k) tested in
+            cNMF. Used to restrict which cNMF k values are considered when generating
+            metaprograms.
+          - `cnmf_k_step_size` (integer): Step size for the range of k components tested in cNMF.
+            Used to restrict which cNMF k values are considered when generating metaprograms.
+          - `seed` (integer): Random seed used when clustering and shuffling metaprograms, for
+            reproducibility.
 
 output:
   - results:
