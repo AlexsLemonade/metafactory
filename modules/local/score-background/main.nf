@@ -3,7 +3,6 @@ process SCORE_BACKGROUND {
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
-    // TODO: replace with the score-background container URIs once the wave container is built
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
             ? 'oras://community.wave.seqera.io/library/score-background:f7b56d72e2cd7bc8'

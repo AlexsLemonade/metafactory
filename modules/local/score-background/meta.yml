@@ -48,8 +48,7 @@ tools:
   - scipy:
       description: |
         SciPy is an open-source software for mathematics, science, and engineering, providing
-        the sparse matrix routines used to subset the expression matrix and to score all
-        shuffled metaprograms in a chunk of replicates with a single matrix multiplication.
+        the sparse matrix routines used to subset the expression matrix.
       homepage: https://scipy.org
       documentation: https://docs.scipy.org/doc/scipy/
       license: ["BSD-3-Clause"]
