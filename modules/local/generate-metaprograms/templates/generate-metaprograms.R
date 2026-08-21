@@ -148,9 +148,10 @@ stopifnot(
   "Not all cNMF results directories exist" = all(dir.exists(cnmf_results_dirs)),
   "orphan cutoff should be between -1 and 1" = dplyr::between(orphan_cutoff, -1, 1),
   "Output file must end in .rds" = endsWith(output_file, ".rds"),
-  "Metaprogram export file must end in .tsv or .tsv.gz" = stringr::str_detect(mp_export_file, "\\.tsv$|\\.tsv\\.gz$"),
+  "Metaprogram export file must end in .tsv or .tsv.gz" =
+    endsWith(mp_export_file, ".tsv") || endsWith(mp_export_file, ".tsv.gz"),
   "Shuffled metaprogram export file must end in .tsv or .tsv.gz" =
-    stringr::str_detect(shuffled_mp_export_file, "\\.tsv$|\\.tsv\\.gz$")
+    endsWith(shuffled_mp_export_file, ".tsv") || endsWith(shuffled_mp_export_file, ".tsv.gz")
 )
 
 dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
