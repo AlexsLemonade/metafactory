@@ -80,6 +80,17 @@ output:
             as the `metaprogram_list` slot of the RDS file, in a format that can be read by
             downstream python modules.
           pattern: "k-*_metaprograms.tsv.gz"
+      - "k-*_shuffled_metaprograms.tsv.gz":
+          type: file
+          description: |
+            Gzipped long format TSV, written alongside the RDS file, with one row per gene per
+            metaprogram per permutation replicate (columns: `replicate`, `metaprogram`,
+            `gene_id`, `weight`). Holds the same gene weights as the `shuffled_metaprograms`
+            slot of the RDS file, in a format that can be read by downstream python modules.
+            Only the top `n_top_genes` genes of each shuffled metaprogram are included, so the
+            union of the gene IDs is a subset of the gene universe and not the gene universe
+            itself.
+          pattern: "k-*_shuffled_metaprograms.tsv.gz"
   - versions:
       - "versions.yml":
           type: file

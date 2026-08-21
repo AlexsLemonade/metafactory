@@ -125,7 +125,7 @@ def main():
     # the scoring below is deterministic, the seed is set for parity with the other modules
     numpy.random.seed(SEED)
 
-    if not output_file.endswith((".tsv", ".tsv.gz")):
+    if not output_path.name.endswith((".tsv", ".tsv.gz")):
         raise ValueError("Output file must end in .tsv or .tsv.gz")
 
     # both annotation arguments must be provided together or not at all

@@ -1,12 +1,17 @@
 #!/usr/bin/env Rscript
 
 # This script is used to generate metaprograms using cNMF results across all samples in a group
-# Outputs two files:
+# Outputs three files:
 
 # 1. An RDS file with a list of the items described below
 # 2. A gzipped long format TSV with one row per gene per metaprogram
 # (columns: metaprogram, gene_id, weight). This holds the same gene weights as
 # `metaprogram_list` in the RDS file, but in a format that can be read by python modules.
+# 3. A gzipped long format TSV with one row per gene per metaprogram per permutation replicate
+# (columns: replicate, metaprogram, gene_id, weight). This holds the same gene weights as
+# `shuffled_metaprograms` in the RDS file, but in a format that can be read by python modules.
+# Only the top genes of each shuffled metaprogram are included, so the union of its gene ids is
+# a subset of the gene universe and not the gene universe itself.
 
 # Items in the RDS file:
 
@@ -27,18 +32,19 @@
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
-cnmf_results_dirs <- stringr::str_split_1("${cnmf_dirs_string}", ",")
-n_metaprograms     <- as.integer(${meta.n_metaprograms})
-do_filter_spectra  <- tolower("${options.filter_spectra}") == "true"
-orphan_cutoff      <- as.double(${orphan_cutoff})
-n_top_genes        <- as.integer(${options.n_top_genes})
-output_file        <- "${output_file}"
-mp_export_file     <- "${mp_export_file}"
-process_name       <- "${task.process}"
-cnmf_k_lower       <- as.integer(${options.cnmf_k_lower})
-cnmf_k_upper       <- as.integer(${options.cnmf_k_upper})
-cnmf_k_step_size    <- as.integer(${options.cnmf_k_step_size})
-seed               <- as.integer(${options.seed})
+cnmf_results_dirs       <- stringr::str_split_1("${cnmf_dirs_string}", ",")
+n_metaprograms          <- as.integer(${meta.n_metaprograms})
+do_filter_spectra       <- tolower("${options.filter_spectra}") == "true"
+orphan_cutoff           <- as.double(${options.orphan_cutoff})
+n_top_genes             <- as.integer(${options.n_top_genes})
+output_file             <- "${output_file}"
+mp_export_file          <- "${mp_export_file}"
+shuffled_mp_export_file <- "${shuffled_mp_export_file}"
+process_name            <- "${task.process}"
+cnmf_k_lower            <- as.integer(${options.cnmf_k_lower})
+cnmf_k_upper            <- as.integer(${options.cnmf_k_upper})
+cnmf_k_step_size        <- as.integer(${options.cnmf_k_step_size})
+seed                    <- as.integer(${options.seed})
 
 # Fixed parameters
 nreps <- 1000
@@ -142,7 +148,9 @@ stopifnot(
   "Not all cNMF results directories exist" = all(dir.exists(cnmf_results_dirs)),
   "orphan cutoff should be between -1 and 1" = dplyr::between(orphan_cutoff, -1, 1),
   "Output file must end in .rds" = endsWith(output_file, ".rds"),
-  "Metaprogram export file must end in .tsv or .tsv.gz" = stringr::str_detect(mp_export_file, "\\.tsv$|\\.tsv\\.gz$")
+  "Metaprogram export file must end in .tsv or .tsv.gz" = stringr::str_detect(mp_export_file, "\\.tsv$|\\.tsv\\.gz$"),
+  "Shuffled metaprogram export file must end in .tsv or .tsv.gz" =
+    stringr::str_detect(shuffled_mp_export_file, "\\.tsv$|\\.tsv\\.gz$")
 )
 
 dir.create(dirname(output_file), recursive = TRUE, showWarnings = FALSE)
@@ -259,7 +267,7 @@ mp_info_list <- list(
   "shuffled_metaprograms" = shuffled_mps,
   "gene_universe" = rownames(spectra_mtx),
   "n_metaprograms" = n_metaprograms,
-  "cnmf_k_range" = cnmf_k_range,
+  "cnmf_k_range" = k_range,
   "filter_spectra" = do_filter_spectra,
   # if no filtering, this is -1 which means everything was kept
   "orphan_cutoff" = ifelse(do_filter_spectra, orphan_cutoff, -1),
@@ -284,6 +292,30 @@ mp_export_df <- mp_list |>
   purrr::list_rbind()
 
 readr::write_tsv(mp_export_df, mp_export_file)
+
+# also export the shuffled metaprogram gene weights as a gzipped long format TSV
+# this is the same data as `shuffled_metaprograms` above, but in a format that can be read by
+# downstream python modules that cannot read RDS files
+# only the top genes of each shuffled metaprogram are kept, so the union of the gene ids here is
+# a subset of the gene universe and cannot be used in its place
+# `shuffled_mps` comes from `replicate()` and is unnamed, so the index supplied by `imap()` is
+# used as the replicate number, giving a stable 1..nreps label to join downstream output on
+shuffled_mp_export_df <- shuffled_mps |>
+  purrr::imap(function(mp_top_list, replicate_index) {
+    mp_top_list |>
+      purrr::imap(function(gene_weights, mp_name) {
+        tibble::tibble(
+          replicate = as.integer(replicate_index),
+          metaprogram = mp_name,
+          gene_id = names(gene_weights),
+          weight = as.numeric(gene_weights)
+        )
+      }) |>
+      purrr::list_rbind()
+  }) |>
+  purrr::list_rbind()
+
+readr::write_tsv(shuffled_mp_export_df, shuffled_mp_export_file)
 
 # Versions ----------------------------------------------------------------------
 
