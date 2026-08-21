@@ -9,6 +9,7 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_meta
 include { CNMF                   } from '../modules/local/cnmf/main'
 include { GENERATE_METAPROGRAMS  } from '../modules/local/generate-metaprograms/main'
 include { SCORE_METAPROGRAMS     } from '../modules/local/score-metaprograms/main'
+include { SCORE_BACKGROUND       } from '../modules/local/score-background/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,22 +110,27 @@ workflow METAFACTORY {
     }
 
     // build one task per metaprogram set/library combination
-    // only the python readable export of the metaprograms is needed for scoring, so the RDS
-    // file is dropped here and left in the generate metaprograms channel for its other consumers
-    def ch_score_input = GENERATE_METAPROGRAMS.out.results
-        .map { meta, _metaprograms_file, metaprograms_export_file ->
-            [meta.group_id, meta, metaprograms_export_file]
+    // the RDS file is dropped here and left in the generate metaprograms channel for its other
+    // consumers; only the python readable exports are needed for scoring
+    def ch_metaprograms_by_library = GENERATE_METAPROGRAMS.out.results
+        .map { meta, _metaprograms_file, metaprograms_export_file, shuffled_metaprograms_file ->
+            [meta.group_id, meta, metaprograms_export_file, shuffled_metaprograms_file]
         }
         .combine(ch_h5ad_by_group, by: 0)
-        .map { group_id, metaprogram_meta, metaprograms_export_file, unique_id, h5ad_file ->
+        .map { group_id, metaprogram_meta, metaprograms_export_file, shuffled_metaprograms_file, unique_id, h5ad_file ->
             def meta = [
                 unique_id: unique_id,
                 group_id: group_id,
                 n_metaprograms: metaprogram_meta.n_metaprograms,
                 metaprograms_publish_dir: metaprogram_meta.metaprograms_publish_dir,
             ]
-            [meta, metaprograms_export_file, h5ad_file]
+            [meta, metaprograms_export_file, shuffled_metaprograms_file, h5ad_file]
         }
+
+    // the shuffled metaprograms are only used to build the background distribution
+    def ch_score_input = ch_metaprograms_by_library.map { meta, metaprograms_export_file, _shuffled_metaprograms_file, h5ad_file ->
+        [meta, metaprograms_export_file, h5ad_file]
+    }
 
     SCORE_METAPROGRAMS(
         ch_score_input,
@@ -132,6 +138,18 @@ workflow METAFACTORY {
             celltype_annotation_column: params.celltype_annotation_column,
             analysis_celltypes: params.analysis_celltypes,
             n_top_genes: params.n_top_genes,
+            seed: params.seed,
+        ],
+    )
+
+    //
+    // MODULE: Calculate a background score distribution from shuffled metaprograms for each library
+    //
+    SCORE_BACKGROUND(
+        ch_metaprograms_by_library,
+        [
+            celltype_annotation_column: params.celltype_annotation_column,
+            analysis_celltypes: params.analysis_celltypes,
             seed: params.seed,
         ],
     )
