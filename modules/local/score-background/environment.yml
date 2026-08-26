@@ -1,0 +1,11 @@
+name: score-background
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - conda-forge::python=3.14
+  - conda-forge::anndata
+  - conda-forge::numpy
+  - conda-forge::pandas
+  - conda-forge::qnorm
+  - conda-forge::scipy

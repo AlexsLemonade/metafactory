@@ -14,7 +14,7 @@ process GENERATE_METAPROGRAMS {
     val options
 
     output:
-    tuple val(meta), path(output_file), path(mp_export_file), emit: results
+    tuple val(meta), path(output_file), path(mp_export_file), path(shuffled_mp_export_file), emit: results
     path "versions.yml", emit: versions, topic: versions
 
     script:
@@ -26,15 +26,20 @@ process GENERATE_METAPROGRAMS {
 
     // define a python readable export of the metaprogram gene weights, written alongside the RDS file
     mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
+
+    // define a python readable export of the gene shuffled metaprograms, written alongside the RDS file
+    shuffled_mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_shuffled_metaprograms.tsv.gz"
     template('generate-metaprograms.R')
 
     stub:
     output_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.rds"
     mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_metaprograms.tsv.gz"
+    shuffled_mp_export_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_shuffled_metaprograms.tsv.gz"
     """
     mkdir -p "${meta.metaprograms_publish_dir}"
     touch "${output_file}"
     touch "${mp_export_file}"
+    touch "${shuffled_mp_export_file}"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -27,6 +27,9 @@ n_jobs                     = int(${task.cpus})
 process_name               = "${task.process}"
 SEED                       = int(${options.seed})
 
+# columns of the output table, kept here so an empty table has the same header as a populated one
+OUTPUT_COLUMNS = ["metaprogram", "barcodes", "mp_score", "unique_id"]
+
 
 def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     """Subset an AnnData object to cells matching the requested cell type(s).
@@ -48,7 +51,9 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     Returns
     -------
     anndata.AnnData
-        View of the AnnData object containing only the requested cells.
+        View of the AnnData object containing only the requested cells. The view contains no
+        cells if none of them match, which is not an error; a library that does not contain the
+        requested cell types has no scores rather than a failed run.
     """
     if celltype_annotation_column not in adata.obs.columns:
         raise KeyError(
@@ -58,11 +63,6 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
 
     celltype_list = [v.strip() for v in analysis_celltypes.split(",")]
     cell_mask = adata.obs[celltype_annotation_column].isin(celltype_list)
-
-    if not cell_mask.any():
-        raise ValueError(
-            f"No cells match '{analysis_celltypes}' in column '{celltype_annotation_column}'."
-        )
 
     return adata[cell_mask]
 
@@ -125,7 +125,7 @@ def main():
     # the scoring below is deterministic, the seed is set for parity with the other modules
     numpy.random.seed(SEED)
 
-    if not output_file.endswith((".tsv", ".tsv.gz")):
+    if not output_path.name.endswith((".tsv", ".tsv.gz")):
         raise ValueError("Output file must end in .tsv or .tsv.gz")
 
     # both annotation arguments must be provided together or not at all
@@ -159,6 +159,19 @@ def main():
     # only score the cells the metaprograms were generated from
     if celltype_annotation_column:
         adata = subset_cells(adata, celltype_annotation_column, analysis_celltypes)
+
+    # a library with none of the cells the metaprograms were generated from has no scores, so
+    # write an empty table with the expected columns instead of failing the run
+    if adata.n_obs == 0:
+        print(
+            f"No cells to score in '{h5ad_file}' after subsetting; writing an empty scores file.",
+            file=sys.stderr,
+        )
+        del adata
+        # write empty dataframe
+        pandas.DataFrame(columns=OUTPUT_COLUMNS).to_csv(output_path, sep="\\t", index=False)
+        write_versions(process_name)
+        return
 
     # cells and genes to score; scored_genes is the row order of the matrix scored below
     barcodes = adata.obs_names.to_numpy()

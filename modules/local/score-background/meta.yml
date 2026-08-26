@@ -1,11 +1,14 @@
-name: score_metaprograms
+name: score_background
 description: |
-  Score every cell in a library against each metaprogram generated for that library's group.
-  Cells are subset to the cell type(s) that were used for cNMF, matching the annotation exactly
-  as cNMF does, the expression matrix is subset to the metaprogram gene universe and quantile
-  normalized across cells, and each cell is scored for each metaprogram as the weighted dot
-  product of the metaprogram's top gene weights and the normalized expression of those genes.
-  One task is run per metaprogram set (group_id/n_metaprograms combination) per library.
+  Calculate a background (null) score distribution for a library by scoring it against the gene
+  label shuffled metaprograms generated for that library's group. This is the permutation
+  counterpart of the score metaprograms module: cells are subset and the expression matrix is
+  quantile normalized in exactly the same way, and each shuffled metaprogram is scored as the
+  weighted dot product of its gene weights and the normalized expression of those genes. Rather
+  than per cell scores, the number of cells, the mean score and the sum of squared deviations
+  from that mean (M2) are reported for each shuffled metaprogram, which is what Chan's parallel
+  variance algorithm needs to pool the null across libraries downstream. One task is run per
+  metaprogram set (group_id/n_metaprograms combination) per library.
 keywords:
   - single-cell
   - NMF
@@ -13,6 +16,8 @@ keywords:
   - cNMF
   - metaprograms
   - scoring
+  - permutation
+  - null distribution
 tools:
   - anndata:
       description: |
@@ -61,15 +66,26 @@ input:
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form
             `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
-            in the workflow and shared with the generate metaprograms module so that the scores
-            are written alongside the metaprograms they were scored against.
+            in the workflow and shared with the generate metaprograms module so that the
+            background stats are written alongside the metaprograms and scores they correspond to.
     - metaprograms_file:
         type: file
         description: |
           Gzipped long format TSV of metaprogram gene weights (columns `metaprogram`, `gene_id`,
-          `weight`) from the generate metaprograms module. Gene IDs are Ensembl gene IDs and the
-          gene universe is derived as the union of gene IDs across all metaprograms.
+          `weight`) from the generate metaprograms module. Present only to define the gene
+          universe used for quantile normalization: the shuffled metaprograms hold just the top
+          genes of each metaprogram per replicate, so their gene IDs are a subset of the universe
+          and normalizing over that subset would put the background scores on a different scale
+          than the scores from the score metaprograms module. No weights from this file are used.
         pattern: "*_metaprograms.tsv.gz"
+    - shuffled_metaprograms_file:
+        type: file
+        description: |
+          Gzipped long format TSV of gene label shuffled metaprogram gene weights (columns
+          `replicate`, `metaprogram`, `gene_id`, `weight`) from the generate metaprograms module.
+          Each (replicate, metaprogram) pair is one shuffled metaprogram and holds only its top
+          weighted genes, already selected upstream.
+        pattern: "*_shuffled_metaprograms.tsv.gz"
     - h5ad_file:
         type: file
         description: |
@@ -88,23 +104,26 @@ input:
             Multiple values can be supplied as a comma-separated string (e.g. 'tumor,malignant').
             Values must match the annotation exactly. Required when celltype_annotation_column is
             provided.
-          - `n_top_genes` (integer): Number of top weighted genes from each metaprogram to use
-            when scoring cells.
           - `seed` (integer): Random seed, set for reproducibility and parity with the other
-            modules.
+            modules. The shuffling is done upstream when the metaprograms are generated, so this
+            process is deterministic.
 
 output:
   - results:
       - meta:
           type: map
           description: Groovy Map of library and metaprogram set information, passed through unchanged from the input channel.
-      - "*_metaprogram_scores.tsv.gz":
+      - "*_background_score_stats.tsv.gz":
           type: file
           description: |
             Gzipped long format TSV, at
-            `<metaprograms_publish_dir>/<unique_id>_metaprogram_scores.tsv.gz`, with one row per
-            cell per metaprogram (columns: `metaprogram`, `barcodes`, `mp_score`, `unique_id`).
-          pattern: "*_metaprogram_scores.tsv.gz"
+            `<metaprograms_publish_dir>/<unique_id>_background_score_stats.tsv.gz`, with one row
+            per shuffled metaprogram (columns: `metaprogram`, `replicate`, `num_cells`,
+            `mean_mp_score`, `M2`, `unique_id`). `M2` is the sum of squared deviations of the per
+            cell scores from `mean_mp_score`; together with `num_cells` and `mean_mp_score` it
+            allows the mean and variance of the null to be pooled across libraries using Chan's
+            parallel variance algorithm.
+          pattern: "*_background_score_stats.tsv.gz"
   - versions:
       - "versions.yml":
           type: file
