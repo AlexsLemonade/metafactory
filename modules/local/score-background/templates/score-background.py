@@ -275,7 +275,7 @@ def main():
         h5ad_file, gene_universe, celltype_annotation_column, analysis_celltypes, n_jobs
     )
 
-    # look each gene's row in norm_expr up once; genes that are not in the object get -1
+    # look up each gene's row in norm_expr once; genes that are not in the object get -1 which means they will be dropped
     shuffled_df["gene_row"] = scored_genes.get_indexer(shuffled_df["gene_id"])
 
     # score one shuffled metaprogram at a time, keeping only its summary statistics, so that the
