@@ -294,13 +294,13 @@ mp_export_df <- mp_list |>
 
 readr::write_tsv(mp_export_df, mp_export_file)
 
-# also export the shuffled metaprogram gene weights as a gzipped long format TSV
+# also export the shuffled metaprogram gene weights as a gzipped long format TSV.
 # this is the same data as `shuffled_metaprograms` above, but in a format that can be read by
-# downstream python modules that cannot read RDS files
+# downstream python modules that cannot read RDS files.
 # only the top genes of each shuffled metaprogram are kept, so the union of the gene ids here is
-# a subset of the gene universe and cannot be used in its place
+# a subset of the gene universe.
 # `shuffled_mps` comes from `replicate()` and is unnamed, so the index supplied by `imap()` is
-# used as the replicate number, giving a stable 1..nreps label to join downstream output on
+# used as the replicate number, giving a stable 1..nreps label to join downstream output on.
 shuffled_mp_export_df <- shuffled_mps |>
   purrr::imap(function(mp_top_list, replicate_index) {
     mp_top_list |>

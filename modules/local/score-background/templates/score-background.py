@@ -37,6 +37,9 @@ n_jobs                     = int(${task.cpus})
 process_name               = "${task.process}"
 SEED                       = int(${options.seed})
 
+# columns of the output table, kept here so an empty table has the same header as a populated one
+OUTPUT_COLUMNS = ["metaprogram", "replicate", "num_cells", "mean_mp_score", "M2", "unique_id"]
+
 
 def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     """Subset an AnnData object to cells matching the requested cell type(s).
@@ -58,7 +61,10 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     Returns
     -------
     anndata.AnnData
-        View of the AnnData object containing only the requested cells.
+        View of the AnnData object containing only the requested cells. The view contains no
+        cells if none of them match, which is not an error; a library that does not contain the
+        requested cell types contributes nothing to the null distribution rather than failing
+        the run.
     """
     if celltype_annotation_column not in adata.obs.columns:
         raise KeyError(
@@ -68,11 +74,6 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
 
     celltype_list = [v.strip() for v in analysis_celltypes.split(",")]
     cell_mask = adata.obs[celltype_annotation_column].isin(celltype_list)
-
-    if not cell_mask.any():
-        raise ValueError(
-            f"No cells match '{analysis_celltypes}' in column '{celltype_annotation_column}'."
-        )
 
     return adata[cell_mask]
 
@@ -100,7 +101,7 @@ def normalized_expression(h5ad_file, gene_universe, celltype_annotation_column, 
     -------
     tuple of (numpy.ndarray, pandas.Index)
         Quantile normalized gene x cell expression matrix, and the gene IDs in the order of its
-        rows.
+        rows. Both are None when there are no cells left to score after subsetting.
     """
     # read in backed mode so that only the cells and genes being scored are read from disk
     adata = anndata.read_h5ad(h5ad_file, backed="r")
@@ -112,8 +113,14 @@ def normalized_expression(h5ad_file, gene_universe, celltype_annotation_column, 
     if celltype_annotation_column:
         adata = subset_cells(adata, celltype_annotation_column, analysis_celltypes)
 
+    # nothing to normalize or score, which the caller turns into an empty output table
     if adata.n_obs == 0:
-        raise ValueError("The AnnData object contains no cells to score.")
+        print(
+            f"No cells to score in '{h5ad_file}' after subsetting.",
+            file=sys.stderr,
+        )
+        del adata
+        return None, None
 
     # genes to score; scored_genes is the row order of the matrix returned below
     gene_positions = adata.var_names.isin(gene_universe)
@@ -209,7 +216,6 @@ def summarize_scores(scores):
         "M2": M2,
     }
 
-
 def write_versions(process_name):
     """Write a versions.yml file recording the versions of all software used.
 
@@ -254,16 +260,16 @@ def main():
 
     # read in the shuffled metaprograms file, which is used to make the background score distribution
     shuffled_df = pandas.read_csv(
-            shuffled_metaprograms_file,
-            sep="\\t",
-            usecols=["replicate", "metaprogram", "gene_id", "weight"],
-            dtype={
-                "replicate": numpy.int32,
-                "metaprogram": str,
-                "gene_id": str,
-                "weight": numpy.float32,
-            },
-        )
+        shuffled_metaprograms_file,
+        sep="\\t",
+        usecols=["replicate", "metaprogram", "gene_id", "weight"],
+        dtype={
+            "replicate": numpy.int32,
+            "metaprogram": str,
+            "gene_id": str,
+            "weight": numpy.float32,
+        },
+    )
 
     # define the gene universe based on the union of all genes in metaprograms
     # don't use the shuffled ones since we only save the top 200 genes
@@ -274,6 +280,13 @@ def main():
     norm_expr, scored_genes = normalized_expression(
         h5ad_file, gene_universe, celltype_annotation_column, analysis_celltypes, n_jobs
     )
+
+    # a library with no cells to score has no background distribution, so write an empty table
+    # with the expected columns instead of failing the run
+    if norm_expr is None:
+        pandas.DataFrame(columns=OUTPUT_COLUMNS).to_csv(output_path, sep="\\t", index=False)
+        write_versions(process_name)
+        return
 
     # look up each gene's row in norm_expr once; genes that are not in the object get -1 which means they will be dropped
     shuffled_df["gene_row"] = scored_genes.get_indexer(shuffled_df["gene_id"])
@@ -294,7 +307,6 @@ def main():
     background_df["unique_id"] = unique_id
 
     # export summarized background stats
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     background_df.to_csv(output_path, sep="\\t", index=False)
 
     write_versions(process_name)
