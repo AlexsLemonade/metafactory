@@ -10,6 +10,7 @@ include { CNMF                   } from '../modules/local/cnmf/main'
 include { GENERATE_METAPROGRAMS  } from '../modules/local/generate-metaprograms/main'
 include { SCORE_METAPROGRAMS     } from '../modules/local/score-metaprograms/main'
 include { SCORE_BACKGROUND       } from '../modules/local/score-background/main'
+include { COMBINE_SCORES         } from '../modules/local/combine-scores/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -153,6 +154,37 @@ workflow METAFACTORY {
             seed: params.seed,
         ],
     )
+
+    //
+    // MODULE: Combine the per library scores for each metaprogram set into a single table
+    //
+
+    // drop unique_id from meta and group the per library scores by metaprogram set, tagging each
+    // group with the type of score it holds (either metaprogram or background scores)
+    def ch_combine_input = SCORE_METAPROGRAMS.out.results
+        .map { meta, scores_file ->
+            def updated_meta = [
+                group_id: meta.group_id,
+                n_metaprograms: meta.n_metaprograms,
+                score_type: 'metaprogram_scores',
+                metaprograms_publish_dir: meta.metaprograms_publish_dir,
+            ]
+            [updated_meta, scores_file]
+        }
+        .mix(
+            SCORE_BACKGROUND.out.results.map { meta, background_stats_file ->
+                def updated_meta = [
+                    group_id: meta.group_id,
+                    n_metaprograms: meta.n_metaprograms,
+                    score_type: 'background_score_stats',
+                    metaprograms_publish_dir: meta.metaprograms_publish_dir,
+                ]
+                [updated_meta, background_stats_file]
+            }
+        )
+        .groupTuple()
+
+    COMBINE_SCORES(ch_combine_input)
 
     //
     // Collate and save software versions
