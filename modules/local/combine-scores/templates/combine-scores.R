@@ -17,9 +17,17 @@ process_name    <- "${task.process}"
 # Combine scores ---------------------------------------------------------------
 
 # all input files hold the same columns, so the tables are stacked as is and no library
-# identifier is added here; every score table already carries a `unique_id` column
+# identifier is added here since every table should have a unique id column
 score_df <- input_tsv_files |>
-  purrr::map(readr::read_tsv, show_col_types = FALSE) |>
+  purrr::map(function(file){
+    df <- readr::read_tsv(file, show_col_types = FALSE)
+    # check to make sure unique id column is actually present, otherwise something went wrong
+    if("unique_id" %in% colnames(df)) {
+      return(df)
+    } else {
+      stop(sprintf("File %s is missing the 'unique_id' column", file))
+    }
+  }) |>
   dplyr::bind_rows()
 
 # export and make sure output directory exists
