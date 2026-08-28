@@ -54,7 +54,7 @@ msigdb_df <- gene_sets_df |>
     message(sprintf("Downloading gene sets for: %s", name))
 
     # `NA` in the subcollection column means the full collection is used
-    subcollection <- dplyr::if_else(is.na(subcollection), NULL, subcollection)
+    subcollection <- if (is.na(subcollection)) NULL else subcollection
 
     collection_df <- msigdbr::msigdbr(
       species = species,
@@ -92,7 +92,7 @@ msigdb_df <- gene_sets_df |>
 # Export -----------------------------------------------------------------------
 
 message(sprintf(
-  "Writing %s genes across %s gene sets to %s",
+  "Writing %s rows across %s gene sets to %s",
   nrow(msigdb_df),
   dplyr::n_distinct(msigdb_df$gs_name),
   output_file

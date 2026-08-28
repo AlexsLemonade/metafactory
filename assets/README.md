@@ -46,4 +46,4 @@ It is built by `scripts/build-msigdb-gene-sets.R` and only needs to be rebuilt w
 | `gs_name`      | Name of the MSigDB gene set, e.g. `HALLMARK_HYPOXIA`.                                      |
 | `ensembl_gene` | Ensembl gene ID of a gene in `gs_name`.                                                    |
 
-To use a different set of gene sets, build your own table with these columns and pass it with `--msigdb_gene_sets <path/to/file.tsv>`.
+To use a different set of gene sets, build your own table with these columns and pass it with `--msigdb_gene_sets <path/to/file.tsv[.gz]>`.
