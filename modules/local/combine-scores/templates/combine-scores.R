@@ -22,7 +22,8 @@ score_df <- input_tsv_files |>
   purrr::map(readr::read_tsv, show_col_types = FALSE) |>
   dplyr::bind_rows()
 
-# export
+# export and make sure output directory exists
+dir.create(dirname(output_file), recursive = TRUE)
 readr::write_tsv(score_df, output_file)
 
 # Versions ----------------------------------------------------------------------

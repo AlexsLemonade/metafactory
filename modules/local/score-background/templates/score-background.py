@@ -250,6 +250,9 @@ def main():
     if analysis_celltypes and not celltype_annotation_column:
         raise ValueError("celltype_annotation_column is required when analysis_celltypes is provided.")
 
+    # make output directory, if it doesn't exist then the output file can't be created
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
     # read in the real metaprograms file, which is used only to define the gene universe
     mp_df = pandas.read_csv(
         metaprograms_file,
