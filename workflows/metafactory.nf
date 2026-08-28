@@ -3,14 +3,15 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { paramsSummaryMap       } from 'plugin/nf-schema'
-include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
-include { CNMF                   } from '../modules/local/cnmf/main'
-include { GENERATE_METAPROGRAMS  } from '../modules/local/generate-metaprograms/main'
-include { SCORE_METAPROGRAMS     } from '../modules/local/score-metaprograms/main'
-include { SCORE_BACKGROUND       } from '../modules/local/score-background/main'
-include { COMBINE_SCORES         } from '../modules/local/combine-scores/main'
+include { paramsSummaryMap               } from 'plugin/nf-schema'
+include { softwareVersionsToYAML         } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText         } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
+include { CNMF                           } from '../modules/local/cnmf/main'
+include { GENERATE_METAPROGRAMS          } from '../modules/local/generate-metaprograms/main'
+include { CALCULATE_METRICS_METAPROGRAMS } from '../modules/local/calculate-metrics/metaprograms/main'
+include { SCORE_METAPROGRAMS             } from '../modules/local/score-metaprograms/main'
+include { SCORE_BACKGROUND               } from '../modules/local/score-background/main'
+include { COMBINE_SCORES                 } from '../modules/local/combine-scores/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,6 +98,25 @@ workflow METAFACTORY {
             cnmf_k_upper: params.cnmf_k_upper,
             cnmf_k_step_size: params.cnmf_k_step_size,
             seed: params.seed,
+            nreps: params.nreps,
+        ],
+    )
+
+    //
+    // MODULE: Calculate metrics for each set of metaprograms
+    //
+
+    // only the RDS object is needed to calculate metrics, so the python readable exports are
+    // dropped here and left in the generate metaprograms channel for their other consumers
+    def ch_metaprograms_rds = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
+        [meta, metaprograms_file]
+    }
+
+    CALCULATE_METRICS_METAPROGRAMS(
+        ch_metaprograms_rds,
+        [
+            seed: params.seed,
+            nreps: params.nreps,
         ],
     )
 

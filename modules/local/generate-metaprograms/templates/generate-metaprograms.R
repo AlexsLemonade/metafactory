@@ -45,9 +45,7 @@ cnmf_k_lower            <- as.integer(${options.cnmf_k_lower})
 cnmf_k_upper            <- as.integer(${options.cnmf_k_upper})
 cnmf_k_step_size        <- as.integer(${options.cnmf_k_step_size})
 seed                    <- as.integer(${options.seed})
-
-# Fixed parameters
-nreps <- 1000
+nreps                   <- as.integer(${options.nreps})
 
 # Functions --------------------------------------------------------------------
 

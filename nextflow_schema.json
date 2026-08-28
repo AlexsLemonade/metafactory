@@ -114,6 +114,14 @@
                     "default": 2025,
                     "description": "Random seed used across analysis modules (e.g. cNMF, generate metaprograms) for reproducibility.",
                     "fa_icon": "fas fa-hashtag"
+                },
+                "nreps": {
+                    "type": "integer",
+                    "default": 1000,
+                    "minimum": 1,
+                    "description": "Number of replicates to use for permutation testing across analysis modules.",
+                    "help_text": "Used by the generate metaprograms module to build the shuffled metaprograms and by the calculate metrics modules to build the background distributions that the permutation p-values are calculated against.",
+                    "fa_icon": "fas fa-hashtag"
                 }
             }
         },
