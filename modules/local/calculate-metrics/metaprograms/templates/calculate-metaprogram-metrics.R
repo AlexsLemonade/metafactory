@@ -79,7 +79,7 @@ calculate_permutation_significance <- function(stat, observed_df, background_df,
   combined_df <- observed_df |>
     dplyr::select(
       metaprogram,
-      obs_value = {{ stat }}
+      obs_value = tidyselect::all_of(stat)
     ) |>
     dplyr::left_join(background_df, by = c("metaprogram")) |>
     dplyr::select(-replicate)
@@ -88,8 +88,8 @@ calculate_permutation_significance <- function(stat, observed_df, background_df,
   pvalue_df <- combined_df |>
     dplyr::mutate(
       # indicate which rows have background > or < obs
-      greater_than_obs = {{ stat }} >= obs_value,
-      lower_than_obs = {{ stat }} <= obs_value
+      greater_than_obs = .data[[stat]] >= obs_value,
+      lower_than_obs = .data[[stat]] <= obs_value
     ) |>
     dplyr::group_by(metaprogram) |>
     dplyr::summarize(
