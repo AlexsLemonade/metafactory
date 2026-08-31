@@ -16,12 +16,12 @@
 # num_spectra_per_mp: Number of spectra found in that metaprogram
 # num_samples: Number of samples represented in the metaprogram
 # proportion_of_samples: Proportion of the total samples represented in the metaprogram
-# shannon_entropy: shannon's entropy measuring relative abundance of samples in the metaprogram
-# shannon_entropy_norm: Normalized shannon's entropy
+# shannon_entropy: Shannon entropy measuring relative abundance of samples in the metaprogram
+# shannon_entropy_norm: Normalized Shannon entropy
 # eff_number: Effective sample size
 # eff_number_norm: Effective sample size normalized by the total samples in a metaprogram
 # greater_pvalue_eff_number_norm: Pvalue of the observed effective sample size > background
-# greater_adj_pvalue_eff_number_norm: Adjusted pvalue for effective sample size
+# greater_adj_pvalue_eff_number_norm: Adjusted pvalue of the observed effective sample size > background
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
@@ -190,8 +190,10 @@ total_samples <- length(mp_object[["unique_ids"]])
 # add sample column
 mp_clusters_df <- mp_lookup |>
   # spectra are named with unique id which is <library_id>-<sample_id>_cnmf info
-  dplyr::mutate(sample_id = stringr::word(spectra, 1, sep = "_") |>
-                  stringr::word(-1, sep = "-"))
+  dplyr::mutate(
+    sample_id = stringr::word(spectra, 1, sep = "_") |>
+      stringr::word(-1, sep = "-")
+  )
 
 # get observed stats
 # includes proportion of samples, shannon entropy and effective sample size
