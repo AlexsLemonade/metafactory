@@ -62,7 +62,7 @@ calculate_sample_stats <- function(mp_clusters_df, total_samples) {
       proportion_of_samples = num_samples / total_samples,
       # entropy and neff
       shannon_entropy = entropy(num_spectra_per_sample), # entropy
-      shannon_entropy_norm = shannon_entropy / log(num_samples), # normalize by total possible samples in that mp
+      shannon_entropy_norm = dplyr::if_else(num_samples > 1, shannon_entropy / log(num_samples), 0), # normalize by total possible samples in that mp
       eff_number = exp(shannon_entropy), # effective species size or Hill number order of 1
       eff_number_norm = eff_number / num_samples # eff number should be close to the total possible samples in that mp
     )
