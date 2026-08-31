@@ -38,12 +38,15 @@ To change which gene sets are used, edit this file and re-run `scripts/build-msi
 
 The default value of `--msigdb_gene_sets`.
 This is a gzipped tab-separated file holding the genes in each of the MSigDB gene sets selected by `msigdb-gene-sets.tsv`, with one row per gene per gene set.
-It is built by `scripts/build-msigdb-gene-sets.R` and only needs to be rebuilt when `msigdb-gene-sets.tsv` changes or when the gene sets should be updated to a newer release of MSigDB.
-
-| Column         | Description                                                                                |
-| -------------- | ------------------------------------------------------------------------------------------ |
-| `collection`   | Label for the gene set collection, taken from the `name` column of `msigdb-gene-sets.tsv`. |
-| `gs_name`      | Name of the MSigDB gene set, e.g. `HALLMARK_HYPOXIA`.                                      |
-| `ensembl_gene` | Ensembl gene ID of a gene in `gs_name`.                                                    |
+It is built by `scripts/build-msigdb-gene-sets.R` and saved within the repository as the default value of `--msigdb_gene_sets`.
+It only needs to be rebuilt when `msigdb-gene-sets.tsv` changes or when the gene sets should be updated to a newer release of MSigDB.
 
 To use a different set of gene sets, build your own table with these columns and pass it with `--msigdb_gene_sets <path/to/file.tsv[.gz]>`.
+
+| Column          | Description                                                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`          | Short label used to identify this geneset in the pipeline output                                                                                        |
+| `collection`    | MSigDB collection code, e.g. `H` (hallmark), `C2` (curated), `C6` (oncogenic signatures).                                                               |
+| `subcollection` | MSigDB subcollection code within `collection`, e.g. `CP:REACTOME`. Use `NA` for collections that have no subcollections, or to use the full collection. |
+| `gs_name`       | Name of the MSigDB gene set, e.g. `HALLMARK_HYPOXIA`.                                                                                                   |
+| `ensembl_gene`  | Ensembl gene ID of a gene present in the MSigDB gene set.                                                                                               |

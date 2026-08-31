@@ -5,7 +5,7 @@
 # Gene sets are downloaded from MSigDB with `msigdbr` and saved as a single gzipped TSV with
 # one row per gene per gene set (columns: collection, gs_name, ensembl_gene).
 
-# Which gene sets to download is defined by `assets/msigdb-gene-sets.tsv`, where each row selects
+# The gene sets to download are defined by `assets/msigdb-gene-sets.tsv`, where each row selects
 # either an entire (sub)collection or a single named gene set (see `assets/README.md`).
 # The `name` column of that file is used as the `collection` column of the output, so the labels
 # in the output are the short labels defined there rather than the MSigDB collection codes.
@@ -78,9 +78,13 @@ msigdb_df <- gene_sets_df |>
     }
 
     collection_df |>
-      # label rows with the short name rather than the MSigDB collection code
-      dplyr::mutate(collection = name) |>
-      dplyr::select(collection, gs_name, ensembl_gene)
+      # include relevant columns
+      dplyr::mutate(
+        collection = collection,
+        subcollection = subcollection,
+        name = name
+      ) |>
+      dplyr::select(collection, subcollection, name, gs_name, ensembl_gene)
   }) |>
   dplyr::bind_rows() |>
   # remove anything without an ensembl id
