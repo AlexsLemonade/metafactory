@@ -128,7 +128,7 @@ workflow METAFACTORY {
     CALCULATE_METRICS_GENESETS(
         ch_metaprograms_rds,
         [
-            term2gene_file: params.msigdb_gene_sets,
+            term2gene_file: file(params.msigdb_gene_sets),
             seed: params.seed,
             nreps: params.nreps,
         ],
