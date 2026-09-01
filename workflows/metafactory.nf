@@ -9,6 +9,7 @@ include { methodsDescriptionText         } from '../subworkflows/local/utils_nfc
 include { CNMF                           } from '../modules/local/cnmf/main'
 include { GENERATE_METAPROGRAMS          } from '../modules/local/generate-metaprograms/main'
 include { CALCULATE_METRICS_METAPROGRAMS } from '../modules/local/calculate-metrics/metaprograms/main'
+include { CALCULATE_METRICS_GENESETS     } from '../modules/local/calculate-metrics/genesets/main'
 include { SCORE_METAPROGRAMS             } from '../modules/local/score-metaprograms/main'
 include { SCORE_BACKGROUND               } from '../modules/local/score-background/main'
 include { COMBINE_SCORES                 } from '../modules/local/combine-scores/main'
@@ -115,6 +116,19 @@ workflow METAFACTORY {
     CALCULATE_METRICS_METAPROGRAMS(
         ch_metaprograms_rds,
         [
+            seed: params.seed,
+            nreps: params.nreps,
+        ],
+    )
+
+    //
+    // MODULE: Annotate each set of metaprograms with gene sets using ORA and calculate gene set metrics
+    //
+
+    CALCULATE_METRICS_GENESETS(
+        ch_metaprograms_rds,
+        [
+            term2gene_file: params.msigdb_gene_sets,
             seed: params.seed,
             nreps: params.nreps,
         ],

@@ -15,8 +15,7 @@ process CALCULATE_METRICS_METAPROGRAMS {
     val options
 
     output:
-    tuple val(meta), path(metrics_file), emit: metrics
-    tuple val(meta), path(background_file), emit: background
+    tuple val(meta), path(metrics_file), path(background_file), emit: metaprogram_metrics
     path "versions.yml", emit: versions, topic: versions
 
     script:

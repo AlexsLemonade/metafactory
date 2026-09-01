@@ -1,0 +1,12 @@
+name: geneset-metrics
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  # R interpreter
+  - r-base=4.5
+
+  # packages used in module
+  - r-tidyverse
+  - bioconductor-clusterprofiler
