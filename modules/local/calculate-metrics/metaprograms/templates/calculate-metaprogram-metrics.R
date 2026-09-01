@@ -211,7 +211,7 @@ background_mp_stats_df <- replicate(nreps, {
 
 # pvalue for neff to add in to the final data frame
 neff_pvalue_df <- calculate_permutation_significance(
-  eff_number_norm,
+  "eff_number_norm",
   obs_stats_df,
   background_mp_stats_df,
   nreps
