@@ -44,8 +44,10 @@ input:
         description: |
           Groovy Map of the options used to generate the metaprograms, supplied as a single value
           rather than one input per option. Required keys:
-          - `n_top_genes` (integer): Number of top genes to extract from each metaprogram when
-            generating shuffled metaprograms for permutation testing.
+          - `n_top_genes` (integer): Number of top genes to extract from each metaprogram. Used
+            both for the `top_genes` slot of the RDS file, which downstream modules read rather
+            than recomputing the gene lists themselves, and when generating shuffled metaprograms
+            for permutation testing. Must be at least 1.
           - `filter_spectra` (boolean): Whether to filter out orphan spectra (spectra that do not
             correlate well with any spectra from other samples) before generating metaprograms.
           - `orphan_cutoff` (double): Minimum cross-sample maximum correlation required to keep a
@@ -60,6 +62,8 @@ input:
             Used to restrict which cNMF k values are considered when generating metaprograms.
           - `seed` (integer): Random seed used when clustering and shuffling metaprograms, for
             reproducibility.
+          - `nreps` (integer): Number of permutation replicates, and so the number of gene shuffled
+            copies of the metaprograms to generate.
 
 output:
   - results:
@@ -70,7 +74,13 @@ output:
           type: file
           description: |
             RDS file, at `<metaprograms_publish_dir>/k-<n_metaprograms>_metaprograms.rds`,
-            holding the generated metaprograms and associated parameters.
+            holding the generated metaprograms and associated parameters. Slots are
+            `metaprogram_list`, `clusters`, `cluster_list`, `cor_matrix`, `spectra_cor_df`,
+            `shuffled_metaprograms`, `gene_universe`, `top_genes`, `n_metaprograms`,
+            `n_top_genes`, `cnmf_k_range`, `filter_spectra`, `orphan_cutoff`, `unique_ids` and
+            `removed_unique_ids`. `top_genes` holds the top `n_top_genes` gene IDs of each
+            metaprogram, ordered by decreasing weight, and is calculated here so that every
+            downstream consumer uses the same gene lists.
           pattern: "k-*_metaprograms.rds"
       - "k-*_metaprograms.tsv.gz":
           type: file

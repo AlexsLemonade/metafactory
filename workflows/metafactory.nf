@@ -9,6 +9,7 @@ include { methodsDescriptionText         } from '../subworkflows/local/utils_nfc
 include { CNMF                           } from '../modules/local/cnmf/main'
 include { GENERATE_METAPROGRAMS          } from '../modules/local/generate-metaprograms/main'
 include { CALCULATE_METRICS_METAPROGRAMS } from '../modules/local/calculate-metrics/metaprograms/main'
+include { CALCULATE_METRICS_GENESETS     } from '../modules/local/calculate-metrics/genesets/main'
 include { SCORE_METAPROGRAMS             } from '../modules/local/score-metaprograms/main'
 include { SCORE_BACKGROUND               } from '../modules/local/score-background/main'
 include { COMBINE_SCORES                 } from '../modules/local/combine-scores/main'
@@ -114,6 +115,25 @@ workflow METAFACTORY {
 
     CALCULATE_METRICS_METAPROGRAMS(
         ch_metaprograms_rds,
+        [
+            seed: params.seed,
+            nreps: params.nreps,
+        ],
+    )
+
+    //
+    // MODULE: Annotate each set of metaprograms with gene sets using ORA and calculate gene set metrics
+    //
+
+    // the gene sets are the same for every metaprogram set, so they are staged as a value channel
+    // that every task can reuse. this has to be a `path` input on the process rather than an entry
+    // in the options map, so that the file is staged into the task work directory and is readable
+    // on executors that do not share a filesystem with the launch environment
+    def ch_term2gene = channel.value(file(params.msigdb_gene_sets))
+
+    CALCULATE_METRICS_GENESETS(
+        ch_metaprograms_rds,
+        ch_term2gene,
         [
             seed: params.seed,
             nreps: params.nreps,

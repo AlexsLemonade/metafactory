@@ -22,7 +22,11 @@
 # spectra_cor_df: Data frame with all spectra correlation information
 # shuffled_metaprograms: List of shuffled MPs (top genes only) for each permutation replicate
 # gene_universe: List of all genes used to calculate metaprograms
+# top_genes: List of the top `n_top_genes` gene ids, ordered by decreasing weight, for each MP.
+# Calculated here rather than by downstream modules so that every consumer of this object sees
+# the same gene lists
 # n_metaprograms: Number of metaprograms specified
+# n_top_genes: Number of top genes kept for each MP in `top_genes` and `shuffled_metaprograms`
 # cnmf_k_range: Set of k values used with cNMF to consider when generating MPs
 # filter_spectra: Whether or not orphan spectra were removed
 # orphan_cutoff: If orphan spectra were removed, the minimum cross sample correlation
@@ -110,6 +114,23 @@ build_spectra_cor_df <- function(cor_matrix){
 
 }
 
+# function to extract the top genes from each MP
+# takes a list of named gene weight vectors and returns a list of gene id vectors,
+# ordered by decreasing weight, with `num_genes` genes for each MP
+extract_top_genes <- function(mp_list, num_genes){
+
+  # get the top X number of genes for each MP
+  mp_top_list <- mp_list |>
+    purrr::map(function(weights){
+      weights |>
+        sort(decreasing = TRUE) |>
+        head(n = num_genes) |>
+        names() # return gene ids not weights
+    })
+
+  return(mp_top_list)
+}
+
 # generate a character vector of spectra to keep after removing orphans
 remove_orphan_spectra <- function(spectra_mtx, cor_matrix, orphan_cutoff){
 
@@ -145,6 +166,7 @@ set.seed(seed)
 stopifnot(
   "Not all cNMF results directories exist" = all(dir.exists(cnmf_results_dirs)),
   "orphan cutoff should be between -1 and 1" = dplyr::between(orphan_cutoff, -1, 1),
+  "Number of top genes must be at least 1" = n_top_genes >= 1,
   "Output file must end in .rds" = endsWith(output_file, ".rds"),
   "Metaprogram export file must end in .tsv or .tsv.gz" =
     endsWith(mp_export_file, ".tsv") || endsWith(mp_export_file, ".tsv.gz"),
@@ -226,6 +248,11 @@ mp_list <- mp_cluster_list |>
     rowMeans(spectra_mtx[, cluster_spectra, drop = FALSE], na.rm = TRUE)
   })
 
+# extract the top genes for each MP
+# these are saved to the final object so that all downstream modules that need the top genes,
+# such as the gene set metrics module, use the same gene lists
+top_genes <- extract_top_genes(mp_list, n_top_genes)
+
 # get a vector of any samples that might not be represented in the output spectra
 spectra_unique_ids <- names(clusters) |>
   # grab just the unique ids from the spectra names that are remaining
@@ -265,7 +292,9 @@ mp_info_list <- list(
   "spectra_cor_df" = spectra_cor_df,
   "shuffled_metaprograms" = shuffled_mps,
   "gene_universe" = rownames(spectra_mtx),
+  "top_genes" = top_genes, # top genes for each MP, shared with all downstream consumers
   "n_metaprograms" = n_metaprograms,
+  "n_top_genes" = n_top_genes,
   "cnmf_k_range" = k_range,
   "filter_spectra" = do_filter_spectra,
   # if no filtering, this is -1 which means everything was kept

@@ -1,0 +1,138 @@
+name: calculate_metrics_genesets
+description: |
+  Annotate each metaprogram in a single metaprogram set with gene sets using overrepresentation
+  analysis (ORA), and calculate metrics describing how specific those gene sets are to each
+  metaprogram. ORA is run with `clusterProfiler::enricher()` on the top genes of each metaprogram,
+  against the gene universe used to build the metaprograms, using a pre-formatted term2gene table
+  of gene set membership. Gene set specificity scores each gene set by how few metaprograms it is
+  significant in, and is averaged across the gene sets assigned to a metaprogram. A permutation
+  test, which reshuffles the gene sets assigned to each metaprogram while holding the number of
+  gene sets per metaprogram fixed and weighting gene sets by how often they appear, is used to
+  build a background distribution for the mean specificity and to calculate a p-value for it. The
+  top genes and the gene universe are read from the metaprograms RDS object rather than
+  recalculated here, so every module uses the same gene lists.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - metrics
+  - gene sets
+  - overrepresentation analysis
+  - permutation testing
+tools:
+  - clusterProfiler:
+      description: |
+        A universal enrichment tool for interpreting omics data. The `enricher()` function is used
+        here to run overrepresentation analysis of the top genes of each metaprogram against a
+        user supplied set of gene sets.
+      homepage: https://yulab-smu.top/biomedical-knowledge-mining-book/
+      documentation: https://bioconductor.org/packages/release/bioc/html/clusterProfiler.html
+      license: ["Artistic-2.0"]
+  - tidyverse:
+      description: |
+        The tidyverse is a collection of R packages for data science. The dplyr, purrr, readr,
+        tibble and tidyr packages are used here to read the gene sets, reshape the ORA results,
+        calculate the metrics and write the output tables.
+      homepage: https://www.tidyverse.org
+      documentation: https://www.tidyverse.org/packages/
+      license: ["MIT"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
+          combination. Required keys:
+          - `group_id`: Group identifier shared by all samples used to generate the metaprograms.
+          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the metrics are
+            calculated for.
+          - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
+            written to, of the form
+            `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
+            in the workflow and shared with the generate metaprograms module so that the metrics
+            are written alongside the metaprograms they were calculated from.
+          Any other keys present in the map, including the `unique_ids` set by the generate
+          metaprograms module, are passed through unchanged and are not read by this process. The
+          number of metaprograms used in the specificity calculation is taken from the
+          `metaprogram_list` slot of the RDS file rather than from the map.
+    - metaprograms_file:
+        type: file
+        description: |
+          RDS file of metaprograms for a single metaprogram set, as written by the generate
+          metaprograms module. The `metaprogram_list`, `top_genes`, `gene_universe` and
+          `n_metaprograms` slots are read. The `top_genes` slot is required; RDS files written
+          before the top genes were added to the metaprograms object will fail with an error
+          asking for them to be regenerated.
+        pattern: "*.rds"
+  - - term2gene_file:
+        type: file
+        description: |
+          Tab separated file of gene set membership used as the TERM2GENE table for ORA, with one
+          row per gene per gene set. Must have `gs_name` and `ensembl_gene` columns and at least
+          one row; any other columns are ignored, and rows with a missing gene set name or gene ID
+          are dropped. Already formatted, so no gene sets are downloaded or assembled by this
+          process. The same file is used for every metaprogram set, so it is staged as a value
+          channel in the workflow.
+        pattern: "*.tsv{,.gz}"
+  - - options:
+        type: map
+        description: |
+          Groovy Map of the options used to calculate the metrics, supplied as a single value
+          rather than one input per option. Required keys:
+          - `seed` (integer): Random seed used when shuffling the gene sets assigned to each
+            metaprogram to build the background distribution, for reproducibility.
+          - `nreps` (integer): Number of replicates to use for permutation testing. Must be at
+            least 1. The smallest possible p-value is 1 / (nreps + 1), so lower values run faster
+            but give coarser p-values.
+
+output:
+  - ora_metrics:
+      - meta:
+          type: map
+          description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.
+      - "k-*_ora_results.tsv":
+          type: file
+          description: |
+            TSV, at `<metaprograms_publish_dir>/k-<n_metaprograms>_ora_results.tsv`, with one row
+            per gene set per metaprogram for every gene set passing the ORA significance threshold
+            of `p.adjust <= 0.05`. Holds the full result table returned by
+            `clusterProfiler::enricher()` with a leading `metaprogram` column, so it includes the
+            wide `geneID` column listing the overlapping genes. Metaprograms with no significant
+            gene sets have no rows here, but are still reported in the metrics table.
+          pattern: "k-*_ora_results.tsv"
+      - "k-*_geneset_metrics.tsv":
+          type: file
+          description: |
+            TSV, at `<metaprograms_publish_dir>/k-<n_metaprograms>_geneset_metrics.tsv`, with one
+            row per metaprogram (columns: `metaprogram`, `num_sig_genesets`,
+            `mean_geneset_specificity`, `overall_pvalue_geneset_specificity`,
+            `overall_adj_pvalue_geneset_specificity`). Every metaprogram in the set is reported,
+            including those with no significant gene sets, which have a `num_sig_genesets` of 0, a
+            `mean_geneset_specificity` of `NaN` and no p-value. The p-value columns are two sided,
+            testing whether the observed mean specificity is either greater or lower than the
+            background, and are adjusted across metaprograms with the Benjamini-Hochberg method.
+          pattern: "k-*_geneset_metrics.tsv"
+      - "k-*_background_specificity.tsv.gz":
+          type: file
+          description: |
+            Gzipped TSV, written alongside the metrics table at
+            `<metaprograms_publish_dir>/k-<n_metaprograms>_background_specificity.tsv.gz`, holding
+            the background distribution the `mean_geneset_specificity` p-values are calculated
+            against. One row per metaprogram per permutation replicate (columns: `replicate`,
+            `metaprogram`, `mean_geneset_specificity`, `overall_geneset_specificity`). Covers the
+            same metaprograms as the metrics table, so that the observed values and the background
+            are always calculated across the same metaprograms. Gzipped because it holds `nreps`
+            times `n_metaprograms` rows.
+          pattern: "k-*_background_specificity.tsv.gz"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"
