@@ -10,3 +10,6 @@ dependencies:
   # packages used in module
   - r-tidyverse
   - bioconductor-clusterprofiler
+  # clusterProfiler::enricher loads GO.db at runtime by way of DOSE/GOSemSim, but the
+  # clusterProfiler package does not hard-depend on it, so it has to be requested explicitly
+  - bioconductor-go.db
