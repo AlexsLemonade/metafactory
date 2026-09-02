@@ -28,7 +28,7 @@
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
 metaprograms_file <- "${metaprograms_file}"
-term2gene_file    <- "${options.term2gene_file}"
+term2gene_file    <- "${term2gene_file}"
 ora_results_file  <- "${ora_results_file}"
 metrics_file      <- "${metrics_file}"
 background_file   <- "${background_file}"

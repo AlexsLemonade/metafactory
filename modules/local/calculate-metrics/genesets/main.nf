@@ -12,6 +12,7 @@ process CALCULATE_METRICS_GENESETS {
 
     input:
     tuple val(meta), path(metaprograms_file)
+    path term2gene_file
     val options
 
     output:
