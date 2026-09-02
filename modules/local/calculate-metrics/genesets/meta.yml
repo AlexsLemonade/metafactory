@@ -88,7 +88,7 @@ input:
             but give coarser p-values.
 
 output:
-  - ora_results:
+  - ora_metrics:
       - meta:
           type: map
           description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.

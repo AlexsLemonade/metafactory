@@ -44,7 +44,7 @@ SIG_CUTOFF <- 0.05
 # function for running ORA with clusterProfiler::enricher on each metaprogram
 # uses the top genes stored on the metaprograms object for each metaprogram
 # returns a df with all gene sets for each metaprogram with p.adjust <= sig_cutoff
-sig_cutoff <- function(mp_top_list, gene_universe, term2gene_df, sig_cutoff) {
+run_ora <- function(mp_top_list, gene_universe, term2gene_df, sig_cutoff) {
 
   # run ORA using the top genes
   ora_results <- mp_top_list |>
@@ -57,7 +57,7 @@ sig_cutoff <- function(mp_top_list, gene_universe, term2gene_df, sig_cutoff) {
     })
 
   # combine ora results into a single dataframe
-  # only include genesets with pvalue < sig_cutoff, the default by enricher
+  # only keep gene sets with an adjusted pvalue at or below the cutoff
   ora_results_df <- ora_results |>
     purrr::map(function(ora) ora@result) |>
     purrr::list_rbind(names_to = "metaprogram") |>
@@ -73,9 +73,14 @@ sig_cutoff <- function(mp_top_list, gene_universe, term2gene_df, sig_cutoff) {
 get_total_genesets <- function(mp_names, ora_results_df) {
 
   # table of number of gene sets per metaprogram
-  df <- ora_results_df |>
+  num_genesets_df <- ora_results_df |>
     dplyr::group_by(metaprogram) |>
-    dplyr::summarise(num_sig_genesets = length(ID)) |>
+    dplyr::summarise(num_sig_genesets = length(ID))
+
+  df <- data.frame(
+    metaprogram = mp_names
+  ) |>
+    dplyr::left_join(num_genesets_df, by = "metaprogram") |>
     dplyr::mutate(
       num_sig_genesets = dplyr::if_else(is.na(num_sig_genesets), 0, num_sig_genesets)
     )

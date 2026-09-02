@@ -6,8 +6,8 @@ process CALCULATE_METRICS_GENESETS {
     conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-            ? 'oras://community.wave.seqera.io/library/geneset-metrics:f1c42890fb097570'
-            : 'community.wave.seqera.io/library/geneset-metrics:46d13c32069b2439'
+            ? 'oras://community.wave.seqera.io/library/geneset-metrics:c5d6b3eee39a01b2'
+            : 'community.wave.seqera.io/library/geneset-metrics:83e14b2f43d1eb1c'
     }
 
     input:
