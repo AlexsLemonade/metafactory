@@ -1,4 +1,15 @@
 name: geneset-metrics
+# NOTE: do not build this environment with `scripts/build-wave.sh`.
+# That script passes `--build-template conda/pixi:v1`, and pixi does not run conda post-link
+# scripts. `bioconductor-go.db` is an annotation package whose bioconda recipe is little more than
+# a post-link script that downloads the data and installs the R package, so a pixi built image
+# resolves the dependency but ends up with no GO.db in the R library at all. The build still
+# succeeds, and the pipeline then fails at runtime with
+# "there is no package called 'GO.db'" on the first clusterProfiler::enricher() call.
+#
+# Build the images with the default (micromamba) builder instead, which does run post-link scripts:
+#   wave --conda-file modules/local/calculate-metrics/genesets/environment.yml --freeze
+#   wave --conda-file modules/local/calculate-metrics/genesets/environment.yml --freeze --singularity
 channels:
   - conda-forge
   - bioconda
