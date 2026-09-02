@@ -70,14 +70,9 @@ run_ora <- function(mp_top_list, gene_universe, term2gene_df) {
 get_total_genesets <- function(mp_names, ora_results_df) {
 
   # table of number of gene sets per metaprogram
-  num_genesets_df <- ora_results_df |>
+  df <- ora_results_df |>
     dplyr::group_by(metaprogram) |>
-    dplyr::summarise(num_sig_genesets = length(ID))
-
-  df <- data.frame(
-    metaprogram = mp_names
-  ) |>
-    dplyr::left_join(num_genesets_df, by = "metaprogram") |>
+    dplyr::summarise(num_sig_genesets = length(ID)) |>
     dplyr::mutate(
       num_sig_genesets = dplyr::if_else(is.na(num_sig_genesets), 0, num_sig_genesets)
     )
