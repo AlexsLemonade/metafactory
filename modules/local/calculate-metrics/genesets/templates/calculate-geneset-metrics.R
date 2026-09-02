@@ -36,12 +36,15 @@ process_name      <- "${task.process}"
 nreps             <- as.integer(${options.nreps})
 seed              <- as.integer(${options.seed})
 
+# Constants
+SIG_CUTOFF <- 0.05
+
 # Functions --------------------------------------------------------------------
 
 # function for running ORA with clusterProfiler::enricher on each metaprogram
 # uses the top genes stored on the metaprograms object for each metaprogram
-# returns a df with all gene sets for each metaprogram with p.adjust <= 0.05
-run_ora <- function(mp_top_list, gene_universe, term2gene_df) {
+# returns a df with all gene sets for each metaprogram with p.adjust <= sig_cutoff
+sig_cutoff <- function(mp_top_list, gene_universe, term2gene_df, sig_cutoff) {
 
   # run ORA using the top genes
   ora_results <- mp_top_list |>
@@ -54,11 +57,11 @@ run_ora <- function(mp_top_list, gene_universe, term2gene_df) {
     })
 
   # combine ora results into a single dataframe
-  # only include genesets with pvalue < 0.05, the default by enricher
+  # only include genesets with pvalue < sig_cutoff, the default by enricher
   ora_results_df <- ora_results |>
     purrr::map(function(ora) ora@result) |>
     purrr::list_rbind(names_to = "metaprogram") |>
-    dplyr::filter(p.adjust <= 0.05)
+    dplyr::filter(p.adjust <= sig_cutoff)
 
   return(ora_results_df)
 
@@ -268,7 +271,8 @@ stopifnot(
 ora_results_df <- run_ora(
   mp_top_list = top_genes,
   gene_universe = gene_universe,
-  term2gene_df = term2gene_df
+  term2gene_df = term2gene_df,
+  sig_cutoff = SIG_CUTOFF
 )
 
 # table of number of gene sets per metaprogram
