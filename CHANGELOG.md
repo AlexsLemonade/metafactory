@@ -1,11 +1,11 @@
-# nf-core/metafactory: Changelog
+# AlexsLemonade/metafactory: Changelog
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.0.0dev - [date]
+## v1.0.0dev - [unreleased<!-- TODO nf-core: replace with date on release -->]
 
-Initial release of nf-core/metafactory, created with the [nf-core](https://nf-co.re/) template.
+Initial release of AlexsLemonade/metafactory, created with the [nf-core](https://nf-co.re/) template.
 
 ### `Added`
 

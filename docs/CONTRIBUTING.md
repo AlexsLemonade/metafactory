@@ -3,18 +3,15 @@ title: Contributing
 markdownPlugin: checklist
 ---
 
-# `nf-core/metafactory`: Contributing guidelines
+# `AlexsLemonade/metafactory`: Contributing guidelines
 
 Hi there!
-Thanks for taking an interest in improving nf-core/metafactory.
+Thanks for taking an interest in improving AlexsLemonade/metafactory.
 
-This page describes the recommended nf-core way to contribute to both nf-core/metafactory and nf-core pipelines in general, including:
+This page describes the recommended nf-core way to contribute to both AlexsLemonade/metafactory and nf-core pipelines in general, including:
 
 - [General contribution guidelines](#general-contribution-guidelines): common procedures or guides across all nf-core pipelines.
-- [Pipeline-specific contribution guidelines](#pipeline-specific-contribution-guidelines): procedures or guides specific to the development conventions of nf-core/metafactory.
-
-> [!NOTE]
-> If you need help using or modifying nf-core/metafactory, ask on the nf-core Slack [#metafactory](https://nfcore.slack.com/channels/metafactory) channel ([join our Slack here](https://nf-co.re/join/slack)).
+- [Pipeline-specific contribution guidelines](#pipeline-specific-contribution-guidelines): procedures or guides specific to the development conventions of AlexsLemonade/metafactory.
 
 ## General contribution guidelines
 
@@ -23,8 +20,8 @@ This page describes the recommended nf-core way to contribute to both nf-core/me
 To contribute code to any nf-core pipeline:
 
 - [ ] Ensure you have Nextflow, nf-core tools, and nf-test installed. See the [nf-core/tools repository](https://github.com/nf-core/tools) for instructions.
-- [ ] Check whether a GitHub [issue](https://github.com/nf-core/metafactory/issues) about your idea already exists. If an issue does not exist, create one so that others are aware you are working on it.
-- [ ] [Fork](https://help.github.com/en/github/getting-started-with-github/fork-a-repo) the [nf-core/metafactory repository](https://github.com/nf-core/metafactory) to your GitHub account.
+- [ ] Check whether a GitHub [issue](https://github.com/AlexsLemonade/metafactory/issues) about your idea already exists. If an issue does not exist, create one so that others are aware you are working on it.
+- [ ] [Fork](https://help.github.com/en/github/getting-started-with-github/fork-a-repo) the [AlexsLemonade/metafactory repository](https://github.com/AlexsLemonade/metafactory) to your GitHub account.
 - [ ] Create a branch on your forked repository and make your changes following [pipeline conventions](#pipeline-contribution-conventions) (if applicable).
 - [ ] To fix major bugs, name your branch `patch` and follow the [patch release](#patch-release) process.
 - [ ] Update relevant documentation within the `docs/` folder, use nf-core/tools to update `nextflow_schema.json`, and update `CITATIONS.md`.
@@ -33,23 +30,6 @@ To contribute code to any nf-core pipeline:
 - [ ] Submit a pull request (PR) against the `dev` branch and request a review.
 
 If you are not used to this workflow with Git, see the [GitHub documentation](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests) or [Git resources](https://try.github.io/) for more information.
-
-## Use of AI and LLMs
-
-The nf-core stance on the use of AI and LLMs is that humans are still ultimately responsible for their submitted code, regardless of the tools they use.
-
-If you’re using AI tools, try to stick by these guidelines:
-
-- Keep PRs as small and focussed as possible
-- Avoid any unnecessary changes, such as moving or refactoring code (unless that is the explicit intention of the PR)
-- Review all generated code yourself before opening a PR, and ensure that you understand it
-- Engage with the community review process and expect to make revisions
-
-For more detail, see the the [blog post](https://nf-co.re/blog/2026/statement-on-ai) for a statement from the nf-core/core team.
-
-### Getting help
-
-For further information and help, see the [nf-core/metafactory documentation](https://nf-co.re/metafactory/usage) or ask on the nf-core [#metafactory](https://nfcore.slack.com/channels/metafactory) Slack channel ([join our Slack here](https://nf-co.re/join/slack)).
 
 ### Testing
 
@@ -102,7 +82,7 @@ These tests are run with the latest available version of Nextflow and the minimu
 
 ### Pipeline contribution conventions
 
-nf-core semi-standardises how you write code and other contributions to make the nf-core/metafactory code and processing logic more understandable for new contributors and to ensure quality.
+nf-core semi-standardises how you write code and other contributions to make the AlexsLemonade/metafactory code and processing logic more understandable for new contributors and to ensure quality.
 
 #### Add a new pipeline step
 
@@ -118,7 +98,7 @@ Please also refer to the [pipeline-specific contribution guidelines](#pipeline-s
 - [ ] Perform local tests to validate that the new code works as expected.
   - [ ] If applicable, add a new test in the `tests` directory.
 - [ ] Update `usage.md`, `output.md`, and `citation.md` as appropriate.
-- [ ] [Lint](lint) the code with nf-core/tools.
+- [ ] [Lint](#lint-tests) the code with nf-core/tools.
 - [ ] Update any diagrams or pipeline images as necessary.
 
 To update the minimum required Nextflow version, see the [Nextflow version bumping](#nextflow-version-bumping) section below. For more information about pipeline contributions, see [pipeline-specific contribution guidelines](#pipeline-specific-contribution-guidelines).
@@ -153,7 +133,7 @@ Specify these with generic `withLabel:` selectors, so they can be shared across 
 nf-core provides a set of standard labels that you should follow where possible, as seen in the [nf-core pipeline template](https://github.com/nf-core/tools/blob/main/nf_core/pipeline-template/conf/base.config).
 These labels define resource defaults for single-core processes, modules that require a GPU, and different levels of multi-core configurations with increasing memory requirements.
 
-Values assigned within these labels can be dynamically passed to a tool using the the `${task.cpus}` and `${task.memory}` Nextflow variables in the `script:` block of a module (see an example in the [modules repository](https://github.com/nf-core/modules/blob/bd1b6a40f55933d94b8c9ca94ec8c1ea0eaf4b82/modules/nf-core/samtools/bam2fq/main.nf#L30)).
+Values assigned within these labels can be dynamically passed to a tool using the `${task.cpus}` and `${task.memory}` Nextflow variables in the `script:` block of a module (see an example in the [modules repository](https://github.com/nf-core/modules/blob/bd1b6a40f55933d94b8c9ca94ec8c1ea0eaf4b82/modules/nf-core/samtools/bam2fq/main.nf#L30)).
 
 #### Nextflow version bumping
 

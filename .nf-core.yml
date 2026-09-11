@@ -1,7 +1,3 @@
-repository_type: pipeline
-
-nf_core_version: 4.0.2
-
 lint:
   actions_nf_test: false
   nextflow_config:
@@ -22,15 +18,17 @@ lint:
     - assets/sendmail_template.txt
     - assets/email_template.txt
     - assets/nf-core-metafactory_logo_light.png
+    - docs/images/nf-core-metafactory_logo_light.png
+    - docs/images/nf-core-metafactory_logo_dark.png
+    - CODE_OF_CONDUCT.md
 
 template:
   org: AlexsLemonade
   name: metafactory
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
     RNA-sequencing samples
-  author: Ally Hawkins
-  version: 1.0.0dev
   force: false
+  is_nfcore: false
   outdir: .
   skip_features:
     - igenomes
@@ -38,4 +36,4 @@ template:
     - fastqc
     - codespaces
     - email
-  is_nfcore: false
+repository_type: pipeline
