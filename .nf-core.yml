@@ -1,13 +1,5 @@
-repository_type: pipeline
-
-nf_core_version: 4.0.2
-
 lint:
-  files_unchanged:
-    - docs/CONTRIBUTING.md
-    - assets/sendmail_template.txt
-    - .prettierignore
-  multiqc_config: false
+  actions_nf_test: false
   files_exist:
     - conf/igenomes.config
     - conf/igenomes_ignored.config
@@ -15,15 +7,25 @@ lint:
     - assets/email_template.html
     - assets/sendmail_template.txt
     - assets/email_template.txt
-
+    - assets/nf-core-metafactory_logo_light.png
+  files_unchanged:
+    - docs/CONTRIBUTING.md
+    - assets/sendmail_template.txt
+    - .prettierignore
+  multiqc_config: false
+  nextflow_config:
+    - config_defaults:
+        - params.msigdb_gene_sets
+nf_core_version: 4.1.0
+repository_type: pipeline
 template:
-  org: nf-core
-  name: metafactory
+  author: Ally Hawkins
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
     RNA-sequencing samples
-  author: Ally Hawkins
-  version: 1.0.0dev
   force: false
+  is_nfcore: false
+  name: metafactory
+  org: AlexsLemonade
   outdir: .
   skip_features:
     - igenomes
@@ -31,4 +33,4 @@ template:
     - fastqc
     - codespaces
     - email
-  is_nfcore: true
+  version: 1.0.0dev

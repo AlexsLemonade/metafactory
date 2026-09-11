@@ -1,11 +1,9 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/metafactory
+    AlexsLemonade/metafactory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf-core/metafactory
-    Website: https://nf-co.re/metafactory
-    Slack  : https://nfcore.slack.com/channels/metafactory
+    Github : https://github.com/AlexsLemonade/metafactory
 ----------------------------------------------------------------------------------------
 */
 
@@ -27,7 +25,7 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_meta
 //
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
-workflow NFCORE_METAFACTORY {
+workflow ALEXSLEMONADE_METAFACTORY {
 
     take:
     samplesheet // channel: samplesheet read in from --input
@@ -69,7 +67,7 @@ workflow {
     //
     // WORKFLOW: Run main workflow
     //
-    NFCORE_METAFACTORY (
+    ALEXSLEMONADE_METAFACTORY (
         PIPELINE_INITIALISATION.out.samplesheet
     )
     //
