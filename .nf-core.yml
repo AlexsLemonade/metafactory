@@ -1,3 +1,6 @@
+repository_type: pipeline
+nf_core_version: 4.1.0
+
 lint:
   actions_nf_test: false
   nextflow_config:
@@ -36,4 +39,3 @@ template:
     - fastqc
     - codespaces
     - email
-repository_type: pipeline
