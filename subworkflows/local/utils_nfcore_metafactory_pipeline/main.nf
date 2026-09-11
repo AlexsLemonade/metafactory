@@ -1,5 +1,5 @@
 //
-// Subworkflow with functionality specific to the nf-core/metafactory pipeline
+// Subworkflow with functionality specific to the AlexsLemonade/metafactory pipeline
 //
 
 /*
@@ -87,6 +87,7 @@ workflow PIPELINE_INITIALISATION {
         before_text,
         after_text,
         command,
+        false,
     )
 
     //
