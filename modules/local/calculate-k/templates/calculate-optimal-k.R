@@ -224,7 +224,10 @@ stopifnot(
   )
 )
 
-# define output directory so Nextflow doesn't complain
+# define output directories so Nextflow doesn't complain
+# the report tables are written to their own directory, nested inside the directory the optimal
+# value of k and the final metaprograms are written to
+dir.create(final_files_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(metaprogram_metrics_file), recursive = TRUE, showWarnings = FALSE)
 
 # Read input files -------------------------------------------------------------
