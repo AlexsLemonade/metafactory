@@ -32,9 +32,8 @@
 # set to TRUE and no metrics
 # 3. Three gzipped TSVs holding the permuted null distributions for effective sample size, gene set
 # specificity, and cell score CV, with the values of k that were excluded removed
-# 4. A text file holding the optimal value of k
-# 5. A copy of the metaprograms object and the metrics calculated from it for the optimal value of
-# k, so that the metaprograms chosen for the cohort are published as the final result
+# 4. A text file holding the optimal value of k, which is used downstream to pick out the
+# metaprograms and metrics that are published as the final result for the cohort
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
@@ -46,10 +45,6 @@ specificity_background_files <- stringr::str_split_1("${specificity_background_f
 scores_files                 <- stringr::str_split_1("${scores_files_string}", ",")
 background_scores_files      <- stringr::str_split_1("${background_scores_files_string}", ",")
 
-# these two are not read, they are only published for the optimal value of k
-metaprograms_files           <- stringr::str_split_1("${metaprograms_files_string}", ",")
-ora_results_files            <- stringr::str_split_1("${ora_results_files_string}", ",")
-
 # output files
 metaprogram_metrics_file    <- "${metaprogram_metrics_file}"
 k_metrics_file              <- "${k_metrics_file}"
@@ -57,10 +52,6 @@ neff_background_file        <- "${neff_background_file}"
 specificity_background_file <- "${specificity_background_file}"
 cv_background_file          <- "${cv_background_file}"
 optimal_k_file              <- "${optimal_k_file}"
-
-# directory the files for the optimal value of k are copied into
-# the output files above are written here as well, so it is created with them
-final_files_dir             <- "${output_dir}"
 
 process_name <- "${task.process}"
 nreps        <- as.integer(${options.nreps})
@@ -212,8 +203,6 @@ stopifnot(
   "Some or all background specificity files do not exist" = all(file.exists(specificity_background_files)),
   "Some or all cell score files do not exist" = all(file.exists(scores_files)),
   "Some or all background cell score files do not exist" = all(file.exists(background_scores_files)),
-  "Some or all metaprograms files do not exist" = all(file.exists(metaprograms_files)),
-  "Some or all ORA results files do not exist" = all(file.exists(ora_results_files)),
   "Metaprogram metrics file must end in .tsv" = endsWith(metaprogram_metrics_file, ".tsv"),
   "K metrics file must end in .tsv" = endsWith(k_metrics_file, ".tsv"),
   "Background files must end in .tsv.gz" = all(
@@ -226,8 +215,8 @@ stopifnot(
 
 # define output directories so Nextflow doesn't complain
 # the report tables are written to their own directory, nested inside the directory the optimal
-# value of k and the final metaprograms are written to
-dir.create(final_files_dir, recursive = TRUE, showWarnings = FALSE)
+# value of k is written to
+dir.create(dirname(optimal_k_file), recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(metaprogram_metrics_file), recursive = TRUE, showWarnings = FALSE)
 
 # Read input files -------------------------------------------------------------
@@ -517,32 +506,6 @@ readr::write_tsv(
 # export the value of k as a number to match n_metaprograms in nextflow
 readr::write_lines(k_number(optimal_k), optimal_k_file)
 
-# Publish the files for the optimal value of k ---------------------------------
-
-# every input holds one file per value of k, so the optimal value of k picks out the one file to
-# publish from each of them
-# the names are the part of the file name that follows the value of k
-optimal_k_files <- list(
-  "metaprograms.rds" = metaprograms_files,
-  "mp_metrics.tsv" = mp_metrics_files,
-  "ora_results.tsv" = ora_results_files,
-  "geneset_metrics.tsv" = geneset_metrics_files
-) |>
-  # `assign_k_names()` names each list of files by the value of k it belongs to, so pulling out the
-  # optimal value of k errors if any input is missing a file for that value of k
-  purrr::map(function(files) assign_k_names(files)[[optimal_k]])
-
-# the published files keep the `k-<k>_` prefix that every file for a metaprogram set is named with
-final_file_paths <- file.path(
-  final_files_dir,
-  glue::glue("k-{k_number(optimal_k)}_{names(optimal_k_files)}")
-)
-
-stopifnot(
-  "Could not copy all of the files for the optimal value of k" =
-    all(file.copy(unlist(optimal_k_files), final_file_paths))
-)
-
 # Versions ----------------------------------------------------------------------
 
 writeLines(
@@ -550,7 +513,6 @@ writeLines(
     sprintf('"%s":', process_name),
     sprintf("    r-base: %s", as.character(getRversion())),
     sprintf("    dplyr: %s", as.character(utils::packageVersion("dplyr"))),
-    sprintf("    glue: %s", as.character(utils::packageVersion("glue"))),
     sprintf("    purrr: %s", as.character(utils::packageVersion("purrr"))),
     sprintf("    readr: %s", as.character(utils::packageVersion("readr"))),
     sprintf("    stringr: %s", as.character(utils::packageVersion("stringr"))),

@@ -9,10 +9,10 @@ description: |
   permuted background. Each metric is ranked across all values of k, the ranks are normalized to a
   0-1 scale, and the value of k with the highest mean rank is reported as the optimal value of k.
   Values of k with a metaprogram built from a single spectra are dropped from the comparison and
-  reported in the summary table. The metaprograms and metrics belonging to the optimal value of k
-  are copied into the output directory so that they are published as the final result for the
-  group, rather than as a checkpoint. The tables written here are the input to the report that
-  plots these metrics; no plots are made by this process.
+  reported in the summary table. Only the optimal value of k and the tables behind it are written
+  here; the metaprograms generated with that value of k are published separately by the publish
+  metaprograms module, which the reported value of k is used to select. The tables written here are
+  the input to the report that plots these metrics; no plots are made by this process.
 keywords:
   - single-cell
   - NMF
@@ -22,13 +22,6 @@ keywords:
   - metrics
   - model selection
 tools:
-  - glue:
-      description: |
-        Interpreted string literals. Used here to build the names the files for the optimal value
-        of k are published under.
-      homepage: https://glue.tidyverse.org
-      documentation: https://glue.tidyverse.org/reference/index.html
-      license: ["MIT"]
   - tidyverse:
       description: |
         The tidyverse is a collection of R packages for data science. The dplyr, purrr, readr,
@@ -48,14 +41,6 @@ input:
             every group are published side by side.
           Unlike the other metaprogram modules, this process runs once per group rather than once
           per value of k, so the map holds no `n_metaprograms` or `metaprograms_publish_dir` key.
-    - metaprograms_files:
-        type: file
-        description: |
-          RDS files of metaprograms, one per value of k, as written by the generate metaprograms
-          module. The contents are not read; the file belonging to the optimal value of k is
-          picked out of this list by its name and copied into the output directory, so that it is
-          published as the final set of metaprograms for the group.
-        pattern: "k-*_metaprograms.rds"
     - mp_metrics_files:
         type: file
         description: |
@@ -72,13 +57,6 @@ input:
           `eff_number_norm` column is kept, and it is re-exported for the report with the excluded
           values of k removed.
         pattern: "k-*_background_mp_stats.tsv.gz"
-    - ora_results_files:
-        type: file
-        description: |
-          Full ORA result tables, one per value of k, as written by the calculate metrics gene sets
-          module. The contents are not read; the file belonging to the optimal value of k is
-          picked out of this list by its name and published with the final metaprograms.
-        pattern: "k-*_ora_results.tsv"
     - geneset_metrics_files:
         type: file
         description: |
@@ -128,7 +106,8 @@ output:
           type: file
           description: |
             Text file, at `<group_id>/optimal-k.txt`, holding the optimal value of k as a single
-            number so that it can be read back as `n_metaprograms`.
+            number so that it can be read back as `n_metaprograms` and used to select the
+            metaprograms that are published as the final result for the group.
           pattern: "optimal-k.txt"
   - report_metrics:
       - meta:
@@ -178,20 +157,6 @@ output:
             (columns: `n_metaprograms`, `metaprogram`, `replicate`, `score_cv`), pooled across all
             libraries in the group.
           pattern: "all-k_background_cell_score_cv.tsv.gz"
-  - final_metaprograms:
-      - meta:
-          type: map
-          description: Groovy Map of group information, passed through unchanged from the input channel.
-      - "k-*":
-          type: file
-          description: |
-            The four files belonging to the optimal value of k, written to `<group_id>/` and named
-            with the same `k-<optimal k>_` prefix they were staged under: the metaprograms RDS
-            object (`k-*_metaprograms.rds`) and the metrics calculated from it
-            (`k-*_mp_metrics.tsv`, `k-*_ora_results.tsv` and `k-*_geneset_metrics.tsv`), so that
-            the final set of metaprograms for the group and the metrics describing it are published
-            together.
-          pattern: "k-*"
   - versions:
       - "versions.yml":
           type: file

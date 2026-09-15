@@ -233,23 +233,17 @@ workflow METAFACTORY {
 
     // this process runs once per group rather than once per metaprogram set, so the output for
     // every value of k is grouped by group_id here
-    // the metaprograms RDS is the only output of the generate metaprograms module that is needed,
-    // and only so that the one for the optimal value of k can be published as the final result
-    def ch_metaprograms_by_group = GENERATE_METAPROGRAMS.out.results
-        .map { meta, metaprograms_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
-            [meta.group_id, metaprograms_file]
-        }
-        .groupTuple()
-
     def ch_metrics_by_group = CALCULATE_METRICS_METAPROGRAMS.out.metaprogram_metrics
         .map { meta, metrics_file, background_file ->
             [meta.group_id, metrics_file, background_file]
         }
         .groupTuple()
 
+    // the ORA results are not used to compare values of k, so only the gene set metrics and their
+    // background are grouped here
     def ch_geneset_metrics_by_group = CALCULATE_METRICS_GENESETS.out.ora_metrics
-        .map { meta, ora_results_file, metrics_file, background_file ->
-            [meta.group_id, ora_results_file, metrics_file, background_file]
+        .map { meta, _ora_results_file, metrics_file, background_file ->
+            [meta.group_id, metrics_file, background_file]
         }
         .groupTuple()
 
@@ -270,14 +264,13 @@ workflow METAFACTORY {
         .groupTuple()
 
     // joining on group_id lines up every file list for a group into a single task
-    def ch_calculate_k_input = ch_metaprograms_by_group
-        .join(ch_metrics_by_group)
+    def ch_calculate_k_input = ch_metrics_by_group
         .join(ch_geneset_metrics_by_group)
         .join(ch_scores_by_group)
         .join(ch_background_scores_by_group)
-        .map { group_id, metaprograms_files, mp_metrics_files, mp_background_files, ora_results_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files ->
+        .map { group_id, mp_metrics_files, mp_background_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files ->
             def meta = [group_id: group_id]
-            [meta, metaprograms_files, mp_metrics_files, mp_background_files, ora_results_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files]
+            [meta, mp_metrics_files, mp_background_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files]
         }
 
     CALCULATE_K(

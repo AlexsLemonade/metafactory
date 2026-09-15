@@ -11,13 +11,12 @@ process CALCULATE_K {
     }
 
     input:
-    tuple val(meta), path(metaprograms_files), path(mp_metrics_files), path(mp_background_files), path(ora_results_files), path(geneset_metrics_files), path(specificity_background_files), path(scores_files), path(background_scores_files)
+    tuple val(meta), path(mp_metrics_files), path(mp_background_files), path(geneset_metrics_files), path(specificity_background_files), path(scores_files), path(background_scores_files)
     val options
 
     output:
     tuple val(meta), path(optimal_k_file), emit: optimal_k
     tuple val(meta), path(metaprogram_metrics_file), path(k_metrics_file), path(neff_background_file), path(specificity_background_file), path(cv_background_file), emit: report_metrics
-    tuple val(meta), path("${output_dir}/k-*"), emit: final_metaprograms
     path "versions.yml", emit: versions, topic: versions
 
     script:
@@ -29,17 +28,12 @@ process CALCULATE_K {
     scores_files_string = scores_files.join(',')
     background_scores_files_string = background_scores_files.join(',')
 
-    // the metaprograms and the ORA results are not read by the script, they are staged so that the
-    // ones belonging to the optimal value of k can be copied into the output directory and
-    // published as the final metaprograms for this group
-    metaprograms_files_string = metaprograms_files.join(',')
-    ora_results_files_string = ora_results_files.join(',')
-
     // all output for this group is written to one directory named for the group, which is published
     // as the final results for the group rather than as a checkpoint
     output_dir = "${meta.group_id}"
 
-    // the optimal value of k, written as a number so it can be read back as `n_metaprograms`
+    // the optimal value of k, written as a number so it can be read back as `n_metaprograms` and
+    // used to pick out the metaprograms that are published as the final result for this group
     optimal_k_file = "${output_dir}/optimal-k.txt"
 
     // the tables below are only read by the report, so they are kept in their own directory,
@@ -69,8 +63,8 @@ process CALCULATE_K {
     cv_background_file = "${reports_dir}/all-k_background_cell_score_cv.tsv.gz"
 
     // the optimal value of k can only be found from real metrics, so the first metaprogram set
-    // staged stands in for it here and gives the final metaprogram files their expected names
-    stub_k = [metaprograms_files].flatten().first().name.tokenize('_')[0].replace('k-', '')
+    // staged stands in for it here
+    stub_k = [mp_metrics_files].flatten().first().name.tokenize('_')[0].replace('k-', '')
     """
     mkdir -p "${reports_dir}"
 
@@ -80,11 +74,6 @@ process CALCULATE_K {
     touch "${neff_background_file}"
     touch "${specificity_background_file}"
     touch "${cv_background_file}"
-
-    touch "${output_dir}/k-${stub_k}_metaprograms.rds"
-    touch "${output_dir}/k-${stub_k}_mp_metrics.tsv"
-    touch "${output_dir}/k-${stub_k}_ora_results.tsv"
-    touch "${output_dir}/k-${stub_k}_geneset_metrics.tsv"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
