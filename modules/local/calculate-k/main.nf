@@ -1,7 +1,7 @@
 process CALCULATE_K {
     tag "${meta.group_id}"
 
-    label 'process_medium'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     container {
