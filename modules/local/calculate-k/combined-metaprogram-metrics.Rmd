@@ -19,6 +19,10 @@ params:
   seed: 2026
 ---
 
+<!--TODO: Update this report and move it to a separate process.
+Right now this is not used in the workflow.
+-->
+
 This report compares metaprograms generated from a single cohort across a range of k values.
 Here k refers to the number of clusters specified during hierarchical clustering of spectra to define metaprograms.
 
