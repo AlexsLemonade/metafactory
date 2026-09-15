@@ -13,6 +13,7 @@ include { CALCULATE_METRICS_GENESETS     } from '../modules/local/calculate-metr
 include { SCORE_METAPROGRAMS             } from '../modules/local/score-metaprograms/main'
 include { SCORE_BACKGROUND               } from '../modules/local/score-background/main'
 include { COMBINE_SCORES                 } from '../modules/local/combine-scores/main'
+include { CALCULATE_K                    } from '../modules/local/calculate-k/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -227,6 +228,73 @@ workflow METAFACTORY {
     COMBINE_SCORES(ch_combine_input)
 
     //
+    // MODULE: Compare every metaprogram set generated for a group and pick the optimal value of k
+    //
+
+    // this process runs once per group rather than once per metaprogram set, so the output for
+    // every value of k is grouped by group_id here
+    // the metaprograms RDS is the only output of the generate metaprograms module that is needed,
+    // and only so that the one for the optimal value of k can be published as the final result
+    def ch_metaprograms_by_group = GENERATE_METAPROGRAMS.out.results
+        .map { meta, metaprograms_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
+            [meta.group_id, metaprograms_file]
+        }
+        .groupTuple()
+
+    def ch_metrics_by_group = CALCULATE_METRICS_METAPROGRAMS.out.metaprogram_metrics
+        .map { meta, metrics_file, background_file ->
+            [meta.group_id, metrics_file, background_file]
+        }
+        .groupTuple()
+
+    def ch_geneset_metrics_by_group = CALCULATE_METRICS_GENESETS.out.ora_metrics
+        .map { meta, ora_results_file, metrics_file, background_file ->
+            [meta.group_id, ora_results_file, metrics_file, background_file]
+        }
+        .groupTuple()
+
+    // the combined scores channel holds both score types, so it is split on the score type stored
+    // in meta before each type is grouped
+    def ch_combined_scores = COMBINE_SCORES.out.results
+        .branch { meta, _scores_file ->
+            metaprogram_scores: meta.score_type == 'metaprogram_scores'
+            background_score_stats: true
+        }
+
+    def ch_scores_by_group = ch_combined_scores.metaprogram_scores
+        .map { meta, scores_file -> [meta.group_id, scores_file] }
+        .groupTuple()
+
+    def ch_background_scores_by_group = ch_combined_scores.background_score_stats
+        .map { meta, background_stats_file -> [meta.group_id, background_stats_file] }
+        .groupTuple()
+
+    // joining on group_id lines up every file list for a group into a single task
+    def ch_calculate_k_input = ch_metaprograms_by_group
+        .join(ch_metrics_by_group)
+        .join(ch_geneset_metrics_by_group)
+        .join(ch_scores_by_group)
+        .join(ch_background_scores_by_group)
+        .map { group_id, metaprograms_files, mp_metrics_files, mp_background_files, ora_results_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files ->
+            def meta = [group_id: group_id]
+            [meta, metaprograms_files, mp_metrics_files, mp_background_files, ora_results_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files]
+        }
+
+    CALCULATE_K(
+        ch_calculate_k_input,
+        [
+            nreps: params.nreps,
+        ],
+    )
+
+    // the optimal value of k is written to a file so that it survives as a process output, and is
+    // read back here as the number of metaprograms to use for the report
+    def ch_optimal_k = CALCULATE_K.out.optimal_k
+        .map { meta, optimal_k_file ->
+            [meta, optimal_k_file.text.trim().toInteger()]
+        }
+
+    //
     // Collate and save software versions
     //
     def topic_versions = channel.topic("versions")
@@ -256,5 +324,6 @@ workflow METAFACTORY {
         )
 
     emit:
+    optimal_k = ch_optimal_k
     versions = ch_collated_versions
 }

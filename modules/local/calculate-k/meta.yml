@@ -1,0 +1,204 @@
+name: calculate_k
+description: |
+  Compare the metaprograms generated for a single group across every value of k that was tested and
+  identify the optimal value of k. Five metrics are combined: the proportion of metaprograms with a
+  significant normalized effective sample size, the proportion that are not redundant with another
+  metaprogram, where the value of k falls relative to the elbow of the median coherence curve,
+  whether the overall gene set specificity is significantly greater than its permuted background,
+  and the proportion of metaprograms whose cell scores are significantly more variable than their
+  permuted background. Each metric is ranked across all values of k, the ranks are normalized to a
+  0-1 scale, and the value of k with the highest mean rank is reported as the optimal value of k.
+  Values of k with a metaprogram built from a single spectra are dropped from the comparison and
+  reported in the summary table. The metaprograms and metrics belonging to the optimal value of k
+  are copied into the output directory so that they are published as the final result for the
+  group, rather than as a checkpoint. The tables written here are the input to the report that
+  plots these metrics; no plots are made by this process.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - metrics
+  - model selection
+tools:
+  - glue:
+      description: |
+        Interpreted string literals. Used here to build the names the files for the optimal value
+        of k are published under.
+      homepage: https://glue.tidyverse.org
+      documentation: https://glue.tidyverse.org/reference/index.html
+      license: ["MIT"]
+  - tidyverse:
+      description: |
+        The tidyverse is a collection of R packages for data science. The dplyr, purrr, readr,
+        stringr and tibble packages are used here to read the per k metrics, summarize them for
+        each value of k, rank the values of k and write the output tables.
+      homepage: https://www.tidyverse.org
+      documentation: https://www.tidyverse.org/packages/
+      license: ["MIT"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing group information, one map per group_id. Required keys:
+          - `group_id`: Group identifier shared by all samples the metaprograms were generated
+            from. Also used as the name of the output directory, so that the final results for
+            every group are published side by side.
+          Unlike the other metaprogram modules, this process runs once per group rather than once
+          per value of k, so the map holds no `n_metaprograms` or `metaprograms_publish_dir` key.
+    - metaprograms_files:
+        type: file
+        description: |
+          RDS files of metaprograms, one per value of k, as written by the generate metaprograms
+          module. The contents are not read; the file belonging to the optimal value of k is
+          picked out of this list by its name and copied into the output directory, so that it is
+          published as the final set of metaprograms for the group.
+        pattern: "k-*_metaprograms.rds"
+    - mp_metrics_files:
+        type: file
+        description: |
+          Metaprogram metrics TSVs, one per value of k, as written by the calculate metrics
+          metaprograms module. The `metaprogram`, `max_correlation`, `median_difference`,
+          `num_spectra_per_mp`, `proportion_of_samples`, `eff_number_norm` and
+          `greater_adj_pvalue_eff_number_norm` columns are read.
+        pattern: "k-*_mp_metrics.tsv"
+    - mp_background_files:
+        type: file
+        description: |
+          Gzipped TSVs of the permuted background for the metaprogram sample stats, one per value
+          of k, as written by the calculate metrics metaprograms module. Only the
+          `eff_number_norm` column is kept, and it is re-exported for the report with the excluded
+          values of k removed.
+        pattern: "k-*_background_mp_stats.tsv.gz"
+    - ora_results_files:
+        type: file
+        description: |
+          Full ORA result tables, one per value of k, as written by the calculate metrics gene sets
+          module. The contents are not read; the file belonging to the optimal value of k is
+          picked out of this list by its name and published with the final metaprograms.
+        pattern: "k-*_ora_results.tsv"
+    - geneset_metrics_files:
+        type: file
+        description: |
+          Gene set metrics TSVs, one per value of k, as written by the calculate metrics gene sets
+          module. The `num_sig_genesets` and `mean_geneset_specificity` columns are read.
+        pattern: "k-*_geneset_metrics.tsv"
+    - specificity_background_files:
+        type: file
+        description: |
+          Gzipped TSVs of the permuted background for gene set specificity, one per value of k, as
+          written by the calculate metrics gene sets module. The `overall_geneset_specificity`
+          column holds one value per replicate per value of k and is the null distribution the
+          observed specificity is compared against.
+        pattern: "k-*_background_specificity.tsv.gz"
+    - scores_files:
+        type: file
+        description: |
+          Gzipped TSVs of per cell metaprogram scores for every library in the group, one per value
+          of k, as written by the combine scores module. Used to calculate the observed coefficient
+          of variation of the scores for each metaprogram, and to count the samples represented in
+          the group.
+        pattern: "k-*_combined_metaprogram_scores.tsv.gz"
+    - background_scores_files:
+        type: file
+        description: |
+          Gzipped TSVs of per library background score stats for the shuffled metaprograms, one per
+          value of k, as written by the combine scores module. The per library counts, means and
+          sums of squared deviations are pooled here to build the null distribution the observed
+          coefficient of variation is compared against.
+        pattern: "k-*_combined_background_score_stats.tsv.gz"
+  - - options:
+        type: map
+        description: |
+          Groovy Map of the options used to compare values of k, supplied as a single value rather
+          than one input per option. Required keys:
+          - `nreps` (integer): Number of replicates used for permutation testing by the metrics
+            modules. Used as the denominator when calculating the empirical p-values for gene set
+            specificity and the cell score CV, so it must match the value the staged background
+            files were generated with.
+
+output:
+  - optimal_k:
+      - meta:
+          type: map
+          description: Groovy Map of group information, passed through unchanged from the input channel.
+      - "optimal-k.txt":
+          type: file
+          description: |
+            Text file, at `<group_id>/optimal-k.txt`, holding the optimal value of k as a single
+            number so that it can be read back as `n_metaprograms`.
+          pattern: "optimal-k.txt"
+  - report_metrics:
+      - meta:
+          type: map
+          description: Groovy Map of group information, passed through unchanged from the input channel.
+      # these tables are only read by the report, so they are kept in `<group_id>/reports/`,
+      # separate from the optimal value of k and the final metaprograms
+      - "all-k_metaprogram_metrics.tsv":
+          type: file
+          description: |
+            TSV, at `<group_id>/reports/all-k_metaprogram_metrics.tsv`, with one row per metaprogram per
+            value of k. Holds every observed metric for that metaprogram along with whether it
+            passes the cutoff for each metric (`neff_is_significant`, `correlation_is_passing`,
+            `coherence_is_passing`, `cv_is_significant`). Values of k dropped from the comparison
+            are not included.
+          pattern: "all-k_metaprogram_metrics.tsv"
+      - "all-k_summary_metrics.tsv":
+          type: file
+          description: |
+            TSV, at `<group_id>/reports/all-k_summary_metrics.tsv`, with one row per value of k. Holds the
+            single summarized value for each metric, the normalized rank of each of those metrics
+            (the `rank_` columns), the mean rank across all metrics, and whether that value of k is
+            the optimal one. Values of k dropped from the comparison are reported with
+            `is_excluded` set to TRUE and no metrics.
+          pattern: "all-k_summary_metrics.tsv"
+      - "all-k_background_eff_sample_size.tsv.gz":
+          type: file
+          description: |
+            Gzipped TSV, at `<group_id>/reports/all-k_background_eff_sample_size.tsv.gz`, holding the
+            permuted null distribution for the normalized effective sample size (columns:
+            `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`), with the excluded
+            values of k removed.
+          pattern: "all-k_background_eff_sample_size.tsv.gz"
+      - "all-k_background_geneset_specificity.tsv.gz":
+          type: file
+          description: |
+            Gzipped TSV, at `<group_id>/reports/all-k_background_geneset_specificity.tsv.gz`, holding the
+            permuted null distribution for the overall gene set specificity (columns:
+            `n_metaprograms`, `replicate`, `overall_geneset_specificity`), with one row per
+            replicate per value of k.
+          pattern: "all-k_background_geneset_specificity.tsv.gz"
+      - "all-k_background_cell_score_cv.tsv.gz":
+          type: file
+          description: |
+            Gzipped TSV, at `<group_id>/reports/all-k_background_cell_score_cv.tsv.gz`, holding the
+            permuted null distribution for the coefficient of variation of the cell scores
+            (columns: `n_metaprograms`, `metaprogram`, `replicate`, `score_cv`), pooled across all
+            libraries in the group.
+          pattern: "all-k_background_cell_score_cv.tsv.gz"
+  - final_metaprograms:
+      - meta:
+          type: map
+          description: Groovy Map of group information, passed through unchanged from the input channel.
+      - "k-*":
+          type: file
+          description: |
+            The four files belonging to the optimal value of k, written to `<group_id>/` and named
+            with the same `k-<optimal k>_` prefix they were staged under: the metaprograms RDS
+            object (`k-*_metaprograms.rds`) and the metrics calculated from it
+            (`k-*_mp_metrics.tsv`, `k-*_ora_results.tsv` and `k-*_geneset_metrics.tsv`), so that
+            the final set of metaprograms for the group and the metrics describing it are published
+            together.
+          pattern: "k-*"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"
