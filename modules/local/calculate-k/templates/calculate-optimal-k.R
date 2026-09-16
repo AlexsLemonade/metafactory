@@ -121,11 +121,18 @@ k_number <- function(n_metaprograms) {
 
 # function to calculate the "kneedle"
 # copied from https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/05-metaprogram-correlation.Rmd
+# returns NA when the curve is flat, since there is no elbow to find
 kneedle <- function(k_values, metric_values, concave = TRUE) {
 
   # Step 1: Smooth data to preserve original shape
   fit <- smooth.spline(k_values, metric_values)
   metric_values <- predict(fit, k_values)[["y"]]
+
+  # a flat curve has the same value for every k, so normalizing it divides by zero and leaves no
+  # well defined knee
+  if (diff(range(metric_values)) == 0) {
+    return(NA_real_)
+  }
 
   # Step 2: Normalize to [0, 1]
   x <- (k_values - min(k_values)) / (max(k_values) - min(k_values))
@@ -399,10 +406,14 @@ elbow_value <- kneedle(
 
 # the value of k at the elbow is prioritized, values below the elbow are preferred over values
 # above it
+# with no elbow every value of k scores the same 0.5, the midpoint of the scale, so that coherence
+# neither prefers nor penalizes any value of k. Ranking ties them all at the top rank, which leaves
+# the optimal value of k to the other four metrics
 k_metrics_df <- k_metrics_df |>
   dplyr::mutate(
-    is_coherence_elbow = k == elbow_value,
+    is_coherence_elbow = !is.na(elbow_value) & k == elbow_value,
     coherence_elbow_passing = dplyr::case_when(
+      is.na(elbow_value) ~ 0.5,
       k == elbow_value ~ 1,
       k < elbow_value ~ 0.5,
       k > elbow_value ~ 0
