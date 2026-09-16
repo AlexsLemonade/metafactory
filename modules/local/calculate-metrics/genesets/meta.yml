@@ -8,9 +8,10 @@ description: |
   significant in, and is averaged across the gene sets assigned to a metaprogram. A permutation
   test, which reshuffles the gene sets assigned to each metaprogram while holding the number of
   gene sets per metaprogram fixed and weighting gene sets by how often they appear, is used to
-  build a background distribution for the mean specificity and to calculate a p-value for it. The
-  top genes and the gene universe are read from the metaprograms RDS object rather than
-  recalculated here, so every module uses the same gene lists.
+  build a background distribution for the mean specificity which gets exported to use for calculating
+  overall significance in calculate-k. The top genes and the gene universe
+  are read from the metaprograms RDS object rather than recalculated here, so every module uses the
+  same gene lists.
 keywords:
   - single-cell
   - NMF
@@ -107,20 +108,19 @@ output:
           description: |
             TSV, at `<metaprograms_publish_dir>/k-<n_metaprograms>_geneset_metrics.tsv`, with one
             row per metaprogram (columns: `metaprogram`, `num_sig_genesets`,
-            `mean_geneset_specificity`, `overall_pvalue_geneset_specificity`,
-            `overall_adj_pvalue_geneset_specificity`). Every metaprogram in the set is reported,
-            including those with no significant gene sets, which have a `num_sig_genesets` of 0, a
-            `mean_geneset_specificity` of `NaN` and no p-value. The p-value columns are two sided,
-            testing whether the observed mean specificity is either greater or lower than the
-            background, and are adjusted across metaprograms with the Benjamini-Hochberg method.
+            `mean_geneset_specificity`). Every metaprogram in the set is reported, including those
+            with no significant gene sets, which have a `num_sig_genesets` of 0 and a
+            `mean_geneset_specificity` of `NaN`. No p-value is reported per metaprogram; the
+            background below is exported so that the calculate k module can test the mean
+            specificity across all metaprograms for each value of k instead.
           pattern: "k-*_geneset_metrics.tsv"
       - "k-*_background_specificity.tsv.gz":
           type: file
           description: |
             Gzipped TSV, written alongside the metrics table at
             `<metaprograms_publish_dir>/k-<n_metaprograms>_background_specificity.tsv.gz`, holding
-            the background distribution the `mean_geneset_specificity` p-values are calculated
-            against. One row per metaprogram per permutation replicate (columns: `replicate`,
+            the background distribution the observed gene set specificity is compared against by
+            the calculate k module. One row per metaprogram per permutation replicate (columns: `replicate`,
             `metaprogram`, `mean_geneset_specificity`, `overall_geneset_specificity`). Covers the
             same metaprograms as the metrics table, so that the observed values and the background
             are always calculated across the same metaprograms. Gzipped because it holds `nreps`

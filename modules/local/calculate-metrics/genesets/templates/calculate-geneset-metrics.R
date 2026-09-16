@@ -10,20 +10,17 @@
 # 2. A TSV with one row per metaprogram holding the ORA derived metrics described below
 # 3. A gzipped TSV with the background values for gene set specificity, with one row per
 # metaprogram per permutation replicate (columns: replicate, metaprogram,
-# mean_geneset_specificity, overall_geneset_specificity). This is the null distribution the
-# `mean_geneset_specificity` p-values are calculated against.
+# mean_geneset_specificity, overall_geneset_specificity).
 
 # The gene set metrics TSV contains the following metrics:
 
 # num_sig_genesets: Total number of gene sets identified as significant by ORA
 # mean_geneset_specificity: Mean specificity of all gene sets assigned to a metaprogram through ORA
-# overall_pvalue_geneset_specificity: pvalue of observed specificity being > or < background
-# overall_adj_pvalue_geneset_specificity: adjusted pvalue for gene set specificity
 
 # Metaprograms that have no significant gene sets are still reported, with a
-# `mean_geneset_specificity` of NaN and no p-value, since there is nothing to average over. The
-# permuted background covers the same set of metaprograms so that the observed values and the
-# background are always calculated across the same metaprograms.
+# `mean_geneset_specificity` of NaN, since there is nothing to average over. The permuted
+# background covers the same set of metaprograms so that the observed values and the background
+# are always calculated across the same metaprograms.
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
@@ -163,46 +160,6 @@ permute_specificity <- function(
   return(background)
 }
 
-# calculate significance for permutation testing
-# reports a pvalue for a specified statistic
-calculate_permutation_significance <- function(stat, observed_df, background_df, nreps) {
-
-  # combine the observed values with the background
-  combined_df <- observed_df |>
-    dplyr::select(
-      metaprogram,
-      obs_value = tidyselect::all_of(stat)
-    ) |>
-    dplyr::left_join(background_df, by = c("metaprogram")) |>
-    dplyr::select(-replicate)
-
-  # calculate the pvalue for the requested stat
-  pvalue_df <- combined_df |>
-    dplyr::mutate(
-      # indicate which rows have background > or < obs
-      greater_than_obs = .data[[stat]] >= obs_value,
-      lower_than_obs = .data[[stat]] <= obs_value
-    ) |>
-    dplyr::group_by(metaprogram) |>
-    dplyr::summarize(
-      # calculate p values and retain a column with the observed value
-      obs_value = unique(obs_value),
-      greater_pvalue = (sum(greater_than_obs) + 1) / (nreps + 1),
-      lower_pvalue = (sum(lower_than_obs) + 1) / (nreps + 1),
-      overall_pvalue = min(greater_pvalue, lower_pvalue) * 2
-    ) |>
-    # add adjusted pvalue
-    # depending on the stat will depend on which pvalue we use, either 1 or 2 sided test
-    dplyr::mutate(
-      greater_adj_pvalue = p.adjust(greater_pvalue, method = "BH"),
-      lower_adj_pvalue = p.adjust(lower_pvalue, method = "BH"),
-      overall_adj_pvalue = p.adjust(overall_pvalue, method = "BH")
-    )
-
-  return(pvalue_df)
-
-}
-
 # Set up -----------------------------------------------------------------------
 
 set.seed(seed)
@@ -296,26 +253,11 @@ background_specificity_df <- permute_specificity(
   nreps
 )
 
-# calculate pvalue for specificity
-specificity_pvalue_df <- calculate_permutation_significance(
-  "mean_geneset_specificity",
-  obs_specificity_df,
-  background_specificity_df,
-  nreps
-) |>
-  dplyr::select(
-    "metaprogram",
-    "overall_pvalue_geneset_specificity" = "overall_pvalue",
-    "overall_adj_pvalue_geneset_specificity" = "overall_adj_pvalue"
-  )
-
 # Combine and export -----------------------------------------------------------
 
 # join all gene set metrics
 geneset_metrics_df <- num_genesets_df |>
-  # gene set specificity and pvalue
-  dplyr::left_join(obs_specificity_df, by = "metaprogram") |>
-  dplyr::left_join(specificity_pvalue_df, by = "metaprogram")
+  dplyr::left_join(obs_specificity_df, by = "metaprogram")
 
 readr::write_tsv(ora_results_df, ora_results_file)
 readr::write_tsv(geneset_metrics_df, metrics_file)

@@ -97,7 +97,10 @@ calculate_permutation_significance <- function(stat, observed_df, background_df,
       obs_value = unique(obs_value),
       greater_pvalue = (sum(greater_than_obs) + 1) / (nreps + 1),
       lower_pvalue = (sum(lower_than_obs) + 1) / (nreps + 1),
-      overall_pvalue = min(greater_pvalue, lower_pvalue) * 2
+      # the two sided pvalue is capped at 1, since every background value that ties the observed
+      # value counts towards both one sided pvalues, and doubling the smaller of the two can then
+      # give a value above 1
+      overall_pvalue = min(2 * min(greater_pvalue, lower_pvalue), 1)
     ) |>
     # add adjusted pvalue
     # depending on the stat will depend on which pvalue we use, either 1 or 2 sided test
