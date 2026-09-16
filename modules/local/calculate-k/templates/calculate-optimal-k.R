@@ -149,12 +149,14 @@ kneedle <- function(k_values, metric_values, concave = TRUE) {
 # used here for overall gene set specificity and cell score CV
 # `group_columns` defines the level the pvalue is calculated at, either one pvalue per metaprogram
 # within a value of k, or a single pvalue for each value of k
+# `adjust_columns` defines the family the pvalues are adjusted within
 calculate_permutation_significance <- function(
   stat,
   observed_df,
   background_df,
   nreps,
-  group_columns = c("n_metaprograms", "metaprogram")
+  group_columns = c("n_metaprograms", "metaprogram"),
+  adjust_columns = "n_metaprograms"
 ) {
 
   # combine the observed values with the background
@@ -186,11 +188,16 @@ calculate_permutation_significance <- function(
     ) |>
     # add adjusted pvalue
     # depending on the stat will depend on which pvalue we use, either 1 or 2 sided test
+    # `summarize(.by = )` returns an ungrouped table, so the adjustment is grouped again here
+    # a BH adjusted pvalue depends on the other pvalues it is adjusted with, so adjusting every
+    # value of k together would make each k depend on which other k were run
+    dplyr::group_by(dplyr::across(dplyr::all_of(adjust_columns))) |>
     dplyr::mutate(
       greater_adj_pvalue = p.adjust(greater_pvalue, method = "BH"),
       lower_adj_pvalue = p.adjust(lower_pvalue, method = "BH"),
       overall_adj_pvalue = p.adjust(overall_pvalue, method = "BH")
-    )
+    ) |>
+    dplyr::ungroup()
 
   return(pvalue_df)
 
@@ -316,6 +323,8 @@ var_df <- scores_df |>
 
 # calculate pvalues for each cv
 # the observed values come from `var_df`, so only the pvalues are kept here
+# the default adjustment family is the metaprograms within a value of k, which is the family the
+# metaprogram metrics module uses for the effective sample size pvalues
 cv_pvalue_df <- calculate_permutation_significance(
   "score_cv",
   var_df,
@@ -412,12 +421,15 @@ specificity_background_df <- specificity_background_df |>
 # here we are calculating the overall mean pvalue so that we get one pvalue for each k
 # this mirrors what we did in: https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/06-gene-set-uniqueness.Rmd
 # the metrics calculation module calculates this per metaprogram so we need to do it separately here
+# there is one test per value of k here, so the values of k are the family and no columns are
+# passed to adjust within
 geneset_specificity_pvalue_df <- calculate_permutation_significance(
   "overall_geneset_specificity",
   k_metrics_df,
   specificity_background_df,
   nreps,
-  group_columns = "n_metaprograms"
+  group_columns = "n_metaprograms",
+  adjust_columns = character(0)
 ) |>
   dplyr::select(
     n_metaprograms,
