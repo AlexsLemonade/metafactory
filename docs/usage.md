@@ -28,7 +28,7 @@ Samples are described in a comma-separated samplesheet with three columns and a 
 unique_id,group_id,h5ad_file
 SCPCL000001,SCPCP000001,/path/to/SCPCL000001_processed_rna.h5ad
 SCPCL000002,SCPCP000001,/path/to/SCPCL000002_processed_rna.h5ad
-SCPCL000003,SCPCP000002,/path/to/SCPCL000003_processed_rna.h5ad
+SCPCL000003,SCPCP000001,/path/to/SCPCL000003_processed_rna.h5ad
 ```
 
 Metaprograms are built once per `group_id`, so a single run can process multiple independent cohorts.
@@ -118,7 +118,7 @@ These control how the spectra from all samples in a group are clustered into met
 | ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--n_metaprograms`              | `'8,9,10,11'` | Comma-separated values of `k` (numbers of metaprograms) to build and compare. At least four values are required to identify the optimal `k`. |
 | `--n_top_genes`                 | `200`         | Number of top genes per metaprogram used for scoring and ORA.                                                                                |
-| `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra — those that do not correlate with spectra from any other sample — before clustering.                       |
+| `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra, those with low correlation to spectra from other samples, prior to clustering.                             |
 | `--metaprograms_orphan_cutoff`  | `0.3`         | Minimum cross-sample maximum correlation required to keep a spectra when filtering is enabled.                                               |
 
 ## Core Nextflow arguments
