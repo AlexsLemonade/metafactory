@@ -94,7 +94,8 @@ assign_k_names <- function(file_list) {
     "Could not pull the value of k out of all file names" = !any(is.na(files_n_metaprograms))
   )
 
-  names(file_list) <- sprintf("k_%02d", files_n_metaprograms)
+  # add k values as the names of the files in the list
+  names(file_list) <- files_n_metaprograms
 
   return(file_list)
 
@@ -108,14 +109,6 @@ read_k_files <- function(file_list, ...) {
     assign_k_names() |>
     purrr::map(function(file) readr::read_tsv(file, show_col_types = FALSE, ...)) |>
     dplyr::bind_rows(.id = "n_metaprograms")
-
-}
-
-# pull the numeric value of k out of the `k_05` labels used to identify each set of metaprograms
-k_number <- function(n_metaprograms) {
-
-  stringr::str_remove(n_metaprograms, "^k_") |>
-    as.numeric()
 
 }
 
@@ -389,9 +382,8 @@ k_metrics_df <- mp_metrics_df |>
     .by = "n_metaprograms"
   ) |>
   dplyr::left_join(total_samples_df, by = "n_metaprograms") |>
-  dplyr::mutate(k = k_number(n_metaprograms)) |>
-  dplyr::relocate(n_metaprograms, k) |>
-  dplyr::arrange(k)
+  dplyr::relocate(n_metaprograms) |>
+  dplyr::arrange(n_metaprograms)
 
 # Coherence elbow --------------------------------------------------------------
 
@@ -505,13 +497,12 @@ k_metrics_df <- k_metrics_df |>
     # recycled when no values of k were excluded and the table has no rows
     tibble::tibble(
       n_metaprograms = excluded_k,
-      k = k_number(excluded_k),
       is_excluded = TRUE,
       is_optimal_k = FALSE
     )
   ) |>
-  dplyr::relocate(n_metaprograms, k, is_excluded, is_optimal_k) |>
-  dplyr::arrange(k)
+  dplyr::relocate(n_metaprograms, is_excluded, is_optimal_k) |>
+  dplyr::arrange(n_metaprograms)
 
 # Export -----------------------------------------------------------------------
 
@@ -530,7 +521,7 @@ readr::write_tsv(
 )
 
 # export the value of k as a number to match n_metaprograms in nextflow
-readr::write_lines(k_number(optimal_k), optimal_k_file)
+readr::write_lines(optimal_k, optimal_k_file)
 
 # Versions ----------------------------------------------------------------------
 
