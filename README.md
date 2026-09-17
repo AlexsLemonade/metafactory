@@ -13,42 +13,57 @@
 
 ## Introduction
 
-**AlexsLemonade/metafactory** is a bioinformatics pipeline that ...
+`metafactory` is a Nextflow pipeline for identifying _metaprograms_ — recurrent gene expression programs that are shared across samples — from single-cell and single-nuclei RNA-sequencing data.
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+Gene expression programs are first found within each sample independently using consensus non-negative matrix factorization (cNMF).
+The programs from every sample in a cohort are then compared to one another and clustered into metaprograms, so that only the programs that recur across multiple samples are retained.
+Because the number of metaprograms (`k`) present in a cohort is not known ahead of time, the pipeline builds metaprograms across a range of values of `k`, evaluates each set with a panel of metrics, and reports the optimal value of `k` along with the metaprograms, their gene set annotations, and a score for every cell.
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/community/brand/workflow-schematics#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
+### Pipeline summary
+
+1. **Use [`cNMF`](https://github.com/dylkot/cNMF) to identify gene expression programs in each sample.**
+   cNMF is run on the raw counts across a range of components to produce a set of consensus gene expression programs (spectra) for each sample.
+   By default, all cells are used but cells can be optionally subset to the cell types of interest prior to running `cNMF`.
+2. **Build metaprograms for each group of samples.**
+   The spectra from all samples in a group are combined and correlated, low-correlation (orphan) spectra are optionally removed, and the remaining spectra are hierarchically clustered into `k` metaprograms.
+   Each metaprogram is a set of gene weights averaged across the spectra assigned to it.
+   This step is repeated for every value of `k` specified using the `--n_metaprograms` parameter.
+3. **Annotate metaprograms with gene sets.**
+   Overrepresentation analysis (ORA) is run on the top genes of each metaprogram against a set of MSigDB gene sets.
+4. **Score cells against metaprograms.**
+   Every cell in every sample of a group is scored against each metaprogram built for that group.
+   Scores are calculated by taking the dot product of the gene weights for the top genes in each metaprogram and the quantile-normalized expression of those genes in a given cell.
+5. **Calculate metaprogram metrics.**
+   Metrics describing the interpretability of each metaprogram are calculated.
+   These include: normalized effective sample size, correlation, coherence of individual gene expression programs within a metaprogram, gene set specificity, and coefficient of variation of cell scores.
+6. **Choose the optimal value of `k`.**
+   All values of `k` tested for a group are compared using the five metrics described in step 5.
+   Each metric is ranked across values of `k`, and the value of `k` with the highest mean rank is selected.
+
+**Caution:** `metafactory` is actively in development.
 
 ## Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/get_started/environment_setup/overview) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/get_started/run-your-first-pipeline) with `-profile test` before running the workflow on actual data.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
+### Input
 
-First, prepare a samplesheet with your input data that looks as follows:
+The pipeline takes filtered and normalized single-cell/single-nuclei objects, one per library, provided as AnnData `.h5ad` files.
+Currently, the pipeline has been developed to handle processed `AnnData` objects from [ScPCA](https://scpca.alexslemonade.org), but future work will expand support to other single-cell file types.
+Cells are expected to have already been filtered, and raw counts are expected to be available alongside the normalized data.
 
-`samplesheet.csv`:
+Samples are described in a comma-separated samplesheet with three columns and a header row:
 
-```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-```
+| Column      | Description                                                                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unique_id` | Unique identifier for the library. Used to name all per-library output.                                                                         |
+| `group_id`  | Identifier for the group of samples that metaprograms are built across. All libraries sharing a `group_id` are analyzed together as one cohort. |
+| `h5ad_file` | Path to the filtered and normalized `.h5ad` file for that library. Local and remote (e.g. `s3://`) paths are both supported.                    |
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
+Metaprograms are built once per `group_id`, so a single run can process multiple independent cohorts.
 
--->
-
-Now, you can run the pipeline using:
-
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
+### Running the pipeline
 
 ```bash
 nextflow run AlexsLemonade/metafactory \
@@ -59,6 +74,24 @@ nextflow run AlexsLemonade/metafactory \
 
 > [!WARNING]
 > Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_; see [docs](https://nf-co.re/docs/running/run-pipelines#using-parameter-files).
+
+## Output
+
+Final results are written to `<OUTDIR>/results/<group_id>/`, with one directory per group.
+For each group, the pipeline produces:
+
+- **Metaprograms for the optimal value of `k`** — the metaprograms object holding the gene weights for each metaprogram, the spectra assigned to it, and the parameters used to build it.
+- **Metrics report** — a report summarizing the metrics calculated for every value of `k` tested, the metrics used to rank them, and the value of `k` that was selected.
+- **ORA results** — the gene sets significantly associated with each metaprogram, as identified by overrepresentation analysis of its top genes.
+- **Metaprogram scores** — a table of scores for every cell in every library of the group against each metaprogram.
+
+Intermediate output from each step, including the results for the values of `k` that were not selected, is written to `<OUTDIR>/checkpoints/`.
+Nextflow execution reports, the validated samplesheet, the parameters used, and the software versions are written to `<OUTDIR>/pipeline_info/`.
+
+## Parameters
+
+The pipeline parameters, including the samplesheet format and the options controlling cNMF and metaprogram generation, are described in [`docs/usage.md`](docs/usage.md).
+A full, automatically generated description of every parameter is also available with `nextflow run AlexsLemonade/metafactory --help` (or `--help_full` for the complete list).
 
 ## Credits
 
