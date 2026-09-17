@@ -88,7 +88,7 @@ assign_k_names <- function(file_list) {
   files_n_metaprograms <- basename(file_list) |>
     stringr::word(1, sep = "_") |>
     stringr::str_remove("^k-") |>
-    as.numeric()
+    as.integer()
 
   stopifnot(
     "Could not pull the value of k out of all file names" = !any(is.na(files_n_metaprograms))
