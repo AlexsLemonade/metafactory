@@ -1,4 +1,4 @@
-# AlexsLemonade/metafactory
+# metafactory
 
 [![GitHub Actions CI Status](https://github.com/AlexsLemonade/metafactory/actions/workflows/nf-test.yml/badge.svg)](https://github.com/AlexsLemonade/metafactory/actions/workflows/nf-test.yml)
 [![GitHub Actions Linting Status](https://github.com/AlexsLemonade/metafactory/actions/workflows/linting.yml/badge.svg)](https://github.com/AlexsLemonade/metafactory/actions/workflows/linting.yml)[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
@@ -10,6 +10,10 @@
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 [![Launch on Seqera Platform](https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Seqera%20Platform-%234256e7)](https://cloud.seqera.io/launch?pipeline=https://github.com/AlexsLemonade/metafactory)
+
+<!--TODO: Update overview diagram -->
+
+![Overview of metafactory](./assets/diagrams/NMF-metaprogram-overview.png)
 
 ## Introduction
 
