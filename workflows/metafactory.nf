@@ -3,16 +3,17 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { paramsSummaryMap               } from 'plugin/nf-schema'
-include { softwareVersionsToYAML         } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText         } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
-include { CNMF                           } from '../modules/local/cnmf/main'
-include { GENERATE_METAPROGRAMS          } from '../modules/local/generate-metaprograms/main'
-include { CALCULATE_METRICS_METAPROGRAMS } from '../modules/local/calculate-metrics/metaprograms/main'
-include { CALCULATE_METRICS_GENESETS     } from '../modules/local/calculate-metrics/genesets/main'
-include { SCORE_METAPROGRAMS             } from '../modules/local/score-metaprograms/main'
-include { SCORE_BACKGROUND               } from '../modules/local/score-background/main'
-include { COMBINE_SCORES                 } from '../modules/local/combine-scores/main'
+include { paramsSummaryMap                             } from 'plugin/nf-schema'
+include { softwareVersionsToYAML                       } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText                       } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
+include { CNMF                                         } from '../modules/local/cnmf/main'
+include { GENERATE_METAPROGRAMS                        } from '../modules/local/generate-metaprograms/main'
+include { CALCULATE_METRICS_METAPROGRAMS               } from '../modules/local/calculate-metrics/metaprograms/main'
+include { CALCULATE_METRICS_GENESETS                   } from '../modules/local/calculate-metrics/genesets/main'
+include { SCORE_METAPROGRAMS                           } from '../modules/local/score-metaprograms/main'
+include { SCORE_BACKGROUND                             } from '../modules/local/score-background/main'
+include { COMBINE_SCORES as COMBINE_METAPROGRAM_SCORES ; COMBINE_SCORES as COMBINE_BACKGROUND_SCORES } from '../modules/local/combine-scores/main'
+include { CALCULATE_K                                  } from '../modules/local/calculate-k/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,6 +29,22 @@ workflow METAFACTORY {
     main:
 
     def ch_versions = channel.empty()
+
+    // parse the comma separated list of k values to test into a list of integers
+    def n_metaprograms_list = params.n_metaprograms
+        .split(',')
+        *.trim()
+        *.toInteger()
+
+    // the optimal value of k is chosen from the elbow of the coherence curve, which is not defined
+    // with fewer than four values of k
+    // the schema enforces this as well, so this is here to catch runs that skip parameter
+    // validation, and to fail before any task is submitted rather than in the last process
+    if (n_metaprograms_list.size() < 4) {
+        error(
+            "At least 4 values of --n_metaprograms are required to choose the optimal value of k, but ${n_metaprograms_list.size()} were provided: ${params.n_metaprograms}"
+        )
+    }
 
     //
     // Create channel samplesheet of [meta, file(h5ad_file)]
@@ -63,12 +80,6 @@ workflow METAFACTORY {
             [meta.group_id, meta.unique_id, cnmf_output]
         }
         .groupTuple(by: 0)
-
-    // parse the comma separated list of k values to test into a list of integers
-    def n_metaprograms_list = params.n_metaprograms
-        .split(',')
-        *.trim()
-        *.toInteger()
 
     // labels used to identify the spectra filtering settings the metaprograms were built with
     def filter_label = params.metaprograms_filter_spectra ? 'filtered' : 'unfiltered'
@@ -183,6 +194,21 @@ workflow METAFACTORY {
         ],
     )
 
+    // combine the metaprogram scores for each library into a single channel for downstream processing
+    def metaprograms_score_ch = SCORE_METAPROGRAMS.out.results
+        .map { meta, scores_file ->
+            def updated_meta = [
+                group_id: meta.group_id,
+                n_metaprograms: meta.n_metaprograms,
+                score_type: 'metaprogram_scores',
+                metaprograms_publish_dir: meta.metaprograms_publish_dir,
+            ]
+            [updated_meta, scores_file]
+        }
+        .groupTuple()
+
+    COMBINE_METAPROGRAM_SCORES(metaprograms_score_ch)
+
     //
     // MODULE: Calculate a background score distribution from shuffled metaprograms for each library
     //
@@ -195,36 +221,70 @@ workflow METAFACTORY {
         ],
     )
 
-    //
-    // MODULE: Combine the per library scores for each metaprogram set into a single table
-    //
-
-    // drop unique_id from meta and group the per library scores by metaprogram set, tagging each
-    // group with the type of score it holds (either metaprogram or background scores)
-    def ch_combine_input = SCORE_METAPROGRAMS.out.results
-        .map { meta, scores_file ->
+    // combine all background scores
+    def background_score_ch = SCORE_BACKGROUND.out.results
+        .map { meta, background_stats_file ->
             def updated_meta = [
                 group_id: meta.group_id,
                 n_metaprograms: meta.n_metaprograms,
-                score_type: 'metaprogram_scores',
+                score_type: 'background_score_stats',
                 metaprograms_publish_dir: meta.metaprograms_publish_dir,
             ]
-            [updated_meta, scores_file]
+            [updated_meta, background_stats_file]
         }
-        .mix(
-            SCORE_BACKGROUND.out.results.map { meta, background_stats_file ->
-                def updated_meta = [
-                    group_id: meta.group_id,
-                    n_metaprograms: meta.n_metaprograms,
-                    score_type: 'background_score_stats',
-                    metaprograms_publish_dir: meta.metaprograms_publish_dir,
-                ]
-                [updated_meta, background_stats_file]
-            }
-        )
         .groupTuple()
 
-    COMBINE_SCORES(ch_combine_input)
+    COMBINE_BACKGROUND_SCORES(background_score_ch)
+
+    //
+    // MODULE: Compare every metaprogram set generated for a group and pick the optimal value of k
+    //
+
+    // this process runs once per group rather than once per metaprogram set, so the output for
+    // every value of k is grouped by group_id here
+    def ch_metrics_by_group = CALCULATE_METRICS_METAPROGRAMS.out.metaprogram_metrics
+        .map { meta, metrics_file, background_file ->
+            [meta.group_id, metrics_file, background_file]
+        }
+        .groupTuple()
+
+    // the ORA results are not used to compare values of k, so only the gene set metrics and their
+    // background are grouped here
+    def ch_geneset_metrics_by_group = CALCULATE_METRICS_GENESETS.out.ora_metrics
+        .map { meta, _ora_results_file, metrics_file, background_file ->
+            [meta.group_id, metrics_file, background_file]
+        }
+        .groupTuple()
+
+    // generate channels with all scores and background scores grouped by group_id
+    def ch_scores_by_group = COMBINE_METAPROGRAM_SCORES.out.results
+        .map { meta, scores_file -> [meta.group_id, scores_file] }
+        .groupTuple()
+
+    def ch_background_scores_by_group = COMBINE_BACKGROUND_SCORES.out.results
+        .map { meta, background_stats_file -> [meta.group_id, background_stats_file] }
+        .groupTuple()
+
+    // joining on group_id lines up every file list for a group into a single task
+    def ch_calculate_k_input = ch_metrics_by_group
+        .join(ch_geneset_metrics_by_group)
+        .join(ch_scores_by_group)
+        .join(ch_background_scores_by_group)
+        .map { group_id, mp_metrics_files, mp_background_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files ->
+            def meta = [group_id: group_id]
+            [meta, mp_metrics_files, mp_background_files, geneset_metrics_files, specificity_background_files, scores_files, background_scores_files]
+        }
+
+    CALCULATE_K(
+        ch_calculate_k_input,
+        [nreps: params.nreps],
+    )
+
+    // the optimal value of k is written to a file so that it survives as a process output, and is
+    // read back here as the number of metaprograms to use for the report
+    def ch_optimal_k = CALCULATE_K.out.optimal_k.map { meta, optimal_k_file ->
+        [meta, optimal_k_file.text.trim().toInteger()]
+    }
 
     //
     // Collate and save software versions
@@ -256,5 +316,6 @@ workflow METAFACTORY {
         )
 
     emit:
-    versions = ch_collated_versions
+    optimal_k = ch_optimal_k
+    versions  = ch_collated_versions
 }

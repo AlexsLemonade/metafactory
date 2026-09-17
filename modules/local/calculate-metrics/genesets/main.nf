@@ -1,7 +1,7 @@
 process CALCULATE_METRICS_GENESETS {
     tag "${meta.group_id}-k${meta.n_metaprograms}"
 
-    label 'process_low'
+    label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
     container {
