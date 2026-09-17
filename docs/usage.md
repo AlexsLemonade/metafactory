@@ -47,6 +47,7 @@ nextflow run AlexsLemonade/metafactory \
 
 Note that the pipeline will create the following files in your working directory:
 
+```
 work                # Directory containing the nextflow working files
 <OUTDIR>            # Finished results in specified location (defined with --outdir)
 .nextflow_log       # Log file from Nextflow
