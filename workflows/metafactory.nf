@@ -30,6 +30,22 @@ workflow METAFACTORY {
 
     def ch_versions = channel.empty()
 
+    // parse the comma separated list of k values to test into a list of integers
+    def n_metaprograms_list = params.n_metaprograms
+        .split(',')
+        *.trim()
+        *.toInteger()
+
+    // the optimal value of k is chosen from the elbow of the coherence curve, which is not defined
+    // with fewer than four values of k
+    // the schema enforces this as well, so this is here to catch runs that skip parameter
+    // validation, and to fail before any task is submitted rather than in the last process
+    if (n_metaprograms_list.size() < 4) {
+        error(
+            "At least 4 values of --n_metaprograms are required to choose the optimal value of k, but ${n_metaprograms_list.size()} were provided: ${params.n_metaprograms}"
+        )
+    }
+
     //
     // Create channel samplesheet of [meta, file(h5ad_file)]
     //
@@ -64,12 +80,6 @@ workflow METAFACTORY {
             [meta.group_id, meta.unique_id, cnmf_output]
         }
         .groupTuple(by: 0)
-
-    // parse the comma separated list of k values to test into a list of integers
-    def n_metaprograms_list = params.n_metaprograms
-        .split(',')
-        *.trim()
-        *.toInteger()
 
     // labels used to identify the spectra filtering settings the metaprograms were built with
     def filter_label = params.metaprograms_filter_spectra ? 'filtered' : 'unfiltered'

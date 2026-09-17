@@ -114,8 +114,14 @@ read_k_files <- function(file_list, ...) {
 
 # function to calculate the "kneedle"
 # copied from https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/05-metaprogram-correlation.Rmd
-# returns NA when the curve is flat, since there is no elbow to find
+# returns NA when there is no elbow to find, either because too few values of k are left or
+# because the curve is flat
 kneedle <- function(k_values, metric_values, concave = TRUE) {
+
+  # smoothing needs at least four unique values of k, and an elbow is not meaningful with fewer
+  if (length(unique(k_values)) < 4) {
+    return(NA_real_)
+  }
 
   # Step 1: Smooth data to preserve original shape
   fit <- smooth.spline(k_values, metric_values)
@@ -261,15 +267,6 @@ excluded_k <- mp_metrics_df |>
   dplyr::filter(num_spectra_per_mp == 1) |>
   dplyr::pull(n_metaprograms) |>
   unique()
-
-# keep the full set of k so that the excluded values can be reported in the summary table
-all_k <- unique(mp_metrics_df[["n_metaprograms"]])
-
-# the elbow of the coherence curve won't be found if we don't have enough values of k
-stopifnot(
-  "Fewer than 4 values of k are left after removing values of k with a single spectra metaprogram" =
-    length(setdiff(all_k, excluded_k)) >= 4
-)
 
 mp_metrics_df <- dplyr::filter(mp_metrics_df, !n_metaprograms %in% excluded_k)
 neff_background_df <- dplyr::filter(neff_background_df, !n_metaprograms %in% excluded_k)
