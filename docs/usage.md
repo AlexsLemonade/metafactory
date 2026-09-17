@@ -47,7 +47,6 @@ nextflow run AlexsLemonade/metafactory \
 
 Note that the pipeline will create the following files in your working directory:
 
-```bash
 work                # Directory containing the nextflow working files
 <OUTDIR>            # Finished results in specified location (defined with --outdir)
 .nextflow_log       # Log file from Nextflow
@@ -72,10 +71,10 @@ n_metaprograms: "8,9,10,11"
 > Do not use `-c <file>` to specify parameters as this will result in errors.
 > Custom config files specified with `-c` must only be used for [tuning process resource specifications](https://nf-co.re/docs/running/run-pipelines#configuring-pipelines), other infrastructural tweaks, or module arguments (`args`).
 
-To check that the pipeline is installed and your environment is set up without running any analysis, you can run the stub profile from the project root:
+To check that the pipeline is able to run in your environment without running any analysis, you can run the workflow with the `stub` profile:
 
 ```bash
-nextflow run . -profile stub -stub
+nextflow run AlexsLemonade/metafactory -profile stub -stub
 ```
 
 ## Parameters

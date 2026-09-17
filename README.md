@@ -40,7 +40,7 @@ Because the number of metaprograms (`k`) present in a cohort is not known ahead 
    All values of `k` tested for a group are compared using the five metrics described in step 5.
    Each metric is ranked across values of `k`, and the value of `k` with the highest mean rank is selected.
 
-**Caution:** `metafactory` is actively in development.
+**Caution:** `metafactory` is in active development and may be unstable.
 
 ## Usage
 
