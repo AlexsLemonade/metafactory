@@ -14,6 +14,7 @@ include { SCORE_METAPROGRAMS                           } from '../modules/local/
 include { SCORE_BACKGROUND                             } from '../modules/local/score-background/main'
 include { COMBINE_SCORES as COMBINE_METAPROGRAM_SCORES ; COMBINE_SCORES as COMBINE_BACKGROUND_SCORES } from '../modules/local/combine-scores/main'
 include { CALCULATE_K                                  } from '../modules/local/calculate-k/main'
+include { PUBLISH_METAPROGRAMS                         } from '../modules/local/publish-metaprograms/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -281,10 +282,44 @@ workflow METAFACTORY {
     )
 
     // the optimal value of k is written to a file so that it survives as a process output, and is
-    // read back here as the number of metaprograms to use for the report
+    // read back here as the number of metaprograms to use for the report and for determining which files to publish to results
+    // we need group id and optimal k for joining as the first element of the tuple
     def ch_optimal_k = CALCULATE_K.out.optimal_k.map { meta, optimal_k_file ->
-        [meta, optimal_k_file.text.trim().toInteger()]
+        [[meta.group_id, optimal_k_file.text.trim().toInteger()]]
     }
+
+    // pull out files from each of the calculation steps for later joining and publishing
+    // all are keyed on a [group_id, n_metaprograms] tuple, so that joining them against the
+    // optimal value of k keeps only the metaprogram set chosen for each group and drops the rest
+    def metaprograms_rds_ch = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_rds_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
+        [[meta.group_id, meta.n_metaprograms], metaprograms_rds_file]
+    }
+
+    def metaprogram_metrics_ch = CALCULATE_METRICS_METAPROGRAMS.out.metaprogram_metrics.map { meta, metaprogram_metrics_file, _background_file ->
+        [[meta.group_id, meta.n_metaprograms], metaprogram_metrics_file]
+    }
+
+    def geneset_metrics_ch = CALCULATE_METRICS_GENESETS.out.ora_metrics.map { meta, ora_results_file, geneset_metrics_file, _background_file ->
+        [[meta.group_id, meta.n_metaprograms], ora_results_file, geneset_metrics_file]
+    }
+
+    def cell_scores_ch = COMBINE_METAPROGRAM_SCORES.out.results.map { meta, cell_scores_file ->
+        [[meta.group_id, meta.n_metaprograms], cell_scores_file]
+    }
+
+    // joining on the key drops every metaprogram set except the one chosen for each group
+    def publish_ch = ch_optimal_k
+        .join(metaprograms_rds_ch)
+        .join(metaprogram_metrics_ch)
+        .join(geneset_metrics_ch)
+        .join(cell_scores_ch)
+        .map { key, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file ->
+            def meta = [group_id: key[0], optimal_k: key[1]]
+            // make sure meta actually defines group id and key for use in the process
+            [meta, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file]
+        }
+
+    PUBLISH_METAPROGRAMS(publish_ch)
 
     //
     // Collate and save software versions

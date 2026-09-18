@@ -1,0 +1,84 @@
+name: publish_metaprograms
+description: |
+  Copy the files for the metaprogram set chosen as the final result for a group into a single
+  directory named for that group.
+  Files are chosen based on the optimal value of k (n_metaprograms) chosen for that group.
+  Files are copied as is, with no contents or file names changed.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - publish
+tools:
+  - coreutils:
+      description: |
+        The GNU core utilities are the basic file, shell and text manipulation utilities of the
+        GNU operating system. `cp` is used here to copy the files for the chosen metaprogram set
+        into the results directory for the group.
+      homepage: https://www.gnu.org/software/coreutils/
+      documentation: https://www.gnu.org/software/coreutils/manual/
+      license: ["GPL-3.0-or-later"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing group information, one map per group. Required keys:
+          - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
+            The files are copied into a directory of this name.
+          - `optimal_k`: Number of metaprograms (k) in the metaprogram set chosen as the final
+            result for the group, read back from the optimal k file written by the calculate k
+            module.
+          Note that `n_metaprograms` and `metaprograms_publish_dir` are deliberately absent, since
+          only the chosen metaprogram set reaches this module and its files are published to the
+          results directory for the group rather than to the checkpoint directory for the
+          metaprogram set.
+    - metaprograms_rds_file:
+        type: file
+        description: RDS file of the metaprogram set chosen for this group, from the calculate metaprogram metrics module.
+        pattern: "*.rds"
+    - metaprogram_metrics_file:
+        type: file
+        description: TSV of per metaprogram metrics for the chosen metaprogram set, from the calculate metaprogram metrics module.
+        pattern: "*_metaprogram_metrics.tsv"
+    - ora_results_file:
+        type: file
+        description: |
+          TSV of the full ORA results for the chosen metaprogram set, from the calculate gene set
+          metrics module.
+        pattern: "*_ora_results.tsv"
+    - geneset_metrics_file:
+        type: file
+        description: |
+          TSV of per metaprogram gene set metrics for the chosen metaprogram set, derived from the
+          ORA results by the calculate gene set metrics module.
+        pattern: "*_geneset_metrics.tsv"
+    - cell_scores_file:
+        type: file
+        description: |
+          Gzipped TSV of per cell metaprogram scores for the chosen metaprogram set, holding the
+          scores for every library in the group, from the combine scores module.
+        pattern: "*_combined_metaprogram_scores.tsv.gz"
+
+output:
+  - results:
+      - meta:
+          type: map
+          description: Groovy Map of group information, passed through unchanged from the input channel.
+      - "*/*":
+          type: file
+          description: |
+            Copies of every input file, at `<group_id>/<file name>`, with their contents and file
+            names unchanged.
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"
