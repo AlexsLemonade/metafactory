@@ -20,15 +20,6 @@ process PUBLISH_METAPROGRAMS {
     script:
     // every file for this group is copied into one directory named for the group
     output_dir = "${meta.group_id}"
-
-    // join all files into a list to use for cp
-    input_files_string = [
-        metaprograms_rds_file,
-        metaprogram_metrics_file,
-        ora_results_file,
-        geneset_metrics_file,
-        cell_scores_file,
-    ].join(' ')
     """
     mkdir -p "${output_dir}"
 
@@ -45,17 +36,13 @@ process PUBLISH_METAPROGRAMS {
 
     stub:
     output_dir = "${meta.group_id}"
-    input_files_string = [
-        metaprograms_rds_file,
-        metaprogram_metrics_file,
-        ora_results_file,
-        geneset_metrics_file,
-        cell_scores_file,
-    ].join(' ')
     """
     mkdir -p "${output_dir}"
 
-    cp -L ${input_files_string} "${output_dir}/"
+    for f in ${output_files}; do
+      # -L so that the copies hold the file contents rather than the symlinks nextflow stages in
+      cp -L "\${f}" "${output_dir}/"
+    done
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
