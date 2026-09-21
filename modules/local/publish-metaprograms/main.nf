@@ -11,7 +11,7 @@ process PUBLISH_METAPROGRAMS {
     }
 
     input:
-    tuple val(meta), path(metaprograms_rds_file), path(metaprogram_metrics_file), path(ora_results_file), path(geneset_metrics_file), path(cell_scores_file)
+    tuple val(meta), path(output_files)
 
     output:
     tuple val(meta), path("${output_dir}/*"), emit: results
@@ -32,8 +32,10 @@ process PUBLISH_METAPROGRAMS {
     """
     mkdir -p "${output_dir}"
 
-    # -L so that the copies hold the file contents rather than the symlinks nextflow stages in
-    cp -L ${input_files_string} "${output_dir}/"
+    for f in ${output_files}; do
+      # -L so that the copies hold the file contents rather than the symlinks nextflow stages in
+      cp -L "\${f}" "${output_dir}/"
+    done
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

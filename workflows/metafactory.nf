@@ -316,7 +316,7 @@ workflow METAFACTORY {
         .map { key, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file ->
             def meta = [group_id: key[0], optimal_k: key[1]]
             // make sure meta actually defines group id and key for use in the process
-            [meta, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file]
+            [meta, [metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file]]
         }
 
     PUBLISH_METAPROGRAMS(publish_ch)
