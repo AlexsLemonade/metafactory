@@ -4,11 +4,7 @@ process PUBLISH_METAPROGRAMS {
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
-    container {
-        workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-            ? 'docker://ubuntu:24.04'
-            : 'ubuntu:24.04'
-    }
+    container 'ubuntu:24.04'
 
     input:
     tuple val(meta), path(output_files)
