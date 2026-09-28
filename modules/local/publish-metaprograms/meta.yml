@@ -11,15 +11,6 @@ keywords:
   - cNMF
   - metaprograms
   - publish
-tools:
-  - coreutils:
-      description: |
-        The GNU core utilities are the basic file, shell and text manipulation utilities of the
-        GNU operating system. `cp` is used here to copy the files for the chosen metaprogram set
-        into the results directory for the group.
-      homepage: https://www.gnu.org/software/coreutils/
-      documentation: https://www.gnu.org/software/coreutils/manual/
-      license: ["GPL-3.0-or-later"]
 
 input:
   - - meta:
@@ -35,32 +26,9 @@ input:
           only the chosen metaprogram set reaches this module and its files are published to the
           results directory for the group rather than to the checkpoint directory for the
           metaprogram set.
-    - metaprograms_rds_file:
+    - output_files:
         type: file
-        description: RDS file of the metaprogram set chosen for this group, from the calculate metaprogram metrics module.
-        pattern: "*.rds"
-    - metaprogram_metrics_file:
-        type: file
-        description: TSV of per metaprogram metrics for the chosen metaprogram set, from the calculate metaprogram metrics module.
-        pattern: "*_metaprogram_metrics.tsv"
-    - ora_results_file:
-        type: file
-        description: |
-          TSV of the full ORA results for the chosen metaprogram set, from the calculate gene set
-          metrics module.
-        pattern: "*_ora_results.tsv"
-    - geneset_metrics_file:
-        type: file
-        description: |
-          TSV of per metaprogram gene set metrics for the chosen metaprogram set, derived from the
-          ORA results by the calculate gene set metrics module.
-        pattern: "*_geneset_metrics.tsv"
-    - cell_scores_file:
-        type: file
-        description: |
-          Gzipped TSV of per cell metaprogram scores for the chosen metaprogram set, holding the
-          scores for every library in the group, from the combine scores module.
-        pattern: "*_combined_metaprogram_scores.tsv.gz"
+        description: An array of files to be copied to the output directory.
 
 output:
   - results:

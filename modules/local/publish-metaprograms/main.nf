@@ -6,8 +6,8 @@ process PUBLISH_METAPROGRAMS {
     conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-            ? 'oras://community.wave.seqera.io/library/publish-metaprograms:25fa452f5af16069'
-            : 'community.wave.seqera.io/library/publish-metaprograms:a3062d416e788dd4'
+            ? 'docker://ubuntu:24.04'
+            : 'ubuntu:24.04'
     }
 
     input:
@@ -31,22 +31,6 @@ process PUBLISH_METAPROGRAMS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         coreutils: \$(cp --version | head -n 1 | sed 's/^.* //')
-    END_VERSIONS
-    """
-
-    stub:
-    output_dir = "${meta.group_id}"
-    """
-    mkdir -p "${output_dir}"
-
-    for f in ${output_files}; do
-      # -L so that the copies hold the file contents rather than the symlinks nextflow stages in
-      cp -L "\${f}" "${output_dir}/"
-    done
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        stub: x.y.z
     END_VERSIONS
     """
 }
