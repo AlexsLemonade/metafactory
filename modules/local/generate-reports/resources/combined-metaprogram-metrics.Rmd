@@ -268,7 +268,7 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = max_correlation)) +
   labs(
     x = "Number of metaprograms (k)",
     y = "Max correlation of metaprogram gene weights",
-    color = glue::glue("Max correlation ≤ {correlation_cutoff}")
+    color = glue::glue("Max correlation less than or equal to {correlation_cutoff}")
   )
 ```
 
@@ -276,7 +276,7 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = max_correlation)) +
 k_metrics_df |>
   dplyr::filter(!is_excluded) |>
   dplyr::select(n_metaprograms, num_passing_correlation, proportion_passing_correlation) |>
-  DT::datatable(colnames = c("k", glue::glue("Number of metaprograms with max correlation ≤ {correlation_cutoff}"), glue::glue("% of metaprograms with max correlation ≤ {correlation_cutoff}"))) |>
+  DT::datatable(colnames = c("k", glue::glue("Number of metaprograms with max correlation less than or equal to {correlation_cutoff}"), glue::glue("% of metaprograms with max correlation less than or equal to {correlation_cutoff}"))) |>
   DT::formatPercentage("proportion_passing_correlation", 2)
 ```
 
@@ -337,7 +337,7 @@ knitr::asis_output(
 After generating metaprograms for each value of k, the top `r params$n_top_genes` genes based on gene weights were extracted from each metaprogram.
 Over-representation analysis was then run using `clusterProfiler::enricher()` function on these `r params$n_top_genes` genes.
 
-Any gene sets with an adjusted p value ≤ `r sig_value` are considered significant.
+Any gene sets with an adjusted p value less than or equal to `r sig_value` are considered significant.
 Good metaprograms should have at least one significant gene set.
 
 The table below shows the total number of metaprograms with at least one significant gene set for each value of k.
@@ -346,7 +346,7 @@ The table below shows the total number of metaprograms with at least one signifi
 k_metrics_df |>
   dplyr::filter(!is_excluded) |>
   dplyr::select(n_metaprograms, num_metaprograms_with_genesets, proportion_metaprograms_with_genesets) |>
-  DT::datatable(colnames = c("k", "Number of metaprograms with ≥ 1 significant gene set", "% of metaprograms with ≥ 1 significant gene set")) |>
+  DT::datatable(colnames = c("k", "Number of metaprograms with at least 1 significant gene set", "% of metaprograms with at least 1 significant gene set")) |>
   DT::formatPercentage("proportion_metaprograms_with_genesets", 2)
 ```
 
@@ -441,14 +441,14 @@ The above metrics are combined to define the optimal value of k.
 Each metric has a single number reported for each value of k on a 0-1 scale where 1 indicates a good metaprogram.
 The values included are:
 
-* `Effective sample size`: Proportion of metaprograms with a normalized effective sample size significantly greater than the null distribution (p ≤ `r sig_value`).
+* `Effective sample size`: Proportion of metaprograms with a normalized effective sample size significantly greater than the null distribution (p less than or equal to `r sig_value`).
 * `Correlation`: Proportion of metaprograms with a max correlation to all other metaprograms < `r correlation_cutoff`.
 * `Coherence`: Value indicating if the specific k is at, above, or below the elbow point for coherence.
 The value of k at the elbow is prioritized and assigned a value of 1.
 Values of k below the elbow will be 0.5 and values above the elbow will be 0.
-* `Gene set specificity`: Binary value indicating if the overall gene set specificity is significantly greater than the null distribution (p ≤ `r sig_value`).
+* `Gene set specificity`: Binary value indicating if the overall gene set specificity is significantly greater than the null distribution (p less than or equal to `r sig_value`).
 Values of k that are significant will be 1 and those that are not significant will be 0.
-* `Coefficient of variation`: Proportion of metaprograms with a CV significantly greater than the null distribution (p ≤ `r sig_value`).
+* `Coefficient of variation`: Proportion of metaprograms with a CV significantly greater than the null distribution (p less than or equal to `r sig_value`).
 
 For each metric, each value of k is ranked, assigning the same rank to any values of k with the exact same value for a specific metric.
 The rank is normalized by the total number of possible k so that the scale is still 0-1, where 1 indicates a good metaprogram.
