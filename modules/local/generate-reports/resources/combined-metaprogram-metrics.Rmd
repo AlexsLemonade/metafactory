@@ -22,11 +22,6 @@ params:
 This report compares metaprograms generated from a single cohort across a range of k values.
 Here k refers to the number of clusters specified during hierarchical clustering of spectra to define metaprograms.
 
-<!--TODO
-Add bullet points for each metric that is shown
-
--->
-
 ## Set Up
 
 ```{r}
@@ -126,6 +121,22 @@ cv_background_df <- readr::read_tsv(params$cv_background_file, show_col_types = 
 # the optimal value of k, reported as a number
 optimal_k <- readr::read_lines(params$optimal_k_file) |>
   as.numeric()
+```
+
+```{r}
+# `n_metaprograms` holds the value of k a numeric, which makes every plot treat k as a continuous axis
+# k is converted to a factor here so that it is plotted as a discrete axis, with the levels in numeric order
+k_levels <- sort(unique(as.numeric(k_metrics_df$n_metaprograms)))
+
+as_k_factor <- function(df) {
+  dplyr::mutate(df, n_metaprograms = factor(n_metaprograms, levels = k_levels))
+}
+
+mp_metrics_df <- as_k_factor(mp_metrics_df)
+k_metrics_df <- as_k_factor(k_metrics_df)
+neff_background_df <- as_k_factor(neff_background_df)
+specificity_background_df <- as_k_factor(specificity_background_df)
+cv_background_df <- as_k_factor(cv_background_df)
 ```
 
 ```{r}
@@ -456,8 +467,10 @@ rank_columns <- c(
 )
 
 # selecting with the named vector labels each row of the heatmap, with one column per value of k
+# make sure k appears in the correct order
 rank_mtx <- k_metrics_df |>
   dplyr::filter(!is_excluded) |>
+  dplyr::arrange(n_metaprograms) |>
   dplyr::select(n_metaprograms, dplyr::all_of(rank_columns)) |>
   tibble::column_to_rownames("n_metaprograms") |>
   as.matrix() |>
