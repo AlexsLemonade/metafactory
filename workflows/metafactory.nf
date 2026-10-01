@@ -15,6 +15,7 @@ include { SCORE_BACKGROUND                             } from '../modules/local/
 include { COMBINE_SCORES as COMBINE_METAPROGRAM_SCORES ; COMBINE_SCORES as COMBINE_BACKGROUND_SCORES } from '../modules/local/combine-scores/main'
 include { CALCULATE_K                                  } from '../modules/local/calculate-k/main'
 include { PUBLISH_METAPROGRAMS                         } from '../modules/local/publish-metaprograms/main'
+include { GENERATE_REPORTS                             } from '../modules/local/generate-reports/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,6 +280,29 @@ workflow METAFACTORY {
     CALCULATE_K(
         ch_calculate_k_input,
         [nreps: params.nreps],
+    )
+
+    //
+    // MODULE: Render the report comparing every value of k that was tested for a group
+    //
+
+    // the report reads every table the calculate k module writes along with the optimal value of
+    // k it chose, so the two output channels are joined back together on meta here
+    def ch_report_input = CALCULATE_K.out.report_metrics.join(CALCULATE_K.out.optimal_k)
+
+    // the report rmd file is staged as a value channel that every task
+    // can reuse. like the gene sets, this has to be a `path` input on the process rather than a
+    // path built from `moduleDir`, so that the file is staged into the task work directory and is
+    // readable on executors that do not share a filesystem with the launch environment
+    def ch_report_rmd = channel.value(file("${projectDir}/modules/local/generate-reports/resources/combined-metaprogram-metrics.Rmd"))
+
+    GENERATE_REPORTS(
+        ch_report_input,
+        ch_report_rmd,
+        [
+            n_top_genes: params.n_top_genes,
+            seed: params.seed,
+        ],
     )
 
     // the optimal value of k is written to a file so that it survives as a process output, and is

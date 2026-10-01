@@ -1,0 +1,151 @@
+name: generate_reports
+description: |
+  Render the report that plots and tabulates the five metrics used to rank each value of k: the normalized
+  effective sample size of each metaprogram, the max correlation of metaprogram gene weights, the
+  coherence of the spectra in each metaprogram and the elbow of the median coherence curve, the
+  overall gene set specificity, and the coefficient of variation of the cell scores. The three
+  permuted null distributions are shown alongside the observed values they were compared against,
+  and the normalized ranks of all five metrics are shown as a heatmap with one column per value of
+  k.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - metrics
+  - model selection
+  - report
+tools:
+  - rmarkdown:
+      description: |
+        R package for converting R Markdown documents into a variety of formats. Used here, with
+        knitr and pandoc, to render the report as a single self contained HTML file.
+      homepage: https://rmarkdown.rstudio.com
+      documentation: https://pkgs.rstudio.com/rmarkdown/
+      license: ["GPL-3"]
+  - tidyverse:
+      description: |
+        The tidyverse is a collection of R packages for data science. The readr package is used to
+        read the metrics tables, dplyr to summarize and filter them, tibble to reshape the ranks
+        into a matrix, and ggplot2 to make the plots.
+      homepage: https://www.tidyverse.org
+      documentation: https://www.tidyverse.org/packages/
+      license: ["MIT"]
+  - ggforce:
+      description: |
+        ggplot2 extension providing `geom_sina()`, used to plot the permuted null distributions.
+      homepage: https://ggforce.data-imaginist.com
+      documentation: https://ggforce.data-imaginist.com/reference/index.html
+      license: ["MIT"]
+  - ggbeeswarm:
+      description: |
+        ggplot2 extension providing `geom_beeswarm()`, used to plot the per metaprogram metrics on
+        top of their boxplots.
+      homepage: https://github.com/eclarke/ggbeeswarm
+      documentation: https://github.com/eclarke/ggbeeswarm
+      license: ["GPL-3"]
+  - DT:
+      description: |
+        R interface to the DataTables JavaScript library, used for the scrollable summary tables.
+      homepage: https://rstudio.github.io/DT/
+      documentation: https://rstudio.github.io/DT/
+      license: ["GPL-3"]
+  - ComplexHeatmap:
+      description: |
+        Bioconductor package for making heatmaps, used with circlize for the color scale to show
+        the normalized rank of every metric for every value of k.
+      homepage: https://jokergoo.github.io/ComplexHeatmap-reference/book/
+      documentation: https://jokergoo.github.io/ComplexHeatmap-reference/book/
+      license: ["MIT"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing group information, one map per group_id. Required keys:
+          - `group_id`: Group identifier shared by all samples the metaprograms were generated
+            from. Also used as the name of the output directory, so that the report for every
+            group is published alongside the other final results for that group.
+          Like the calculate k module this process runs once per group rather than once per value
+          of k, so the map holds no `n_metaprograms` or `metaprograms_publish_dir` key.
+    - metaprogram_metrics_file:
+        type: file
+        description: |
+          TSV with one row per metaprogram per value of k, as written by the calculate k module.
+          Holds every observed metric and whether it passes the cutoff for that metric.
+        pattern: "all-k_metaprogram_metrics.tsv"
+    - k_metrics_file:
+        type: file
+        description: |
+          TSV with one row per value of k, as written by the calculate k module. Holds the
+          summarized value of each metric, the normalized rank of each metric, the mean rank, and
+          whether that value of k was excluded from the comparison or chosen as the optimal one.
+        pattern: "all-k_summary_metrics.tsv"
+    - neff_background_file:
+        type: file
+        description: |
+          Gzipped TSV of the permuted null distribution for the normalized effective sample size,
+          as written by the calculate k module.
+        pattern: "all-k_background_eff_sample_size.tsv.gz"
+    - specificity_background_file:
+        type: file
+        description: |
+          Gzipped TSV of the permuted null distribution for the overall gene set specificity, as
+          written by the calculate k module.
+        pattern: "all-k_background_geneset_specificity.tsv.gz"
+    - cv_background_file:
+        type: file
+        description: |
+          Gzipped TSV of the permuted null distribution for the coefficient of variation of the
+          cell scores, as written by the calculate k module.
+        pattern: "all-k_background_cell_score_cv.tsv.gz"
+    - optimal_k_file:
+        type: file
+        description: |
+          Text file holding the optimal value of k for the group as a single number, as written by
+          the calculate k module. Reported in the report and used to pick out the metaprograms
+          whose coherence is summarized at the end of it.
+        pattern: "optimal-k.txt"
+  - - report_rmd:
+        type: file
+        description: |
+          The R Markdown document to render, `resources/combined-metaprogram-metrics.Rmd` from
+          this module directory. It is staged as an input rather than read from `moduleDir` so
+          that it is readable on executors that do not share a filesystem with the launch
+          environment, and so that its contents are never interpolated by the nextflow template
+          engine. Staged into a `report/` subdirectory of the task directory, so that the copy the
+          script renders does not overwrite the staged file itself.
+        pattern: "*.Rmd"
+  - - options:
+        type: map
+        description: |
+          Groovy Map of the options used to render the report, supplied as a single value rather
+          than one input per option. Required keys:
+          - `n_top_genes` (integer): Number of top genes per metaprogram used for gene set
+            annotation and cell scoring. Only reported in the report text, so it must match the
+            value the staged tables were generated with.
+          - `seed` (integer): Random seed, set before plotting so that the jittered sina and
+            beeswarm plots are reproducible.
+
+output:
+  - report:
+      - meta:
+          type: map
+          description: Groovy Map of group information, passed through unchanged from the input channel.
+      - "combined-metaprogram-metrics.html":
+          type: file
+          description: |
+            Self contained HTML report, at `<group_id>/combined-metaprogram-metrics.html`. Self
+            contained, so no accompanying `_files` directory is written alongside it.
+          pattern: "combined-metaprogram-metrics.html"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"
