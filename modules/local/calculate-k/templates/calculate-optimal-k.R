@@ -387,8 +387,9 @@ k_metrics_df <- mp_metrics_df |>
 # increasing k doesn't improve coherence after a certain value of k, so a modified version of the
 # kneedle algorithm is used to find the elbow of the coherence curve
 # values of k greater than the elbow indicate no substantial gain of coherence over lower values
+# `n_metaprograms` holds the value of k as a character column so it needs to be converted to a number
 elbow_value <- kneedle(
-  k_metrics_df[["k"]],
+  as.integer(k_metrics_df[["n_metaprograms"]]),
   k_metrics_df[["median_coherence"]],
   concave = TRUE
 )
@@ -400,12 +401,12 @@ elbow_value <- kneedle(
 # the optimal value of k to the other four metrics
 k_metrics_df <- k_metrics_df |>
   dplyr::mutate(
-    is_coherence_elbow = !is.na(elbow_value) & k == elbow_value,
+    is_coherence_elbow = !is.na(elbow_value) & as.integer(n_metaprograms) == elbow_value,
     coherence_elbow_passing = dplyr::case_when(
       is.na(elbow_value) ~ 0.5,
-      k == elbow_value ~ 1,
-      k < elbow_value ~ 0.5,
-      k > elbow_value ~ 0
+      as.integer(n_metaprograms) == elbow_value ~ 1,
+      as.integer(n_metaprograms) < elbow_value ~ 0.5,
+      as.integer(n_metaprograms) > elbow_value ~ 0
     )
   )
 
