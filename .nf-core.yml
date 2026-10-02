@@ -12,6 +12,9 @@ lint:
     - docs/CONTRIBUTING.md
     - assets/sendmail_template.txt
     - .prettierignore
+  template_strings:
+    # ignore the Jinja-like placeholders in the R Markdown report
+    - modules/local/generate-reports/resources/combined-metaprogram-metrics.Rmd
   multiqc_config: false
   files_exist:
     - conf/igenomes.config
