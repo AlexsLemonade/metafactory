@@ -29,7 +29,7 @@ Here k refers to the number of clusters specified during hierarchical clustering
 # plots background points with observed values in color on top as sina plot
 plot_permutation_results <- function(background_df, observed_df, x_axis, y_axis){
 
-  ggplot(background_df, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
+  ggplot(background_df, aes(x = .data[[x_axis]], y = .data[[y_axis]])) +
     ggforce::geom_sina(
       color = "gray",
       alpha = 0.1
@@ -37,8 +37,8 @@ plot_permutation_results <- function(background_df, observed_df, x_axis, y_axis)
     geom_point(
       data = observed_df,
       aes(
-        x = {{ x_axis }},
-        y = {{ y_axis }},
+        x = .data[[x_axis]],
+        y = .data[[y_axis]],
         color = is_significant
       ),
       size  = 3,
@@ -223,7 +223,7 @@ The observed values are colored in red if they are significantly greater than th
 neff_obs_df <- mp_metrics_df |>
   dplyr::select(n_metaprograms, metaprogram, eff_number_norm, is_significant = neff_is_significant)
 
-plot_permutation_results(neff_background_df, neff_obs_df, metaprogram, eff_number_norm) +
+plot_permutation_results(neff_background_df, neff_obs_df, "metaprogram", "eff_number_norm") +
   facet_wrap(vars(n_metaprograms), scale = "free_x", ncol = 3) +
   labs(
     y = "Normalized effective sample size",
@@ -376,7 +376,7 @@ gss_obs_df <- k_metrics_df |>
     is_significant = geneset_specificity_significant == 1
   )
 
-plot_permutation_results(specificity_background_df, gss_obs_df, n_metaprograms, overall_geneset_specificity) +
+plot_permutation_results(specificity_background_df, gss_obs_df, "n_metaprograms", "overall_geneset_specificity") +
   labs(
     y = "Mean gene set specificity",
     x = "Number of metaprograms (k)",
@@ -406,7 +406,7 @@ This produces a unique background distribution for each metaprogram.
 cv_obs_df <- mp_metrics_df |>
   dplyr::select(n_metaprograms, metaprogram, score_cv, is_significant = cv_is_significant)
 
-plot_permutation_results(cv_background_df, cv_obs_df, metaprogram, score_cv) +
+plot_permutation_results(cv_background_df, cv_obs_df, "metaprogram", "score_cv") +
   facet_wrap(
     vars(n_metaprograms),
     scales = "free_x",
