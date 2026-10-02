@@ -200,7 +200,7 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = proportion_of_samples)) +
 
 ### Normalized effective sample size
 
-Here we will look at the normalized effective species size or Hill number of order 1.
+Here we will look at the normalized effective sample size or Hill number of order 1.
 This is calculated by taking the exponential of Shannon's entropy and represents the effective number of common or abundant samples.
 Here we are looking for a number close to the total possible samples in that metaprogram.
 The values are normalized by the total number of samples in the metaprogram such that values close to 1 indicate all samples are equally abundant.
@@ -442,7 +442,7 @@ Each metric has a single number reported for each value of k on a 0-1 scale wher
 The values included are:
 
 * `Effective sample size`: Proportion of metaprograms with a normalized effective sample size significantly greater than the null distribution (p less than or equal to `r sig_value`).
-* `Correlation`: Proportion of metaprograms with a max correlation to all other metaprograms < `r correlation_cutoff`.
+* `Correlation`: Proportion of metaprograms with a max correlation to all other metaprograms less than or equal to `r correlation_cutoff`.
 * `Coherence`: Value indicating if the specific k is at, above, or below the elbow point for coherence.
 The value of k at the elbow is prioritized and assigned a value of 1.
 Values of k below the elbow will be 0.5 and values above the elbow will be 0.
@@ -494,7 +494,7 @@ ht <- ComplexHeatmap::Heatmap(
   cluster_columns = FALSE,
   # Split last row into its own section
   row_split = c(rep("Metrics", nrow(rank_mtx) - 1), "Mean rank"),
-  row_gap   = unit(0.3, "cm"),  # gap size between the two sections
+  row_gap   = grid::unit(0.3, "cm"),  # gap size between the two sections
   # Labels
   row_names_side    = "left",
   column_names_side = "bottom",
