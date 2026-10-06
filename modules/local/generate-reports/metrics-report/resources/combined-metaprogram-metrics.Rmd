@@ -156,12 +156,16 @@ excluded_k <- k_metrics_df |>
   dplyr::filter(is_excluded) |>
   dplyr::pull(n_metaprograms)
 
-knitr::asis_output(
-  glue::glue("The following values of k have at least one metaprogram with only one spectra and were removed from this analysis:
-             {paste0(excluded_k, collapse = ', ')}
-             "
+if (length(excluded_k) > 0) {
+  knitr::asis_output(
+    glue::glue(
+      "
+      The following values of k have at least one metaprogram with only one spectra and were removed from this analysis:
+      {paste0(excluded_k, collapse = ', ')}
+      "
+    )
   )
-)
+}
 ```
 
 

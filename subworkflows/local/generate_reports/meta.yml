@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "generate_reports"
+description: |
+  Generate the reports for each group based on the optimal value of k and the metrics used to
+  choose it.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - metrics
+  - model selection
+  - report
+components:
+  - generate-reports/metrics-report
+input:
+  - optimal_k_ch:
+      type: file
+      description: |
+        Channel containing the optimal value of k for each group, as emitted by the `optimal_k`
+        output of the calculate k module. The file holds the optimal value of k as a single number.
+        `meta` must contain a `group_id` key, and is used to join this channel with `report_metrics_ch`.
+        Structure: [ val(meta), path(optimal_k_file) ]
+      pattern: "optimal-k.txt"
+  - report_metrics_ch:
+      type: file
+      description: |
+        Channel containing the tables used to build the report for each group, as emitted by the
+        `report_metrics` output of the calculate k module: the per metaprogram metrics for every
+        value of k, the summarized metrics and ranks for every value of k, and the permuted null
+        distributions for the normalized effective sample size, the overall gene set specificity,
+        and the coefficient of variation of the cell scores.
+        Structure: [ val(meta), path(metaprogram_metrics_file), path(k_metrics_file),
+        path(neff_background_file), path(specificity_background_file), path(cv_background_file) ]
+      pattern: "all-k_*.{tsv,tsv.gz}"
+output:
+  - metrics_report:
+      type: file
+      description: |
+        Channel containing the self contained HTML report of the combined metaprogram metrics for
+        each group, written to `<group_id>/combined-metaprogram-metrics.html`.
+        Structure: [ val(meta), path(report) ]
+      pattern: "combined-metaprogram-metrics.html"
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"
