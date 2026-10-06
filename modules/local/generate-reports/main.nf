@@ -11,7 +11,13 @@ process GENERATE_REPORTS {
     }
 
     input:
-    tuple val(meta), path(metaprogram_metrics_file), path(k_metrics_file), path(neff_background_file), path(specificity_background_file), path(cv_background_file), path(optimal_k_file)
+    tuple val(meta), 
+      path(metaprogram_metrics_file),
+      path(k_metrics_file),
+      path(neff_background_file),
+      path(specificity_background_file),
+      path(cv_background_file),
+      path(optimal_k_file)
     path report_rmd, stageAs: 'report/*'
     val options
 

@@ -276,7 +276,11 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = max_correlation)) +
 k_metrics_df |>
   dplyr::filter(!is_excluded) |>
   dplyr::select(n_metaprograms, num_passing_correlation, proportion_passing_correlation) |>
-  DT::datatable(colnames = c("k", glue::glue("Number of metaprograms with max correlation less than or equal to {correlation_cutoff}"), glue::glue("% of metaprograms with max correlation less than or equal to {correlation_cutoff}"))) |>
+  DT::datatable(colnames = c(
+    "k",
+    glue::glue("Number of metaprograms with max correlation less than or equal to {correlation_cutoff}"),
+    glue::glue("% of metaprograms with max correlation less than or equal to {correlation_cutoff}")
+  )) |>
   DT::formatPercentage("proportion_passing_correlation", 2)
 ```
 
@@ -431,7 +435,11 @@ The below table shows the total percentage of metaprograms with significant CV f
 k_metrics_df |>
   dplyr::filter(!is_excluded) |>
   dplyr::select(n_metaprograms, num_significant_cv, proportion_significant_cv) |>
-  DT::datatable(colnames = c("k", "Number of metaprograms with significant CV", "% of metaprograms with significant CV")) |>
+  DT::datatable(colnames = c(
+    "k",
+    "Number of metaprograms with significant CV",
+    "% of metaprograms with significant CV"
+  )) |>
   DT::formatPercentage("proportion_significant_cv", 2)
 ```
 
