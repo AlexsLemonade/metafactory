@@ -14,7 +14,7 @@ lint:
     - .prettierignore
   template_strings:
     # ignore the Jinja-like placeholders in the R Markdown report
-    - modules/local/generate-reports/assets/combined-metaprogram-metrics.Rmd
+    - modules/local/generate-reports/metrics-report/assets/combined-metaprogram-metrics.Rmd
   multiqc_config: false
   files_exist:
     - conf/igenomes.config
