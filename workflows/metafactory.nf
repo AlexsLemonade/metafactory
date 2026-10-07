@@ -289,8 +289,8 @@ workflow METAFACTORY {
     //
 
     GENERATE_REPORTS(
-        CALCULATE_K.out.report_metrics,
         CALCULATE_K.out.optimal_k,
+        CALCULATE_K.out.report_metrics,
     )
 
     // the optimal value of k is written to a file so that it survives as a process output, and is
