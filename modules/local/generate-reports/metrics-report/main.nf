@@ -12,7 +12,7 @@ process RENDER_METRICS_REPORT {
 
     input:
     tuple val(meta), path(metaprogram_metrics_file), path(k_metrics_file), path(neff_background_file), path(specificity_background_file), path(cv_background_file), path(optimal_k_file)
-    path report_rmd, stageAs: 'report.rmd'
+    path report_rmd, stageAs: 'report/report.rmd'
     val options
 
     output:
