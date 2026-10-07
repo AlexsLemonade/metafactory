@@ -21,7 +21,7 @@ workflow GENERATE_REPORTS {
     // readable on executors that do not share a filesystem with the launch environment
     RENDER_METRICS_REPORT(
         ch_report_input,
-        file("${projectDir}/modules/local/generate-reports/assets/combined-metaprogram-metrics.Rmd")
+        file("${projectDir}/modules/local/generate-reports/metrics-report/assets/combined-metaprogram-metrics.Rmd"),
         [
             n_top_genes: params.n_top_genes,
             seed: params.seed,
