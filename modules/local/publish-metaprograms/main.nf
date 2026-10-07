@@ -4,7 +4,7 @@ process PUBLISH_METAPROGRAMS {
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
-    container 'ubuntu:24.04'
+    container 'docker.io/library/ubuntu:24.04'
 
     input:
     tuple val(meta), path(output_files)

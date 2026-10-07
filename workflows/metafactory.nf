@@ -15,6 +15,7 @@ include { SCORE_BACKGROUND                             } from '../modules/local/
 include { COMBINE_SCORES as COMBINE_METAPROGRAM_SCORES ; COMBINE_SCORES as COMBINE_BACKGROUND_SCORES } from '../modules/local/combine-scores/main'
 include { CALCULATE_K                                  } from '../modules/local/calculate-k/main'
 include { PUBLISH_METAPROGRAMS                         } from '../modules/local/publish-metaprograms/main'
+include { GENERATE_REPORTS                             } from '../subworkflows/local/generate_reports/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,6 +280,17 @@ workflow METAFACTORY {
     CALCULATE_K(
         ch_calculate_k_input,
         [nreps: params.nreps],
+    )
+
+    //
+    // MODULE: Render a set of reports
+    // Metrics report for comparing every value of k that was tested for a group
+    // Summary report for the identified value of k
+    //
+
+    GENERATE_REPORTS(
+        CALCULATE_K.out.optimal_k,
+        CALCULATE_K.out.report_metrics,
     )
 
     // the optimal value of k is written to a file so that it survives as a process output, and is

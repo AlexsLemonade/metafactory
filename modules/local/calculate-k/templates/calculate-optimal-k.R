@@ -103,12 +103,14 @@ assign_k_names <- function(file_list) {
 
 # read a list of TSV files and combine them into a single data frame with a column holding the
 # value of k the file came from
+# `bind_rows(.id = )` always adds that column as character, so it is converted back to a number here too
 read_k_files <- function(file_list, ...) {
 
   file_list |>
     assign_k_names() |>
     purrr::map(function(file) readr::read_tsv(file, show_col_types = FALSE, ...)) |>
-    dplyr::bind_rows(.id = "n_metaprograms")
+    dplyr::bind_rows(.id = "n_metaprograms") |>
+    dplyr::mutate(n_metaprograms = as.integer(n_metaprograms))
 
 }
 
@@ -388,7 +390,7 @@ k_metrics_df <- mp_metrics_df |>
 # kneedle algorithm is used to find the elbow of the coherence curve
 # values of k greater than the elbow indicate no substantial gain of coherence over lower values
 elbow_value <- kneedle(
-  k_metrics_df[["k"]],
+  k_metrics_df[["n_metaprograms"]],
   k_metrics_df[["median_coherence"]],
   concave = TRUE
 )
@@ -400,12 +402,12 @@ elbow_value <- kneedle(
 # the optimal value of k to the other four metrics
 k_metrics_df <- k_metrics_df |>
   dplyr::mutate(
-    is_coherence_elbow = !is.na(elbow_value) & k == elbow_value,
+    is_coherence_elbow = !is.na(elbow_value) & n_metaprograms == elbow_value,
     coherence_elbow_passing = dplyr::case_when(
       is.na(elbow_value) ~ 0.5,
-      k == elbow_value ~ 1,
-      k < elbow_value ~ 0.5,
-      k > elbow_value ~ 0
+      n_metaprograms == elbow_value ~ 1,
+      n_metaprograms < elbow_value ~ 0.5,
+      n_metaprograms > elbow_value ~ 0
     )
   )
 
