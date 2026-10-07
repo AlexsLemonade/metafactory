@@ -19,11 +19,9 @@ workflow GENERATE_REPORTS {
     // can reuse. like the gene sets, this has to be a `path` input on the process rather than a
     // path built from `moduleDir`, so that the file is staged into the task work directory and is
     // readable on executors that do not share a filesystem with the launch environment
-    def ch_report_rmd = channel.value(file("${projectDir}/modules/local/generate-reports/assets/combined-metaprogram-metrics.Rmd"))
-
     RENDER_METRICS_REPORT(
         ch_report_input,
-        ch_report_rmd,
+        file("${projectDir}/modules/local/generate-reports/assets/combined-metaprogram-metrics.Rmd")
         [
             n_top_genes: params.n_top_genes,
             seed: params.seed,

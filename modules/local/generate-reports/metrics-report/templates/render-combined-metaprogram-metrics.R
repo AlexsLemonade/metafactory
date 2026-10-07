@@ -11,7 +11,7 @@
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
 
-# the report, staged from the module's `resources/` directory into a subdirectory of the task
+# the report, staged from the module's `assets/` directory into a subdirectory of the task
 # directory
 report_rmd <- "${report_rmd}"
 
