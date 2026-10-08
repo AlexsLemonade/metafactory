@@ -19,6 +19,8 @@ combined_scores_file <- "${combined_scores_file}"
 output_dir  <- "${output_dir}"
 report_file <- "${report_file}"
 
+seed <- as.integer(${options.seed})
+
 process_name <- "${task.process}"
 
 # Render -----------------------------------------------------------------------
@@ -44,7 +46,8 @@ rmarkdown::render(
     metaprograms_object_file = metaprograms_object_file,
     metaprograms_metrics_file = metaprograms_metrics_file,
     ora_results_file = ora_results_file,
-    combined_scores_file = combined_scores_file
+    combined_scores_file = combined_scores_file,
+    seed = seed
   ),
   envir = new.env()
 )

@@ -282,17 +282,6 @@ workflow METAFACTORY {
         [nreps: params.nreps],
     )
 
-    //
-    // MODULE: Render a set of reports
-    // Metrics report for comparing every value of k that was tested for a group
-    // Summary report for the identified value of k
-    //
-
-    GENERATE_REPORTS(
-        CALCULATE_K.out.optimal_k,
-        CALCULATE_K.out.report_metrics,
-    )
-
     // the optimal value of k is written to a file so that it survives as a process output, and is
     // read back here as the number of metaprograms to use for the report and for determining which files to publish to results
     // we need group id and optimal k for joining as the first element of the tuple
@@ -300,7 +289,7 @@ workflow METAFACTORY {
         [[meta.group_id, optimal_k_file.text.trim().toInteger()]]
     }
 
-    // pull out files from each of the calculation steps for later joining and publishing
+    // pull out files from each of the calculation steps for later joining, reporting and publishing
     // all are keyed on a [group_id, n_metaprograms] tuple, so that joining them against the
     // optimal value of k keeps only the metaprogram set chosen for each group and drops the rest
     def metaprograms_rds_ch = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_rds_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
@@ -320,7 +309,9 @@ workflow METAFACTORY {
     }
 
     // joining on the key drops every metaprogram set except the one chosen for each group
-    def publish_ch = ch_optimal_k
+    // shared by the individual report and the publish module, which both only need the files for
+    // the metaprogram set chosen as the final result for each group
+    def ch_optimal_metaprogram_set = ch_optimal_k
         .join(metaprograms_rds_ch)
         .join(metaprogram_metrics_ch)
         .join(geneset_metrics_ch)
@@ -328,8 +319,25 @@ workflow METAFACTORY {
         .map { key, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file ->
             def meta = [group_id: key[0], optimal_k: key[1]]
             // make sure meta actually defines group id and key for use in the process
-            [meta, [metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file]]
+            [meta, metaprograms_rds_file, metaprogram_metrics_file, geneset_metrics_file, ora_results_file, cell_scores_file]
         }
+
+    //
+    // MODULE: Render a set of reports
+    // Metrics report for comparing every value of k that was tested for a group
+    // Individual report evaluating the metaprogram set chosen as the optimal value of k
+    //
+
+    GENERATE_REPORTS(
+        CALCULATE_K.out.optimal_k,
+        CALCULATE_K.out.report_metrics,
+        ch_optimal_metaprogram_set,
+    )
+
+    // bundle the same files into a single list for the publish module, which copies them as is
+    def publish_ch = ch_optimal_metaprogram_set.map { meta, metaprograms_rds_file, metaprogram_metrics_file, geneset_metrics_file, ora_results_file, cell_scores_file ->
+        [meta, [metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file]]
+    }
 
     PUBLISH_METAPROGRAMS(publish_ch)
 

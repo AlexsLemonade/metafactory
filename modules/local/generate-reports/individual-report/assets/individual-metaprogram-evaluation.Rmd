@@ -13,6 +13,7 @@ params:
   metaprograms_metrics_file: NULL
   ora_results_file: NULL
   combined_scores_file: NULL
+  seed: 2026
 ---
 
 This notebook evaluates a single set of metaprograms for a group of samples.
@@ -139,7 +140,7 @@ options(
   )
 )
 
-set.seed(2026)
+set.seed(params$seed)
 ```
 
 
@@ -300,8 +301,10 @@ mp_cor_df <- all_cor_df |>
 
 ```{r}
 # grab the median difference
+# `mp_cor_df` facets on `mp1`, so the label data needs the same column name to be placed on the
+# matching panel rather than repeated on every panel
 mp_labels <- mp_metrics_df |>
-  dplyr::select(metaprogram, median_difference) |>
+  dplyr::select(mp1 = metaprogram, median_difference) |>
   dplyr::mutate(x = -Inf, y = Inf)
 ```
 

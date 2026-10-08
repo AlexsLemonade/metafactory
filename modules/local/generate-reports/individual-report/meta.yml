@@ -68,46 +68,36 @@ input:
   - - meta:
         type: map
         description: |
-          Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
-          combination. Required keys:
+          Groovy Map containing group information, one map per group_id. Required keys:
           - `group_id`: Group identifier shared by all samples used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the report is
-            built for. Also used in the name of the report file.
-          - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
-            written to, of the form
-            `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. The report is
-            written alongside the other checkpoint files for this metaprogram set.
-          Any other keys present in the map, including the `unique_ids` set by the generate
-          metaprograms module, are passed through unchanged and are not read by this process.
+            Also used as the name of the output directory, so that the report for every group is
+            published alongside the other final results for that group.
+          - `optimal_k`: Number of metaprograms (k) in the metaprogram set chosen as the final
+            result for the group, read back from the optimal k file written by the calculate k
+            module. The report evaluates this metaprogram set.
     - metaprograms_file:
         type: file
         description: |
-          RDS file of metaprograms for a single metaprogram set, as written by the generate
+          RDS file of metaprograms for the chosen metaprogram set, as written by the generate
           metaprograms module.
         pattern: "k-*_metaprograms.rds"
     - metaprogram_metrics_file:
         type: file
         description: |
-          TSV of per metaprogram metrics for this metaprogram set, as written by the calculate
-          metrics metaprograms module.
+          TSV of per metaprogram metrics for the chosen metaprogram set, as written by the
+          calculate metrics metaprograms module.
         pattern: "k-*_mp_metrics.tsv"
-    - geneset_metrics_file:
-        type: file
-        description: |
-          TSV of per metaprogram gene set metrics for this metaprogram set, as written by the
-          calculate metrics gene sets module.
-        pattern: "k-*_geneset_metrics.tsv"
     - ora_results_file:
         type: file
         description: |
-          TSV of the full over-representation analysis results for this metaprogram set, as
+          TSV of the full over-representation analysis results for the chosen metaprogram set, as
           written by the calculate metrics gene sets module.
         pattern: "k-*_ora_results.tsv"
     - combined_scores_file:
         type: file
         description: |
-          Gzipped TSV of per cell metaprogram scores for every library in the group, as written by
-          the combine scores module.
+          Gzipped TSV of per cell metaprogram scores for every library in the group, scored
+          against the chosen metaprogram set, as written by the combine scores module.
         pattern: "k-*_combined_metaprogram_scores.tsv.gz"
   - - report_rmd:
         type: file
@@ -119,19 +109,25 @@ input:
           engine. Staged into a `report/` subdirectory of the task directory, so that the copy the
           script renders does not overwrite the staged file itself.
         pattern: "*.Rmd"
+  - - options:
+        type: map
+        description: |
+          Groovy Map of the options used to render the report, supplied as a single value rather
+          than one input per option. Required keys:
+          - `seed` (integer): Random seed, set before plotting so that the jittered sina and
+            beeswarm plots are reproducible.
 
 output:
   - report:
       - meta:
           type: map
-          description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.
-      - "k-*_individual-metaprogram-evaluation.html":
+          description: Groovy Map of group information, passed through unchanged from the input channel.
+      - "individual-metaprogram-evaluation.html":
           type: file
           description: |
-            Self contained HTML report, at
-            `<metaprograms_publish_dir>/k-<n_metaprograms>_individual-metaprogram-evaluation.html`.
+            Self contained HTML report, at `<group_id>/individual-metaprogram-evaluation.html`.
             Self contained, so no accompanying `_files` directory is written alongside it.
-          pattern: "k-*_individual-metaprogram-evaluation.html"
+          pattern: "individual-metaprogram-evaluation.html"
   - versions:
       - "versions.yml":
           type: file
