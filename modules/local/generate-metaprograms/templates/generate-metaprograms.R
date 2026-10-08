@@ -256,8 +256,9 @@ top_genes <- extract_top_genes(mp_list, n_top_genes)
 # get a vector of any samples that might not be represented in the output spectra
 spectra_unique_ids <- names(clusters) |>
   # grab just the unique ids from the spectra names that are remaining
-  stringr::word(1, sep = "_")
-removed_unique_ids <- setdiff(unique_ids, spectra_unique_ids)
+  stringr::word(1, sep = "_") |>
+  unique()
+removed_unique_ids <- setdiff(unique(unique_ids), spectra_unique_ids)
 
 # Shuffle MPs ------------------------------------------------------------------
 # make gene x metaprogram matrix
