@@ -1,0 +1,23 @@
+name: generate-reports
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  # R interpreter
+  - r-base=4.5
+
+  # rendering the report
+  - r-rmarkdown
+  - r-knitr
+  - pandoc
+
+  # packages used in report
+  - r-tidyverse
+  - r-glue
+  - r-dt
+  - r-ggforce
+  - r-ggridges
+  - r-patchwork
+  - r-circlize
+  - bioconductor-complexheatmap

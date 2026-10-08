@@ -1,0 +1,619 @@
+---
+title: "Metaprogram evaluation"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+    number_sections: false
+    code_folding: hide
+params:
+  metaprograms_object_file: NULL
+  metaprograms_metrics_file: NULL
+  geneset_metrics_file: NULL
+  ora_results_file: NULL
+  combined_scores_file: NULL
+---
+
+This notebook evaluates a single set of metaprograms for a group of samples.
+Metaprograms should be:
+
+* Non-redundant
+* Composed of a mix of libraries
+* Biologically interpretable
+
+The metrics shown here will help evaluate if the identified MPs show these characteristics.
+
+```{r define_functions}
+#| warning: FALSE
+
+# helper function for getting jaccard between two vectors
+calc_jaccard <- function(vec1, vec2) {
+  length(intersect(vec1, vec2)) / length(union(vec1, vec2))
+}
+
+# function for getting the jaccard index between two gene sets
+geneset_jaccard <- function(geneset1, geneset2, geneset_map = all_term_df) {
+
+  genes1 <- geneset_map |>
+    dplyr::filter(gs_name == geneset1) |>
+    dplyr::pull(ensembl_gene)
+
+  genes2 <- geneset_map |>
+    dplyr::filter(gs_name == geneset2) |>
+    dplyr::pull(ensembl_gene)
+
+  jaccard <- calc_jaccard(genes1, genes2)
+
+  return(jaccard)
+}
+
+# make a heatmap looking at the Jaccard index betwen gene sets for each MP
+ora_jaccard_heatmap <- function(results_df, title){
+  # only one list here since we will compare each MP to all other MPs
+  id1_list <- split(results_df$ID, results_df$metaprogram)
+  # create the grid of comparisons
+  cross_df <- tidyr::expand_grid(id1 = names(id1_list), id2 = names(id1_list))
+
+  # calculate a single Jaccard index for each combination using split lists & ids
+  jaccard_scores <- cross_df |>
+    purrr::pmap_dbl(\(id1, id2){
+      calc_jaccard(id1_list[[id1]], id1_list[[id2]])
+    })
+
+  # add scores to the comparison grid and convert to matrix
+  jaccard_matrix <- cross_df |>
+    dplyr::mutate(jaccard = jaccard_scores) |>
+    # convert to matrix
+    tidyr::pivot_wider(
+      names_from = "id2",
+      values_from = "jaccard"
+    ) |>
+    tibble::column_to_rownames(var = "id1") |>
+    as.matrix()
+
+  ComplexHeatmap::Heatmap(jaccard_matrix,
+                          name = "Jaccard index",
+                          column_title = title,
+                          col = circlize::colorRamp2(c(0, max(jaccard_matrix)), colors = c("white", "darkslateblue")))
+}
+
+# make a dotplot for ORA results from a single metaprogram
+# modified from what we get with enrichplot::dotplot to take as input a dataframe
+dotplot <- function(df, title = NULL) {
+
+  df <- df |>
+    # only show the top 10 results
+    dplyr::slice_min(order_by = p.adjust, n = 10, with_ties = FALSE) |>
+    dplyr::mutate(
+      # convert GeneRatio to a numeric
+      top_number = stringr::word(GeneRatio, 1, sep = "/") |> as.numeric(),
+      bottom_number = stringr::word(GeneRatio, -1, sep = "/") |> as.numeric(),
+      GeneRatio = top_number/ bottom_number,
+      # reformat the description shown for y labels
+      # remove _, wrap and reorder by GeneRatio
+      Description = stringr::str_replace_all(Description, "_", " ") |>
+        stringr::str_wrap(width = 30) |>
+        forcats::fct_reorder(GeneRatio)
+
+      )
+
+  ggplot2::ggplot(df, aes(
+    x     = GeneRatio,
+    y     = Description,
+    color = p.adjust,
+    size  = Count
+  )) +
+    geom_point() +
+    scale_color_continuous(
+      low = "#e06663", high = "#327eba",
+      name = "p.adjust",
+      guide = guide_colorbar(reverse = TRUE)
+    ) +
+    scale_size(range = c(2, 10)) +
+    labs(title = title, x = "GeneRatio", y = NULL)
+}
+```
+
+
+```{r setup, message = FALSE, echo = FALSE}
+library(ggplot2)
+
+# Set default ggplot theme
+theme_set(
+  theme_bw() +
+    theme(
+      strip.background = element_rect(fill = "transparent", linewidth = 0.5)
+    )
+)
+
+# some helpful settings
+options(
+  dplyr.summarise.inform = FALSE,
+  DT.options = list(
+    scrollX = TRUE,
+    scrollY = "400px",
+    scrollCollapse = TRUE,
+    paging = FALSE,
+    searching = FALSE
+  )
+)
+
+set.seed(2026)
+```
+
+
+```{r}
+# check for files to make sure they exist
+stopifnot(
+  "Metaprogram object file does not exist" = file.exists(params$metaprograms_object_file),
+  "Metaprogram metrics file does not exist" = file.exists(params$metaprograms_metrics_file),
+  "Gene set metrics file does not exist" = file.exists(params$geneset_metrics_file),
+  "ORA results file does not exist" = file.exists(params$ora_results_file),
+  "Metaprogram scores file does not exist" = file.exists(params$combined_scores_file)
+)
+```
+
+
+```{r}
+# read in objects
+mp_obj <- readr::read_rds(params$metaprograms_object_file)
+
+# read in metrics and ora results
+mp_metrics_df <- readr::read_tsv(params$metaprograms_metrics_file)
+geneset_metrics_df <- readr::read_tsv(params$geneset_metrics_file)
+ora_results_df <- readr::read_tsv(params$ora_results_file)
+
+# pull out some items we are going to use multiple places to decrease typing later
+cor_mtx <- mp_obj$cor_matrix
+all_cor_df <- mp_obj$spectra_cor_df
+```
+
+```{r}
+# read in tsv with all scores for all samples
+score_df <- readr::read_tsv(params$combined_scores_file, col_types = list(.default = "c", mp_score = "d")) |>
+  dplyr::mutate(
+    sample_id = stringr::word(unique_id, -1, sep = "-")
+  )
+```
+
+
+## Parameters
+
+This notebook shows results for the following parameters:
+
+* Number of metaprograms (k): `r mp_obj$n_metaprograms`
+* Filtering of orphan spectra: `r mp_obj$filter_spectra`
+* Oprhan spectra cutoff (max cross sample correlation): `r mp_obj$orphan_cutoff`
+* Range of k used with cNMF (`all` indicates 5, 10, 15, 20, and 25 were used): `r mp_obj$cnmf_k_range`
+
+Metaprograms were derived from:
+
+* `r length(mp_obj$unique_ids)` libraries
+
+```{r, results='asis'}
+missing_ids <- mp_obj$removed_unique_ids
+if(length(missing_ids) > 0){
+
+  missing_ids_bullets <- paste0("<li>", paste(missing_ids, collapse = "</li><li>", "</li>"))
+
+    glue::glue("
+      <div class=\"alert alert-info\">
+
+      Metaprograms do not contain cNMF spectra from all libraries.
+      All spectra from the following libraries were removed during filtering.
+
+      {missing_ids_bullets}
+
+      </div>
+    ")
+}
+```
+
+
+## Redundancy of metaprograms
+
+Here we look at the correlation of all MPs to all other MPs.
+Ideally, MPs are unique and non-redundant and therefore have low correlation to all other MPs.
+The first plot shows all the spectra that comprise the MPs correlation to all other spectra and the second looks at correlation of each MP to all other MPs.
+
+```{r}
+# define colors for the cluster annotations
+mp_colors <- palette.colors(n = length(mp_obj$cluster_list), palette = "alphabet") |>
+  purrr::set_names(names(mp_obj$cluster_list))
+
+# metaprogram/cluster annotation
+annotation <- ComplexHeatmap::HeatmapAnnotation(
+  metaprogram = sprintf("MP%02d", mp_obj$clusters),
+  col = list(
+    metaprogram = mp_colors
+))
+
+
+# get dendrogram
+dist_mtx <- as.dist(1-cor_mtx)
+tree <- hclust(dist_mtx, method = "ward.D2")
+dend <- as.dendrogram(tree)
+
+ComplexHeatmap::Heatmap(
+  cor_mtx,
+  show_row_names = FALSE,
+  show_column_names = FALSE,
+  cluster_rows = dend,
+  cluster_columns = dend,
+  top_annotation = annotation,
+  name = "correlation"
+)
+```
+
+
+```{r}
+# combine all mps into a matrix for a heatmap
+# get correlation to each other
+mp_mtx <- do.call(cbind, mp_obj$metaprogram_list)
+mp_cor_matrix <- cor(mp_mtx, method = "pearson", use = "pairwise.complete.obs")
+
+annotation <- ComplexHeatmap::HeatmapAnnotation(
+  metaprogram = colnames(mp_mtx),
+  col = list(
+    metaprogram = mp_colors
+))
+
+ComplexHeatmap::Heatmap(
+  mp_cor_matrix,
+  name = "Correlation",
+  top_annotation = annotation
+)
+```
+
+
+Next we will look at the correlation of each spectra to all other spectra within the same MP and across MPs.
+Ideally, the spectra within a single MP should have high correlation to each other and low correlation to spectra from other MPs.
+In the top left corner of each panel the difference in the median between the two groups (within and between MPs) is displayed.
+
+
+```{r}
+# convert the mp cluster list into a dataframe with one row per spectra
+# use this to get the assigned mp for each cluster when calculating metrics
+mp_lookup <- tibble::enframe(mp_obj$cluster_list, name = "metaprogram", value = "spectra") |>
+  tidyr::unnest_longer(spectra)
+
+# for each correlation, add in the MPs being compared and classify MP
+mp_cor_df <- all_cor_df |>
+  dplyr::filter(spectra1 != spectra2) |>
+  dplyr::left_join(mp_lookup, by = c("spectra1" = "spectra")) |>
+  dplyr::rename(mp1 = metaprogram) |>
+  dplyr::left_join(mp_lookup, by = c("spectra2" = "spectra")) |>
+  dplyr::rename(mp2 = metaprogram) |>
+  dplyr::mutate(within_mp = mp1 == mp2) |>
+  dplyr::mutate(mp_comparison_group = dplyr::if_else(within_mp, "Within MP", "Between MPs"),
+                spectra_comparison_group = dplyr::case_when(
+                  spectra1 == spectra2 ~ "self",
+                  spectra1 < spectra2 ~ "different",
+                  spectra1 > spectra2 ~ "different_dup"
+                )) |>
+  # only report comparisons between different spectra
+  # and remove duplicates
+  dplyr::filter(spectra_comparison_group == "different") |>
+  dplyr::select(spectra1, spectra2, mp1, mp2, correlation, mp_comparison_group) |>
+  dplyr::distinct()
+```
+
+
+```{r}
+# calculate the difference in medians between the two groups to display on the plot
+mp_labels <- mp_cor_df |>
+  dplyr::group_by(mp1, mp_comparison_group) |>
+  dplyr::summarise(
+    group_median = median(correlation)
+  ) |>
+  tidyr::pivot_wider(
+    id_cols = mp1,
+    names_from = mp_comparison_group,
+    values_from = group_median
+  ) |>
+  dplyr::mutate(
+    median_diff = round(`Within MP` - `Between MPs`, 2),
+    x = -Inf, y = Inf
+  )
+```
+
+```{r}
+#| fig.width: 8
+
+ggplot(mp_cor_df, aes(x = correlation, color = mp_comparison_group, fill = mp_comparison_group)) +
+  geom_density(alpha = 0.25) +
+  facet_wrap(vars(mp1), scales = "free_y") +
+  scale_color_manual(values = c("Within MP" = "#00274C",
+                                "Between MPs" = "#FFCB05")) +
+  scale_fill_manual(values = c("Within MP" = "#00274C",
+                               "Between MPs" = "#FFCB05")) +
+  labs(x = "Correlation",
+       y = "Density",
+       fill = "MP comparison group",
+       color = "MP comparison group") +
+  geom_text(
+    data = mp_labels,
+    aes(x = x, y = y, label = median_diff),
+    inherit.aes = FALSE,
+    hjust = -0.1, vjust = 1.2,
+    size = 4
+  )
+```
+
+
+## Library diversity
+
+<!--TODO: Update this to reflect samples and not just libraries-->
+
+MPs should represent a mix of libraries.
+This metric can be useful in filtering out any MPs that are sample-specific.
+
+We will use Shannon's entropy to measure the diversity of each MP where a normalized value of 1 indicates high diversity.
+Shannon's entropy is then used to calculate the normalized effective sample size or Hill number of order 1.
+This represents the effective number of common or abundant samples.
+The values are normalized by the total number of samples in the metaprogram such that values close to 1 indicate all samples are equally abundant.
+
+```{r}
+# grab shannons entropy and effective sample size from metrics
+mp_metrics_df |>
+  dplyr::select(
+    metaprogram,
+    # note that the names of the columns is samples, but this is really libraries right now
+    num_samples,
+    proportion_of_samples,
+    shannon_entropy_norm,
+    eff_number_norm
+  ) |>
+  DT::datatable(colnames = c("Metaprogram", "Num Libraries", "% Libraries", "Normalized Shannon's Entropy", "Normalized Effective Sample Size")
+  ) |>
+  DT::formatPercentage(c("proportion_of_samples")) |>
+  DT::formatRound(c("shannon_entropy_norm", "eff_number_norm"))
+```
+
+The chart below shows the proportion of spectra from each metaprogram that are derived from individual samples.
+Each box represents a unique library and the length of the box represent the number of spectra from that library that contribute to the overall metaprogram.
+
+```{r}
+# add library Id column to metaprogram/spectra map
+# TODO: Update this to use unique id to join and not sample id or library id
+mp_lookup <- mp_lookup |>
+  dplyr::mutate(
+    # spectra are named with libraryid-sampleid_cnmf info
+    sample_id = stringr::word(spectra, 1, sep = "_") |>
+      stringr::word(-1, sep = "-")
+  )
+
+total_libraries <- length(mp_obj$unique_id)
+
+mp_prop_df <- mp_lookup |>
+  dplyr::group_by(metaprogram, sample_id) |>
+  # generate one row per mp/sample combination with the total count
+  dplyr::summarise(n = dplyr::n(),
+                   .groups = "drop_last") |>
+  # get the frequency of each sample compared to all other samples
+  dplyr::mutate(p = n / sum(n),
+                num_samples = dplyr::n_distinct(sample_id)
+  ) |>
+  # ungroup before setting levels otherwise the plot doesn't work
+  dplyr::ungroup() |>
+  dplyr::mutate(metaprogram = forcats::fct_reorder(metaprogram, num_samples))
+
+ggplot(mp_prop_df, aes(x = p, y = metaprogram, fill = sample_id)) +
+  geom_col(color = "gray70") +
+  labs(
+    y = "Metaprogram",
+    x = "Proportion of spectra",
+    fill = "Sample"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+```
+
+
+## Biological interpretability
+
+Ultimately, we want to be able to easily interpret the MPs.
+We won't actually annotate them here, but we will look to see how biologically distinct the MPs might be.
+
+To do that, we'll look at the results from running over-representation analysis on the top genes for each metaprogram.
+
+```{r}
+# pull out the top genes
+mp_top_list <- mp_obj$top_genes
+```
+
+```{r}
+#| results: 'asis'
+
+# print out a message about which MPs have 0 genesets
+all_mps <- names(mp_top_list)
+missing_mps <- all_mps[!all_mps %in% unique(ora_results_df$metaprogram)] |>
+  paste0(collapse = ", ")
+
+if(missing_mps != "") {
+  glue::glue("
+      <div class=\"alert alert-info\">
+
+      No gene sets were identified as significant in the following metaprograms:
+      {missing_mps}
+      </div>
+    ")
+  }
+```
+
+
+To evaluate if the MPs are easily interpretable, we will make a heatmap that shows the significance of each gene set across all MPs.
+Ideal MPs will show gene sets that are uniquely enriched in that MP instead of enriched across multiple MPs.
+The rows represent the all significant gene sets, the columns indicate the MP, and the heatmap color indicates the -log10(pvalue) for that gene set in that MP.
+Only the top 5 gene sets for each metaprogram are shown to save space.
+
+Only MPs with identified gene sets will be included.
+
+```{r}
+#| fig.height: 10
+#| fig.width: 22
+
+
+# convert ora results into a heatmap of pvalues
+heatmap_mtx <- ora_results_df |>
+  dplyr::mutate(logp = -log10(p.adjust)) |>
+  # only keep the top 5 gene sets
+  dplyr::slice_max(logp, n = 5, by = metaprogram) |>
+  dplyr::select(metaprogram, ID, logp) |>
+  tidyr::pivot_wider(
+    names_from = metaprogram,
+    values_from = logp,
+    values_fill = 0  # set missing gene sets to 0
+  ) |>
+  # remove _ and wrap gene set names
+  dplyr::mutate(
+    ID = stringr::str_replace_all(ID, "_", " ") |>
+      stringr::str_wrap(width = 33)
+  ) |>
+  tibble::column_to_rownames("ID") |>
+  as.matrix() |>
+  t()
+
+ComplexHeatmap::Heatmap(
+  heatmap_mtx,
+  name = "-log10(pvalue)\n",
+  row_names_side = "left",
+  row_dend_side = "right",
+  cluster_rows = FALSE,
+  col = circlize::colorRamp2(c(0, max(heatmap_mtx)), colors = c("white", "darkslateblue")),
+  row_names_gp = grid::gpar(fontsize = 20),
+  column_names_gp = grid::gpar(fontsize = 16),
+  heatmap_legend_param = list(
+    title_gp = grid::gpar(fontsize = 20),
+    labels_gp = grid::gpar(fontsize = 20)
+  )
+) |>
+  # don't cut off super long gene set names
+  ComplexHeatmap::draw(padding = unit(c(6, 2, 2, 2), "cm"))
+```
+
+Alternatively, we can use the Jaccard similarity to index to measure how similar the list of gene sets for each MP is to all other MPs.
+
+
+```{r}
+ora_jaccard_heatmap(ora_results_df,
+                    title = "All gene sets")
+```
+
+
+### Specificity and similarity of gene sets
+
+Here we will look at the identified gene sets for each metaprogram.
+If multiple gene sets are returned, it's likely that they are biologically similar.
+Having multiple gene sets that are biologically distinct is going to impede interpretation.
+
+```{r}
+#| fig.height: 25
+#| fig.width: 15
+
+# dot plots for all mps with at least 1 significant gene set
+split(ora_results_df, ora_results_df$metaprogram) |>
+  purrr::imap(\(result, mp){
+    if(nrow(result) > 0) {
+      dotplot(result, title = mp)
+    }
+  }) |>
+  purrr::compact() |>
+  patchwork::wrap_plots(ncol = 2)
+```
+
+
+## Evaluating metaprogram scores across individual cells
+
+Good MPs should show variation in scores for MPs across samples.
+
+Score were assigned for each cell by getting the dot product between the weights for the top genes in the MP and the normalized gene expression values.
+Before calculating the score, gene expression was quantile normalized within each sample.
+
+First we look at the score distribution for all samples for each metaprogram.
+Good MPs will show variability within the dataset, in particular we are looking for a bimodal distribution.
+
+```{r}
+#| message: FALSE
+#| warning: FALSE
+
+ggplot(score_df,
+       aes(x = mp_score, y = forcats::fct_rev(metaprogram))) +
+  ggridges::geom_density_ridges(alpha = 0.8, color = "white", rel_min_height = 0.01) +
+  #facet_wrap(vars(sample_id), scales = "free_x", ncol = 4) +
+  theme(
+    strip.background = element_rect(fill = "grey90"),
+    axis.text.y = element_text(size = 8),
+    legend.position = "none"
+  ) +
+  labs(
+    x = "Score across all samples",
+    y = "Metaprogram"
+  ) +
+  xlim(c(0,0.5))
+```
+
+Good metaprograms should show variation in the scores assigned to cells in the original dataset.
+To measure variation, we will use the coefficient of variation (CV), which reports a score's variance relative to the mean score across all cells.
+
+```{r}
+# calculate the variance for each MP in each sample
+mp_var_df <- score_df |>
+  dplyr::summarise(
+    variance = stats::var(mp_score, na.rm = TRUE),
+    cv = sqrt(variance) / mean(mp_score),
+    .by = c("sample_id", "metaprogram")
+  )
+
+ggplot(
+  mp_var_df,
+  aes(
+    x = metaprogram,
+    y = cv
+  )
+) +
+  ggforce::geom_sina(size = 1, alpha = 0.8) +
+  labs(
+    x = "Metaprogram",
+    y = "CV across all cells in a sample"
+  )
+
+```
+
+Now, we'll look at the distribution for each library individually.
+Good MPs should show variability in multiple samples.
+
+```{r}
+#| fig.height: 35
+#| fig.width: 12
+#| message: FALSE
+#| warning: FALSE
+
+
+ggplot(score_df,
+       aes(x = mp_score, y = metaprogram, fill = metaprogram)) +
+  ggridges::geom_density_ridges(alpha = 0.8, color = "white", bw = 0.5, rel_min_height = 0.1) +
+  facet_wrap(vars(sample_id), scales = "free_x", ncol = 4) +
+  theme(
+    strip.background = element_rect(fill = "grey90"),
+    axis.text.y = element_text(size = 6),
+    legend.position = "none"
+  ) +
+  labs(
+    x = "Score",
+    y = "Metaprogram",
+    title = "MP scores by sample"
+  )
+```
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```
