@@ -578,7 +578,15 @@ Now, we'll look at the distribution for each library individually.
 Good MPs should show variability in multiple samples.
 
 ```{r}
-#| fig.height: 35
+# dynamic figure height for the per sample plot below, which facets with 4 columns, so the
+# height scales with the number of rows needed to fit one panel per sample
+n_samples <- dplyr::n_distinct(score_df$sample_id)
+score_facet_ncol <- 4
+dynamic_score_fig_height <- ceiling(n_samples / score_facet_ncol) * 3
+```
+
+```{r}
+#| fig.height: !r dynamic_score_fig_height
 #| fig.width: 12
 #| message: FALSE
 #| warning: FALSE
@@ -587,7 +595,7 @@ Good MPs should show variability in multiple samples.
 ggplot(score_df,
        aes(x = mp_score, y = metaprogram, fill = metaprogram)) +
   ggridges::geom_density_ridges(alpha = 0.8, color = "white", bw = 0.5, rel_min_height = 0.1) +
-  facet_wrap(vars(sample_id), scales = "free_x", ncol = 4) +
+  facet_wrap(vars(sample_id), scales = "free_x", ncol = score_facet_ncol) +
   theme(
     strip.background = element_rect(fill = "grey90"),
     axis.text.y = element_text(size = 6),
