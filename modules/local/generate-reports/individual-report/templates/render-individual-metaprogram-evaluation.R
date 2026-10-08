@@ -12,7 +12,6 @@ report_rmd <- "${report_rmd}"
 # metaprograms object and metrics tables for a single metaprogram set
 metaprograms_object_file <- "${metaprograms_file}"
 metaprograms_metrics_file <- "${metaprogram_metrics_file}"
-geneset_metrics_file <- "${geneset_metrics_file}"
 ora_results_file <- "${ora_results_file}"
 combined_scores_file <- "${combined_scores_file}"
 
@@ -44,7 +43,6 @@ rmarkdown::render(
   params = list(
     metaprograms_object_file = metaprograms_object_file,
     metaprograms_metrics_file = metaprograms_metrics_file,
-    geneset_metrics_file = geneset_metrics_file,
     ora_results_file = ora_results_file,
     combined_scores_file = combined_scores_file
   ),

@@ -11,7 +11,6 @@ output:
 params:
   metaprograms_object_file: NULL
   metaprograms_metrics_file: NULL
-  geneset_metrics_file: NULL
   ora_results_file: NULL
   combined_scores_file: NULL
 ---
@@ -149,7 +148,6 @@ set.seed(2026)
 stopifnot(
   "Metaprogram object file does not exist" = file.exists(params$metaprograms_object_file),
   "Metaprogram metrics file does not exist" = file.exists(params$metaprograms_metrics_file),
-  "Gene set metrics file does not exist" = file.exists(params$geneset_metrics_file),
   "ORA results file does not exist" = file.exists(params$ora_results_file),
   "Metaprogram scores file does not exist" = file.exists(params$combined_scores_file)
 )
@@ -162,7 +160,6 @@ mp_obj <- readr::read_rds(params$metaprograms_object_file)
 
 # read in metrics and ora results
 mp_metrics_df <- readr::read_tsv(params$metaprograms_metrics_file)
-geneset_metrics_df <- readr::read_tsv(params$geneset_metrics_file)
 ora_results_df <- readr::read_tsv(params$ora_results_file)
 
 # pull out some items we are going to use multiple places to decrease typing later
@@ -302,21 +299,10 @@ mp_cor_df <- all_cor_df |>
 
 
 ```{r}
-# calculate the difference in medians between the two groups to display on the plot
-mp_labels <- mp_cor_df |>
-  dplyr::group_by(mp1, mp_comparison_group) |>
-  dplyr::summarise(
-    group_median = median(correlation)
-  ) |>
-  tidyr::pivot_wider(
-    id_cols = mp1,
-    names_from = mp_comparison_group,
-    values_from = group_median
-  ) |>
-  dplyr::mutate(
-    median_diff = round(`Within MP` - `Between MPs`, 2),
-    x = -Inf, y = Inf
-  )
+# grab the median difference
+mp_labels <- mp_metrics_df |>
+  dplyr::select(metaprogram, median_difference) |>
+  dplyr::mutate(x = -Inf, y = Inf)
 ```
 
 ```{r}
@@ -335,7 +321,7 @@ ggplot(mp_cor_df, aes(x = correlation, color = mp_comparison_group, fill = mp_co
        color = "MP comparison group") +
   geom_text(
     data = mp_labels,
-    aes(x = x, y = y, label = median_diff),
+    aes(x = x, y = y, label = round(median_difference, 2)),
     inherit.aes = FALSE,
     hjust = -0.1, vjust = 1.2,
     size = 4
