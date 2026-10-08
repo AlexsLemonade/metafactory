@@ -255,10 +255,7 @@ top_genes <- extract_top_genes(mp_list, n_top_genes)
 
 # get a vector of any samples that might not be represented in the output spectra
 # spectra are named `{unique_id}_k{k_value}_CNMF{nmf_number}`, and `unique_id` itself may contain
-# underscores, so the unique id is recovered by stripping the known trailing suffix rather than by
-# splitting on the first underscore, which would truncate any unique id that contains one
-# the pattern has no end anchor because nextflow renders this file as a template, interpolating any
-# literal `$` it finds, so `str_remove()` removing only the first (and only) match is relied on instead
+# underscores, so the unique id is recovered by stripping the known trailing suffix
 spectra_unique_ids <- names(clusters) |>
   stringr::str_remove("_k[0-9]+_CNMF[0-9]+") |>
   unique()
