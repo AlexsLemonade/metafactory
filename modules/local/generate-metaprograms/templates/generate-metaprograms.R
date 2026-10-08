@@ -254,9 +254,11 @@ mp_list <- mp_cluster_list |>
 top_genes <- extract_top_genes(mp_list, n_top_genes)
 
 # get a vector of any samples that might not be represented in the output spectra
+# spectra are named `{unique_id}_k{k_value}_CNMF{nmf_number}`, and `unique_id` itself may contain
+# underscores, so the unique id is recovered by stripping the known trailing suffix rather than by
+# splitting on the first underscore, which would truncate any unique id that contains one
 spectra_unique_ids <- names(clusters) |>
-  # grab just the unique ids from the spectra names that are remaining
-  stringr::word(1, sep = "_") |>
+  stringr::str_remove("_k[0-9]+_CNMF[0-9]+$") |>
   unique()
 removed_unique_ids <- setdiff(unique(unique_ids), spectra_unique_ids)
 
