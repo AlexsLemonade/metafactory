@@ -16,7 +16,7 @@ params:
   seed: 2026
 ---
 
-This notebook evaluates a single set of metaprograms for a group of samples.
+This notebook evaluates a single set of metaprograms for a group of libraries.
 Metaprograms should be:
 
 * Non-redundant
@@ -169,11 +169,8 @@ all_cor_df <- mp_obj$spectra_cor_df
 ```
 
 ```{r}
-# read in tsv with all scores for all samples
-score_df <- readr::read_tsv(params$combined_scores_file, col_types = list(.default = "c", mp_score = "d")) |>
-  dplyr::mutate(
-    sample_id = stringr::word(unique_id, -1, sep = "-")
-  )
+# read in tsv with all scores for all libraries
+score_df <- readr::read_tsv(params$combined_scores_file, col_types = list(.default = "c", mp_score = "d"))
 ```
 
 
@@ -183,7 +180,7 @@ This notebook shows results for the following parameters:
 
 * Number of metaprograms (k): `r mp_obj$n_metaprograms`
 * Filtering of orphan spectra: `r mp_obj$filter_spectra`
-* Oprhan spectra cutoff (max cross sample correlation): `r mp_obj$orphan_cutoff`
+* Orphan spectra cutoff (max cross sample correlation): `r mp_obj$orphan_cutoff`
 * Range of k used with cNMF (`all` indicates 5, 10, 15, 20, and 25 were used): `r mp_obj$cnmf_k_range`
 
 Metaprograms were derived from:
@@ -342,8 +339,8 @@ This metric can be useful in filtering out any MPs that are sample-specific.
 
 We will use Shannon's entropy to measure the diversity of each MP where a normalized value of 1 indicates high diversity.
 Shannon's entropy is then used to calculate the normalized effective sample size or Hill number of order 1.
-This represents the effective number of common or abundant samples.
-The values are normalized by the total number of samples in the metaprogram such that values close to 1 indicate all samples are equally abundant.
+This represents the effective number of common or abundant libraries.
+The values are normalized by the total number of libraries in the metaprogram such that values close to 1 indicate all libraries are equally abundant.
 
 ```{r}
 # grab shannons entropy and effective sample size from metrics
@@ -371,30 +368,30 @@ Each box represents a unique library, and its length represents that library's p
 mp_lookup <- mp_lookup |>
   dplyr::mutate(
     # spectra are named with libraryid-sampleid_cnmf info
-    sample_id = stringr::str_remove(spectra, "_k[0-9]+_CNMF[0-9]+$")
+    unique_id = stringr::str_remove(spectra, "_k[0-9]+_CNMF[0-9]+$")
   )
 
 total_libraries <- length(mp_obj$unique_id)
 
 mp_prop_df <- mp_lookup |>
-  dplyr::group_by(metaprogram, sample_id) |>
+  dplyr::group_by(metaprogram, unique_id) |>
   # generate one row per mp/sample combination with the total count
   dplyr::summarise(n = dplyr::n(),
                    .groups = "drop_last") |>
-  # get the frequency of each sample compared to all other samples
+  # get the frequency of each library compared to all other libraries
   dplyr::mutate(p = n / sum(n),
-                num_samples = dplyr::n_distinct(sample_id)
+                num_libraries = dplyr::n_distinct(unique_id)
   ) |>
   # ungroup before setting levels otherwise the plot doesn't work
   dplyr::ungroup() |>
-  dplyr::mutate(metaprogram = forcats::fct_reorder(metaprogram, num_samples))
+  dplyr::mutate(metaprogram = forcats::fct_reorder(metaprogram, num_libraries))
 
-ggplot(mp_prop_df, aes(x = p, y = metaprogram, fill = sample_id)) +
+ggplot(mp_prop_df, aes(x = p, y = metaprogram, fill = unique_id)) +
   geom_col(color = "gray70") +
   labs(
     y = "Metaprogram",
     x = "Proportion of spectra",
-    fill = "Sample"
+    fill = "Unique ID"
   ) +
   theme_bw() +
   theme(
@@ -424,7 +421,19 @@ all_mps <- names(mp_top_list)
 missing_mps <- all_mps[!all_mps %in% unique(ora_results_df$metaprogram)] |>
   paste0(collapse = ", ")
 
-if(missing_mps != "") {
+if(nrow(ora_results_df) == 0) {
+  show_geneset_results <- FALSE
+  knitr::asis_output(
+    "
+      <div class=\"alert alert-info\">
+
+      Gene sets were unable to be identified as significant for any metaprogram.
+      No heatmap or Jaccard similarity plot will be shown.
+      </div>
+    "
+  )
+} else if(missing_mps != "") {
+  show_geneset_results <- TRUE
   glue::glue("
       <div class=\"alert alert-info\">
 
@@ -432,7 +441,10 @@ if(missing_mps != "") {
       {missing_mps}
       </div>
     ")
+  } else {
+    show_geneset_results <- TRUE
   }
+
 ```
 
 
@@ -446,7 +458,7 @@ Only MPs with identified gene sets will be included.
 ```{r}
 #| fig.height: 10
 #| fig.width: 22
-
+#| eval: !r show_geneset_results
 
 # convert ora results into a heatmap of pvalues
 heatmap_mtx <- ora_results_df |>
@@ -490,6 +502,8 @@ Alternatively, we can use the Jaccard similarity to index to measure how similar
 
 
 ```{r}
+#| eval: !r show_geneset_results
+
 ora_jaccard_heatmap(ora_results_df,
                     title = "All gene sets")
 ```
@@ -504,6 +518,7 @@ Having multiple gene sets that are biologically distinct is going to impede inte
 ```{r}
 #| fig.height: 25
 #| fig.width: 15
+#| eval: !r show_geneset_results
 
 # dot plots for all mps with at least 1 significant gene set
 split(ora_results_df, ora_results_df$metaprogram) |>
@@ -519,12 +534,12 @@ split(ora_results_df, ora_results_df$metaprogram) |>
 
 ## Evaluating metaprogram scores across individual cells
 
-Good MPs should show variation in scores for MPs across samples.
+Good MPs should show variation in scores for MPs across libraries.
 
 Score were assigned for each cell by getting the dot product between the weights for the top genes in the MP and the normalized gene expression values.
 Before calculating the score, gene expression was quantile normalized within each sample.
 
-First we look at the score distribution for all samples for each metaprogram.
+First we look at the score distribution for all libraries for each metaprogram.
 Good MPs will show variability within the dataset, in particular we are looking for a bimodal distribution.
 
 ```{r}
@@ -540,7 +555,7 @@ ggplot(score_df,
     legend.position = "none"
   ) +
   labs(
-    x = "Score across all samples",
+    x = "Score across all libraries",
     y = "Metaprogram"
   )
 ```
@@ -554,7 +569,7 @@ mp_var_df <- score_df |>
   dplyr::summarise(
     variance = stats::var(mp_score, na.rm = TRUE),
     cv = sqrt(variance) / mean(mp_score),
-    .by = c("sample_id", "metaprogram")
+    .by = c("unique_id", "metaprogram")
   )
 
 ggplot(
@@ -572,15 +587,15 @@ ggplot(
 
 ```
 
-Now, we'll look at the distribution for each library individually.
-Good MPs should show variability in multiple samples.
+Now, we'll look at the distribution for each library individually, using the unique IDs.
+Good MPs should show variability in multiple libraries.
 
 ```{r}
 # dynamic figure height for the per sample plot below, which facets with 4 columns, so the
 # height scales with the number of rows needed to fit one panel per sample
-n_samples <- dplyr::n_distinct(score_df$sample_id)
+n_libraries <- dplyr::n_distinct(score_df$unique_id)
 score_facet_ncol <- 4
-dynamic_score_fig_height <- ceiling(n_samples / score_facet_ncol) * 3
+dynamic_score_fig_height <- ceiling(n_libraries / score_facet_ncol) * 3
 ```
 
 ```{r}
@@ -593,7 +608,7 @@ dynamic_score_fig_height <- ceiling(n_samples / score_facet_ncol) * 3
 ggplot(score_df,
        aes(x = mp_score, y = metaprogram, fill = metaprogram)) +
   ggridges::geom_density_ridges(alpha = 0.8, color = "white", bw = 0.5, rel_min_height = 0.1) +
-  facet_wrap(vars(sample_id), scales = "free_x", ncol = score_facet_ncol) +
+  facet_wrap(vars(unique_id), scales = "free_x", ncol = score_facet_ncol) +
   theme(
     strip.background = element_rect(fill = "grey90"),
     axis.text.y = element_text(size = 6),
