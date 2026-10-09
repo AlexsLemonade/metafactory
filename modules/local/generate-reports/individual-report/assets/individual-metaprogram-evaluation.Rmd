@@ -194,7 +194,8 @@ Metaprograms were derived from:
 missing_ids <- mp_obj$removed_unique_ids
 if(length(missing_ids) > 0){
 
-  missing_ids_bullets <- paste0("<li>", paste(missing_ids, collapse = "</li><li>", "</li>"))
+  escaped_missing_ids <- htmltools::htmlEscape(missing_ids)
+  missing_ids_bullets <- paste0("<li>", paste(escaped_missing_ids, collapse = "</li><li>"), "</li>")
 
     glue::glue("
       <div class=\"alert alert-info\">
@@ -361,8 +362,8 @@ mp_metrics_df |>
   DT::formatRound(c("shannon_entropy_norm", "eff_number_norm"))
 ```
 
-The chart below shows the proportion of spectra from each metaprogram that are derived from individual samples.
-Each box represents a unique library and the length of the box represent the number of spectra from that library that contribute to the overall metaprogram.
+The chart below shows the proportion of spectra from each metaprogram that are derived from individual libraries.
+Each box represents a unique library, and its length represents that library's proportion of spectra contributing to the metaprogram.
 
 ```{r}
 # add library Id column to metaprogram/spectra map
@@ -370,8 +371,7 @@ Each box represents a unique library and the length of the box represent the num
 mp_lookup <- mp_lookup |>
   dplyr::mutate(
     # spectra are named with libraryid-sampleid_cnmf info
-    sample_id = stringr::word(spectra, 1, sep = "_") |>
-      stringr::word(-1, sep = "-")
+    sample_id = stringr::str_remove(spectra, "_k[0-9]+_CNMF[0-9]+$")
   )
 
 total_libraries <- length(mp_obj$unique_id)
@@ -438,7 +438,7 @@ if(missing_mps != "") {
 
 To evaluate if the MPs are easily interpretable, we will make a heatmap that shows the significance of each gene set across all MPs.
 Ideal MPs will show gene sets that are uniquely enriched in that MP instead of enriched across multiple MPs.
-The rows represent the all significant gene sets, the columns indicate the MP, and the heatmap color indicates the -log10(pvalue) for that gene set in that MP.
+The rows represent metaprograms, the columns represent all significant gene sets, and the heatmap color indicates the -log10(adjusted p-value) for that gene set in that metaprogram.
 Only the top 5 gene sets for each metaprogram are shown to save space.
 
 Only MPs with identified gene sets will be included.
@@ -470,7 +470,7 @@ heatmap_mtx <- ora_results_df |>
 
 ComplexHeatmap::Heatmap(
   heatmap_mtx,
-  name = "-log10(pvalue)\n",
+  name = "-log10(adjusted p-value)\n",
   row_names_side = "left",
   row_dend_side = "right",
   cluster_rows = FALSE,
@@ -534,7 +534,6 @@ Good MPs will show variability within the dataset, in particular we are looking 
 ggplot(score_df,
        aes(x = mp_score, y = forcats::fct_rev(metaprogram))) +
   ggridges::geom_density_ridges(alpha = 0.8, color = "white", rel_min_height = 0.01) +
-  #facet_wrap(vars(sample_id), scales = "free_x", ncol = 4) +
   theme(
     strip.background = element_rect(fill = "grey90"),
     axis.text.y = element_text(size = 8),
@@ -543,8 +542,7 @@ ggplot(score_df,
   labs(
     x = "Score across all samples",
     y = "Metaprogram"
-  ) +
-  xlim(c(0,0.5))
+  )
 ```
 
 Good metaprograms should show variation in the scores assigned to cells in the original dataset.
