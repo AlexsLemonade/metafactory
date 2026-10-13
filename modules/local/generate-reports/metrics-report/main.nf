@@ -2,6 +2,7 @@ process RENDER_METRICS_REPORT {
     tag "${meta.group_id}"
 
     label 'process_medium'
+    label 'results'
 
     conda "${moduleDir}/environment.yml"
     container {
