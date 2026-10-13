@@ -2,6 +2,7 @@ process PUBLISH_METAPROGRAMS {
     tag "${meta.group_id}-k${meta.optimal_k}"
 
     label 'process_single'
+    label 'results'
 
     conda "${moduleDir}/environment.yml"
     container 'docker.io/library/ubuntu:24.04'

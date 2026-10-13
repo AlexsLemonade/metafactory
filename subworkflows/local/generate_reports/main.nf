@@ -8,7 +8,7 @@ workflow GENERATE_REPORTS {
     take:
     optimal_k_ch // channel: [ meta, optimal_k_file ]
     report_metrics_ch // channel: [ meta, report metrics files ]
-    ch_optimal_metaprogram_set // channel: [ meta, metaprograms_file, metaprogram_metrics_file, geneset_metrics_file, ora_results_file, combined_scores_file ]
+    ch_optimal_metaprogram_set // channel: [ meta, metaprograms_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, combined_scores_file ]
 
     main:
 
@@ -16,7 +16,7 @@ workflow GENERATE_REPORTS {
     def ch_metrics_report_input = report_metrics_ch.join(optimal_k_ch)
 
     // the individual report does not read the gene set metrics table, so it is dropped here
-    def ch_individual_report_input = ch_optimal_metaprogram_set.map { meta, metaprograms_rds_file, metaprogram_metrics_file, _geneset_metrics_file, ora_results_file, cell_scores_file ->
+    def ch_individual_report_input = ch_optimal_metaprogram_set.map { meta, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, _geneset_metrics_file, cell_scores_file ->
         [meta, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, cell_scores_file]
     }
 

@@ -1,8 +1,8 @@
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
+IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+ */
 include { paramsSummaryMap                             } from 'plugin/nf-schema'
 include { softwareVersionsToYAML                       } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText                       } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
@@ -19,9 +19,9 @@ include { GENERATE_REPORTS                             } from '../subworkflows/l
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN MAIN WORKFLOW
+RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+ */
 
 workflow METAFACTORY {
     take:
@@ -319,7 +319,7 @@ workflow METAFACTORY {
         .map { key, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file ->
             // make sure meta actually defines group id and key for use in the process
             def meta = [group_id: key[0], optimal_k: key[1]]
-            [meta, metaprograms_rds_file, metaprogram_metrics_file, geneset_metrics_file, ora_results_file, cell_scores_file]
+            [meta, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file]
         }
 
     //
@@ -335,7 +335,7 @@ workflow METAFACTORY {
     )
 
     // bundle the same files into a single list for the publish module, which copies them as is
-    def publish_ch = ch_optimal_metaprogram_set.map { meta, metaprograms_rds_file, metaprogram_metrics_file, geneset_metrics_file, ora_results_file, cell_scores_file ->
+    def publish_ch = ch_optimal_metaprogram_set.map { meta, metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file ->
         [meta, [metaprograms_rds_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, cell_scores_file]]
     }
 

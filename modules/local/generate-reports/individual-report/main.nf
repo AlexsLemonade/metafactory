@@ -2,6 +2,7 @@ process RENDER_INDIVIDUAL_REPORT {
     tag "${meta.group_id}-k${meta.optimal_k}"
 
     label 'process_medium'
+    label 'results'
 
     conda "${moduleDir}/environment.yml"
     container {
