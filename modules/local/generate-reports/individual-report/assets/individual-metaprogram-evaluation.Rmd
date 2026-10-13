@@ -504,8 +504,10 @@ Alternatively, we can use the Jaccard similarity to index to measure how similar
 ```{r}
 #| eval: !r show_geneset_results
 
-ora_jaccard_heatmap(ora_results_df,
-                    title = "All gene sets")
+ora_jaccard_heatmap(
+  ora_results_df,
+  title = "All gene sets"
+)
 ```
 
 

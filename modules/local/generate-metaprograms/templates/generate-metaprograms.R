@@ -259,7 +259,7 @@ top_genes <- extract_top_genes(mp_list, n_top_genes)
 spectra_unique_ids <- names(clusters) |>
   stringr::str_remove("_k[0-9]+_CNMF[0-9]+") |>
   unique()
-removed_unique_ids <- setdiff(unique(unique_ids), spectra_unique_ids)
+removed_unique_ids <- setdiff(unique_ids, spectra_unique_ids)
 
 # Shuffle MPs ------------------------------------------------------------------
 # make gene x metaprogram matrix
