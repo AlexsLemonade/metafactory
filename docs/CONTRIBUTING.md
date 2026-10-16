@@ -59,6 +59,12 @@ nf-test test tests/stub.nf.test --profile +docker
 nf-test test --tag stub --profile +docker
 ```
 
+The stub and parameter validation tests do not run any analysis, so they can also be run without a container profile, which avoids pulling any images:
+
+```bash
+nf-test test tests/stub.nf.test tests/params.nf.test
+```
+
 Test outputs are compared against the snapshots in the `.nf.test.snap` file next to each test.
 Files whose content changes between runs (for example, HTML reports, RDS files, and gzipped files) are listed in `tests/.nftignore`, so only their paths are snapshotted.
 If you have added new functionality or intentionally changed an output, update the test assertions in the `.nf.test` files and regenerate the snapshots:
