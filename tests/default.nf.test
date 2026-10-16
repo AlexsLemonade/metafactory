@@ -16,12 +16,43 @@ nextflow_pipeline {
             // stable_path: All files + folders in ${params.outdir}/ with a stable path (including file name)
             def stable_path = getAllFilesFromDir(params.outdir, relative: true, includeDir: true, ignore: ['pipeline_info/*.{html,json,txt}'])
             // stable_content: All files in ${params.outdir}/ with stable content
+            // each file is recorded as `<path relative to outdir>:md5,<checksum>`, so the snapshot holds
+            // no paths from the machine the test ran on and files with the same name in different
+            // directories can be told apart. the md5 is taken from the raw file bytes, because the
+            // nf-test md5 helper decompresses .gz files and the stub .gz outputs are empty, not valid gzip
+            def outdir_path = new File(params.outdir).toPath()
             def stable_content = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
+                .collect { f -> "${outdir_path.relativize(f.toPath())}:md5,${java.security.MessageDigest.getInstance('MD5').digest(f.bytes).encodeHex()}".toString() }
+                .sort()
+
+            // final results for the single group in the test samplesheet
+            def group_dir = "${params.outdir}/results/SCPCP000001"
+            def optimal_k_file = file("${group_dir}/optimal-k.txt")
+            def optimal_k = optimal_k_file.exists() ? optimal_k_file.text.trim() : null
+
+            // files copied into the group directory for the metaprogram set chosen as the optimal value of k
+            def published_files = [
+                "k-${optimal_k}_metaprograms.rds",
+                "k-${optimal_k}_mp_metrics.tsv",
+                "k-${optimal_k}_ora_results.tsv",
+                "k-${optimal_k}_geneset_metrics.tsv",
+                "k-${optimal_k}_combined_metaprogram_scores.tsv.gz",
+            ].collect { file("${group_dir}/${it}") }
+
             assert workflow.success
             assertAll(
+                // the optimal value of k must be one of the values of n_metaprograms set in conf/test.config
+                { assert optimal_k_file.exists() },
+                { assert optimal_k ==~ /\d+/ },
+                { assert optimal_k.toInteger() in [4, 5, 6, 7] },
+                // both reports are rendered and are not empty
+                { assert file("${group_dir}/combined-metaprogram-metrics.html").size() > 0 },
+                { assert file("${group_dir}/individual-metaprogram-evaluation.html").size() > 0 },
+                // the published metaprogram files are real copies rather than symlinks to the work directory
+                { assert published_files.every { it.exists() && !java.nio.file.Files.isSymbolicLink(it) } },
                 { assert snapshot(
-                    // pipeline versions.yml file for multiqc from which Nextflow version is removed because we test pipelines on multiple Nextflow versions
-                    removeNextflowVersion("$outputDir/pipeline_info/metafactory_software_mqc_versions.yml"),
+                    // pipeline versions.yml file from which Nextflow version is removed because we test pipelines on multiple Nextflow versions
+                    removeNextflowVersion("$outputDir/pipeline_info/metafactory_software_versions.yml"),
                     // All stable path name, with a relative path
                     stable_path,
                     // All files with stable contents

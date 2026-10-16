@@ -64,8 +64,9 @@ process CALCULATE_K {
     cv_background_file = "${reports_dir}/all-k_background_cell_score_cv.tsv.gz"
 
     // the optimal value of k can only be found from real metrics, so the first metaprogram set
-    // staged stands in for it here
-    stub_k = [mp_metrics_files].flatten().first().name.tokenize('_')[0].replace('k-', '')
+    // staged stands in for it here. file names are sorted because the order of the staged files
+    // depends on task completion order, and the stub output needs to be the same on every run
+    stub_k = [mp_metrics_files].flatten()*.name.sort().first().tokenize('_')[0].replace('k-', '')
     """
     mkdir -p "${reports_dir}"
 

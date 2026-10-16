@@ -33,19 +33,47 @@ If you are not used to this workflow with Git, see the [GitHub documentation](ht
 
 ### Testing
 
-Once you have made your changes, run the pipeline with nf-test to test them locally.
+Once you have made your changes, run the pipeline tests with [nf-test](https://www.nf-test.com/) to test them locally.
 For additional information, use the `--verbose` flag to view the Nextflow console log output.
 
-```bash
-nf-test test --tag test --profile +docker --verbose
-```
+#### Running tests
 
-If you have added new functionality, ensure you update the test assertions in the `.nf.test` files in the `tests/` directory.
-Update the snapshots with the following command:
+Run every test with Docker:
 
 ```bash
-nf-test test --tag test --profile +docker --verbose --update-snapshots
+nf-test test --profile +docker
 ```
+
+The `+` adds `docker` to the `test` profile that nf-test uses by default (set in `nf-test.config`).
+
+The pipeline-level tests live in `tests/` and are all tagged `pipeline`:
+
+- `tests/default.nf.test` runs the full pipeline with `-profile test` on the test libraries in `tests/assets/samplesheet.csv`
+- `tests/stub.nf.test` runs the full pipeline with `-stub` on the samplesheet in `stub/` (the empty placeholder `.h5ad` files in `stub/data/` are created by the test), which checks the channel wiring between modules in a few seconds
+- `tests/params.nf.test` checks that invalid parameters and samplesheets fail
+
+To run a single test file or a subset of tests by tag:
+
+```bash
+nf-test test tests/stub.nf.test --profile +docker
+nf-test test --tag stub --profile +docker
+```
+
+The stub and parameter validation tests do not run any analysis, so they can also be run without a container profile, which avoids pulling any images:
+
+```bash
+nf-test test tests/stub.nf.test tests/params.nf.test
+```
+
+Test outputs are compared against the snapshots in the `.nf.test.snap` file next to each test.
+Files whose content changes between runs (for example, HTML reports, RDS files, and gzipped files) are listed in `tests/.nftignore`, so only their paths are snapshotted.
+If you have added new functionality or intentionally changed an output, update the test assertions in the `.nf.test` files and regenerate the snapshots:
+
+```bash
+nf-test test --profile +docker --update-snapshot
+```
+
+Then run the tests again without `--update-snapshot` to confirm the new snapshots are stable, and commit the updated `.nf.test.snap` files.
 
 When you create a pull request with changes, GitHub Actions will run automatic tests.
 Pull requests are typically reviewed when these tests are passing.
