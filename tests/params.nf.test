@@ -22,13 +22,13 @@ nextflow_pipeline {
                     h5ad_file.createNewFile()
                 }
 
-                def stub_samplesheet = new File("${outputDir}/stub-samplesheet.csv")
+                def stub_samplesheet = new File("${new File(outputDir).parent}/stub-samplesheet.csv")
                 stub_samplesheet.parentFile.mkdirs()
                 stub_samplesheet.text = stub_lines.join('\n')
                     .replace('stub/data/', "${projectDir}/stub/data/")
 
                 input          = stub_samplesheet.toString()
-                outdir         = "$outputDir/results"
+                outdir         = "$outputDir"
                 n_metaprograms = '4,5,6'
             }
         }
@@ -38,7 +38,7 @@ nextflow_pipeline {
             // the summary of a validation error is written to stdout, but the details of each
             // invalid value are written to stderr, so both are checked
             def output = (workflow.stdout + workflow.stderr).join('\n')
-            assert output.contains('n_metaprograms')
+            assert output.contains('--n_metaprograms (4,5,6)')
         }
     }
 
@@ -48,13 +48,13 @@ nextflow_pipeline {
             params {
                 // every library points at the stub samplesheet itself, a file that exists but is
                 // not an h5ad file, so only the extension check can fail
-                def bad_samplesheet = new File("${outputDir}/bad-extension-samplesheet.csv")
+                def bad_samplesheet = new File("${new File(outputDir).parent}/bad-extension-samplesheet.csv")
                 bad_samplesheet.parentFile.mkdirs()
                 bad_samplesheet.text = new File("${projectDir}/stub/samplesheet.csv").text
                     .replaceAll(/stub\/data\/[^,\n]+\.h5ad/, "${projectDir}/stub/samplesheet.csv")
 
                 input  = bad_samplesheet.toString()
-                outdir = "$outputDir/results"
+                outdir = "$outputDir"
             }
         }
 
@@ -79,14 +79,14 @@ nextflow_pipeline {
                 }
 
                 // remove the unique_id from the second library
-                def empty_id_samplesheet = new File("${outputDir}/empty-id-samplesheet.csv")
+                def empty_id_samplesheet = new File("${new File(outputDir).parent}/empty-id-samplesheet.csv")
                 empty_id_samplesheet.parentFile.mkdirs()
                 empty_id_samplesheet.text = stub_lines.join('\n')
                     .replaceFirst(/(?m)^STUB02,/, ',')
                     .replace('stub/data/', "${projectDir}/stub/data/")
 
                 input  = empty_id_samplesheet.toString()
-                outdir = "$outputDir/results"
+                outdir = "$outputDir"
             }
         }
 
@@ -113,14 +113,14 @@ nextflow_pipeline {
                 }
 
                 // give the second library the same unique_id as the first library
-                def duplicate_id_samplesheet = new File("${outputDir}/duplicate-id-samplesheet.csv")
+                def duplicate_id_samplesheet = new File("${new File(outputDir).parent}/duplicate-id-samplesheet.csv")
                 duplicate_id_samplesheet.parentFile.mkdirs()
                 duplicate_id_samplesheet.text = stub_lines.join('\n')
                     .replaceFirst(/(?m)^STUB02,/, 'STUB01,')
                     .replace('stub/data/', "${projectDir}/stub/data/")
 
                 input  = duplicate_id_samplesheet.toString()
-                outdir = "$outputDir/results"
+                outdir = "$outputDir"
             }
         }
 

@@ -25,14 +25,15 @@ nextflow_pipeline {
 
                 // the h5ad paths in the stub samplesheet are relative to the project directory,
                 // but nf-test launches each test from its own directory, so a copy of the
-                // samplesheet with absolute paths is written to the test output directory
-                def stub_samplesheet = new File("${outputDir}/stub-samplesheet.csv")
+                // samplesheet with absolute paths is written to the test's directory (the parent of
+                // outputDir), which keeps it out of the output directory that is snapshotted
+                def stub_samplesheet = new File("${new File(outputDir).parent}/stub-samplesheet.csv")
                 stub_samplesheet.parentFile.mkdirs()
                 stub_samplesheet.text = stub_lines.join('\n')
                     .replace('stub/data/', "${projectDir}/stub/data/")
 
                 input  = stub_samplesheet.toString()
-                outdir = "$outputDir/results"
+                outdir = "$outputDir"
             }
         }
 
