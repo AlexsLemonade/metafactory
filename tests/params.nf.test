@@ -35,7 +35,10 @@ nextflow_pipeline {
 
         then {
             assert workflow.failed
-            assert workflow.stdout.toString().contains('n_metaprograms')
+            // the summary of a validation error is written to stdout, but the details of each
+            // invalid value are written to stderr, so both are checked
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('n_metaprograms')
         }
     }
 
@@ -57,7 +60,8 @@ nextflow_pipeline {
 
         then {
             assert workflow.failed
-            assert workflow.stdout.toString().contains("must have extension '.h5ad'")
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains("must have extension '.h5ad'")
         }
     }
 
@@ -88,10 +92,10 @@ nextflow_pipeline {
 
         then {
             assert workflow.failed
-            // an empty unique_id can be caught by the samplesheet schema, where it is a required
-            // field, or by validateInputSamplesheet, so either error message is accepted
-            def stdout = workflow.stdout.toString()
-            assert stdout.contains('Unique ID must be provided') || stdout.contains('Empty unique_id found')
+            // unique_id is a required field in the samplesheet schema, so an empty unique_id is
+            // caught by schema validation before validateInputSamplesheet runs
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('Missing required field(s): unique_id')
         }
     }
 
@@ -122,7 +126,8 @@ nextflow_pipeline {
 
         then {
             assert workflow.failed
-            assert workflow.stdout.toString().contains('Duplicate unique_id values found in samplesheet: STUB01')
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('Duplicate unique_id values found in samplesheet: STUB01')
         }
     }
 }
