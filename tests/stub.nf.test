@@ -41,7 +41,14 @@ nextflow_pipeline {
             def stable_path = getAllFilesFromDir(params.outdir, relative: true, includeDir: true, ignore: ['pipeline_info/*.{html,json,txt}'])
             // stable_content: stub outputs are empty files (or hold a fixed value), so every file
             // outside of pipeline_info has stable content
+            // each file is recorded as `<path relative to outdir>:md5,<checksum>`, so the snapshot holds
+            // no paths from the machine the test ran on and files with the same name in different
+            // directories can be told apart. the md5 is taken from the raw file bytes, because the
+            // nf-test md5 helper decompresses .gz files and the stub .gz outputs are empty, not valid gzip
+            def outdir_path = new File(params.outdir).toPath()
             def stable_content = getAllFilesFromDir(params.outdir, ignore: ['pipeline_info/*'])
+                .collect { f -> "${outdir_path.relativize(f.toPath())}:md5,${java.security.MessageDigest.getInstance('MD5').digest(f.bytes).encodeHex()}".toString() }
+                .sort()
 
             assert workflow.success
             assertAll(
