@@ -22,7 +22,15 @@ nextflow_pipeline {
             // nf-test md5 helper decompresses .gz files and the stub .gz outputs are empty, not valid gzip
             def outdir_path = new File(params.outdir).toPath()
             def stable_content = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
-                .collect { f -> "${outdir_path.relativize(f.toPath())}:md5,${java.security.MessageDigest.getInstance('MD5').digest(f.bytes).encodeHex()}".toString() }
+                .collect { f ->
+                    def content = f.bytes
+                    if (f.name == 'all-k_metaprogram_metrics.tsv') {
+                        // Preserve the header and compare metric rows independently of task completion order.
+                        def lines = f.readLines('UTF-8')
+                        content = (lines.take(1) + lines.drop(1).sort()).join('\n').getBytes('UTF-8')
+                    }
+                    "${outdir_path.relativize(f.toPath())}:md5,${java.security.MessageDigest.getInstance('MD5').digest(content).encodeHex()}".toString()
+                }
                 .sort()
 
             // final results for the single group in the test samplesheet
