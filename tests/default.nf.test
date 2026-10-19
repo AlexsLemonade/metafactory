@@ -57,7 +57,7 @@ nextflow_pipeline {
                 { assert file("${group_dir}/combined-metaprogram-metrics.html").size() > 0 },
                 { assert file("${group_dir}/individual-metaprogram-evaluation.html").size() > 0 },
                 // the published metaprogram files are real copies rather than symlinks to the work directory
-                { assert published_files.every { it.exists() && !java.nio.file.Files.isSymbolicLink(it) } },
+                { assert published_files.every { it.exists() && !java.nio.file.Files.isSymbolicLink(it.toPath()) } },
                 { assert snapshot(
                     // pipeline versions.yml file from which Nextflow version is removed because we test pipelines on multiple Nextflow versions
                     removeNextflowVersion("$outputDir/pipeline_info/metafactory_software_versions.yml"),
