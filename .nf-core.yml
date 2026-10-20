@@ -16,6 +16,11 @@ lint:
     # ignore the Jinja-like placeholders in the R Markdown reports
     - modules/local/generate-reports/metrics-report/assets/combined-metaprogram-metrics.Rmd
     - modules/local/generate-reports/individual-report/assets/individual-metaprogram-evaluation.Rmd
+  nf_test_content:
+    # every test in this file is expected to fail parameter validation, so no versions.yml is written
+    - tests/params.nf.test
+    # the test data is not on nf-core/test-datasets, so the testdata base path params are not used
+    - tests/nextflow.config
   multiqc_config: false
   files_exist:
     - conf/igenomes.config

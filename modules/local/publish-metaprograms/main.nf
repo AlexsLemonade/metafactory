@@ -30,4 +30,21 @@ process PUBLISH_METAPROGRAMS {
         coreutils: \$(cp --version | head -n 1 | sed 's/^.* //')
     END_VERSIONS
     """
+
+    stub:
+    output_dir = "${meta.group_id}"
+    // the files are still copied so that the stub run checks which files are published, but the
+    // version is not read from cp, so the stub output is the same with or without a container
+    """
+    mkdir -p "${output_dir}"
+
+    for f in ${output_files}; do
+      cp -L "\${f}" "${output_dir}/"
+    done
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        stub: x.y.z
+    END_VERSIONS
+    """
 }

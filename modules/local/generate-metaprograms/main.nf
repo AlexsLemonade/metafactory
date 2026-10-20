@@ -3,6 +3,7 @@ process GENERATE_METAPROGRAMS {
     label 'process_medium'
     label 'process_high_memory'
 
+    conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
             ? 'oras://community.wave.seqera.io/library/metafactory:a76461cf4574fb02'
