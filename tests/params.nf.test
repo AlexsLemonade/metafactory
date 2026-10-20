@@ -1,0 +1,133 @@
+nextflow_pipeline {
+
+    name "Test pipeline parameter and samplesheet validation"
+    script "../main.nf"
+    tag "pipeline"
+    tag "params"
+
+    // these runs are expected to fail during parameter validation, before any task is submitted,
+    // so run as a stub in case validation does not stop the run
+    options "-stub"
+
+    test("Fails with fewer than 4 values of n_metaprograms") {
+
+        when {
+            params {
+                // see tests/stub.nf.test for why the placeholder h5ad files are created and the
+                // stub samplesheet is rewritten with absolute paths
+                def stub_lines = new File("${projectDir}/stub/samplesheet.csv").readLines()
+                stub_lines.drop(1).each { line ->
+                    def h5ad_file = new File("${projectDir}/${line.tokenize(',')[-1]}")
+                    h5ad_file.parentFile.mkdirs()
+                    h5ad_file.createNewFile()
+                }
+
+                def stub_samplesheet = new File("${new File(outputDir).parent}/stub-samplesheet.csv")
+                stub_samplesheet.parentFile.mkdirs()
+                stub_samplesheet.text = stub_lines.join('\n')
+                    .replace('stub/data/', "${projectDir}/stub/data/")
+
+                input          = stub_samplesheet.toString()
+                outdir         = "$outputDir"
+                n_metaprograms = '4,5,6'
+            }
+        }
+
+        then {
+            assert workflow.failed
+            // the summary of a validation error is written to stdout, but the details of each
+            // invalid value are written to stderr, so both are checked
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('--n_metaprograms (4,5,6)')
+        }
+    }
+
+    test("Fails with a samplesheet file without the .h5ad extension") {
+
+        when {
+            params {
+                // every library points at the stub samplesheet itself, a file that exists but is
+                // not an h5ad file, so only the extension check can fail
+                def bad_samplesheet = new File("${new File(outputDir).parent}/bad-extension-samplesheet.csv")
+                bad_samplesheet.parentFile.mkdirs()
+                bad_samplesheet.text = new File("${projectDir}/stub/samplesheet.csv").text
+                    .replaceAll(/stub\/data\/[^,\n]+\.h5ad/, "${projectDir}/stub/samplesheet.csv")
+
+                input  = bad_samplesheet.toString()
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.failed
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains("must have extension '.h5ad'")
+        }
+    }
+
+    test("Fails with an empty unique_id in the samplesheet") {
+
+        when {
+            params {
+                // see tests/stub.nf.test for why the placeholder h5ad files are created and the
+                // stub samplesheet is rewritten with absolute paths
+                def stub_lines = new File("${projectDir}/stub/samplesheet.csv").readLines()
+                stub_lines.drop(1).each { line ->
+                    def h5ad_file = new File("${projectDir}/${line.tokenize(',')[-1]}")
+                    h5ad_file.parentFile.mkdirs()
+                    h5ad_file.createNewFile()
+                }
+
+                // remove the unique_id from the second library
+                def empty_id_samplesheet = new File("${new File(outputDir).parent}/empty-id-samplesheet.csv")
+                empty_id_samplesheet.parentFile.mkdirs()
+                empty_id_samplesheet.text = stub_lines.join('\n')
+                    .replaceFirst(/(?m)^STUB02,/, ',')
+                    .replace('stub/data/', "${projectDir}/stub/data/")
+
+                input  = empty_id_samplesheet.toString()
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.failed
+            // unique_id is a required field in the samplesheet schema, so an empty unique_id is
+            // caught by schema validation before validateInputSamplesheet runs
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('Missing required field(s): unique_id')
+        }
+    }
+
+    test("Fails with a duplicate unique_id in the samplesheet") {
+
+        when {
+            params {
+                // see tests/stub.nf.test for why the placeholder h5ad files are created and the
+                // stub samplesheet is rewritten with absolute paths
+                def stub_lines = new File("${projectDir}/stub/samplesheet.csv").readLines()
+                stub_lines.drop(1).each { line ->
+                    def h5ad_file = new File("${projectDir}/${line.tokenize(',')[-1]}")
+                    h5ad_file.parentFile.mkdirs()
+                    h5ad_file.createNewFile()
+                }
+
+                // give the second library the same unique_id as the first library
+                def duplicate_id_samplesheet = new File("${new File(outputDir).parent}/duplicate-id-samplesheet.csv")
+                duplicate_id_samplesheet.parentFile.mkdirs()
+                duplicate_id_samplesheet.text = stub_lines.join('\n')
+                    .replaceFirst(/(?m)^STUB02,/, 'STUB01,')
+                    .replace('stub/data/', "${projectDir}/stub/data/")
+
+                input  = duplicate_id_samplesheet.toString()
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.failed
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('Duplicate unique_id values found in samplesheet: STUB01')
+        }
+    }
+}

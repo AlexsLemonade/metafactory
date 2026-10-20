@@ -224,6 +224,31 @@ if (do_filter_spectra) {
 
 }
 
+# make sure there are enough spectra left to build the requested number of metaprograms
+# if there are not more spectra than metaprograms, every metaprogram has at most one spectra and
+# metrics comparing spectra within and between metaprograms can't be calculated
+n_spectra <- ncol(spectra_mtx)
+if (n_spectra <= n_metaprograms) {
+  stop(
+    sprintf(
+      paste(
+        "Only %d spectra remain, which is not enough to build %d metaprograms with more than",
+        "one spectra each. %s Try including more samples in this group, using smaller values",
+        "of --n_metaprograms, lowering --metaprograms_orphan_cutoff, or setting",
+        "--metaprograms_filter_spectra false."
+      ),
+      n_spectra,
+      n_metaprograms,
+      if (do_filter_spectra) {
+        sprintf("Spectra were filtered with an orphan cutoff of %s.", orphan_cutoff)
+      } else {
+        ""
+      }
+    ),
+    call. = FALSE
+  )
+}
+
 # turn the spectra information into a dataframe
 # save this to the final object for use in the report and calculating metrics
 spectra_cor_df <- build_spectra_cor_df(cor_mtx)

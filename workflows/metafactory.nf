@@ -82,6 +82,13 @@ workflow METAFACTORY {
             [meta.group_id, meta.unique_id, cnmf_output]
         }
         .groupTuple(by: 0)
+        // groupTuple collects results in the order the cNMF tasks finish, which changes between runs
+        // the input order sets the spectra order, and with it the metaprogram assignment and the
+        // permutations, so results are sorted by unique_id to give the same metaprograms every run
+        .map { group_id, unique_ids, cnmf_output_dirs ->
+            def sorted_results = [unique_ids, cnmf_output_dirs].transpose().sort { result -> result[0] }
+            [group_id, sorted_results.collect { result -> result[0] }, sorted_results.collect { result -> result[1] }]
+        }
 
     // labels used to identify the spectra filtering settings the metaprograms were built with
     def filter_label = params.metaprograms_filter_spectra ? 'filtered' : 'unfiltered'
