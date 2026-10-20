@@ -4,3 +4,6 @@ pipeline_info/*
 **/*.rds
 **/*.gz
 checkpoints/cnmf/**
+**/*_mp_metrics.tsv
+**/reports/all-k_metaprogram_metrics.tsv
+**/reports/all-k_summary_metrics.tsv

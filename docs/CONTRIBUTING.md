@@ -67,6 +67,7 @@ nf-test test tests/stub.nf.test tests/params.nf.test
 
 Test outputs are compared against the snapshots in the `.nf.test.snap` file next to each test.
 Files whose content changes between runs (for example, HTML reports, RDS files, and gzipped files) are listed in `tests/.nftignore`, so only their paths are snapshotted.
+The metaprogram metrics tables vary in the last digits between platforms, so they are also listed in `tests/.nftignore`, and `tests/default.nf.test` snapshots their number of rows and header columns instead.
 If you have added new functionality or intentionally changed an output, update the test assertions in the `.nf.test` files and regenerate the snapshots:
 
 ```bash

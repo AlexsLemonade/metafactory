@@ -2629,26 +2629,28 @@
             ],
             [
                 "checkpoints/metrics/SCPCP000001/k-4_filtered_0.3/k-4_geneset_metrics.tsv:md5,febea77eea0a79398fe9c6f8848c1472",
-                "checkpoints/metrics/SCPCP000001/k-4_filtered_0.3/k-4_mp_metrics.tsv:md5,2297b4c1599ee99d544924243428debe",
                 "checkpoints/metrics/SCPCP000001/k-4_filtered_0.3/k-4_ora_results.tsv:md5,dc5fe327f0ee8437f95ba2713862a725",
                 "checkpoints/metrics/SCPCP000001/k-5_filtered_0.3/k-5_geneset_metrics.tsv:md5,7d27bff5b4d0c1d0145b643706586e09",
-                "checkpoints/metrics/SCPCP000001/k-5_filtered_0.3/k-5_mp_metrics.tsv:md5,6f343b607567e93848f79ecda7886cc7",
                 "checkpoints/metrics/SCPCP000001/k-5_filtered_0.3/k-5_ora_results.tsv:md5,dc5fe327f0ee8437f95ba2713862a725",
                 "checkpoints/metrics/SCPCP000001/k-6_filtered_0.3/k-6_geneset_metrics.tsv:md5,c877a86046c196b167f9887e59854a19",
-                "checkpoints/metrics/SCPCP000001/k-6_filtered_0.3/k-6_mp_metrics.tsv:md5,1c00e1a94661705341edbcaab28b2162",
                 "checkpoints/metrics/SCPCP000001/k-6_filtered_0.3/k-6_ora_results.tsv:md5,dc5fe327f0ee8437f95ba2713862a725",
                 "checkpoints/metrics/SCPCP000001/k-7_filtered_0.3/k-7_geneset_metrics.tsv:md5,fdf213190d4725156b836669ed0083b0",
-                "checkpoints/metrics/SCPCP000001/k-7_filtered_0.3/k-7_mp_metrics.tsv:md5,a2f527954a4d0e8fca92b655e976e83e",
                 "checkpoints/metrics/SCPCP000001/k-7_filtered_0.3/k-7_ora_results.tsv:md5,513c024bf50acd474526ba8aeabb5aa0",
                 "results/SCPCP000001/k-5_geneset_metrics.tsv:md5,7d27bff5b4d0c1d0145b643706586e09",
-                "results/SCPCP000001/k-5_mp_metrics.tsv:md5,6f343b607567e93848f79ecda7886cc7",
                 "results/SCPCP000001/k-5_ora_results.tsv:md5,dc5fe327f0ee8437f95ba2713862a725",
-                "results/SCPCP000001/optimal-k.txt:md5,1dcca23355272056f04fe8bf20edfce0",
-                "results/SCPCP000001/reports/all-k_metaprogram_metrics.tsv:md5,f7c58302e8d948b3d7438aa9b8418b30",
-                "results/SCPCP000001/reports/all-k_summary_metrics.tsv:md5,8f0838d63fb35d5405a516229ccefe1e"
+                "results/SCPCP000001/optimal-k.txt:md5,1dcca23355272056f04fe8bf20edfce0"
+            ],
+            [
+                "checkpoints/metrics/SCPCP000001/k-4_filtered_0.3/k-4_mp_metrics.tsv:rows=4,columns=metaprogram,max_correlation,median_difference,num_spectra_per_mp,num_samples,proportion_of_samples,shannon_entropy,shannon_entropy_norm,eff_number,eff_number_norm,greater_pvalue_eff_number_norm,greater_adj_pvalue_eff_number_norm",
+                "checkpoints/metrics/SCPCP000001/k-5_filtered_0.3/k-5_mp_metrics.tsv:rows=5,columns=metaprogram,max_correlation,median_difference,num_spectra_per_mp,num_samples,proportion_of_samples,shannon_entropy,shannon_entropy_norm,eff_number,eff_number_norm,greater_pvalue_eff_number_norm,greater_adj_pvalue_eff_number_norm",
+                "checkpoints/metrics/SCPCP000001/k-6_filtered_0.3/k-6_mp_metrics.tsv:rows=6,columns=metaprogram,max_correlation,median_difference,num_spectra_per_mp,num_samples,proportion_of_samples,shannon_entropy,shannon_entropy_norm,eff_number,eff_number_norm,greater_pvalue_eff_number_norm,greater_adj_pvalue_eff_number_norm",
+                "checkpoints/metrics/SCPCP000001/k-7_filtered_0.3/k-7_mp_metrics.tsv:rows=7,columns=metaprogram,max_correlation,median_difference,num_spectra_per_mp,num_samples,proportion_of_samples,shannon_entropy,shannon_entropy_norm,eff_number,eff_number_norm,greater_pvalue_eff_number_norm,greater_adj_pvalue_eff_number_norm",
+                "results/SCPCP000001/k-5_mp_metrics.tsv:rows=5,columns=metaprogram,max_correlation,median_difference,num_spectra_per_mp,num_samples,proportion_of_samples,shannon_entropy,shannon_entropy_norm,eff_number,eff_number_norm,greater_pvalue_eff_number_norm,greater_adj_pvalue_eff_number_norm",
+                "results/SCPCP000001/reports/all-k_metaprogram_metrics.tsv:rows=22,columns=n_metaprograms,metaprogram,max_correlation,median_difference,num_spectra_per_mp,num_samples,proportion_of_samples,shannon_entropy,shannon_entropy_norm,eff_number,eff_number_norm,greater_pvalue_eff_number_norm,greater_adj_pvalue_eff_number_norm,num_sig_genesets,mean_geneset_specificity,neff_is_significant,correlation_is_passing,coherence_is_passing,score_var,score_cv,greater_pvalue_score_cv,greater_adj_pvalue_score_cv,cv_is_significant",
+                "results/SCPCP000001/reports/all-k_summary_metrics.tsv:rows=4,columns=n_metaprograms,is_excluded,is_optimal_k,num_metaprograms,neff_sig_number,neff_sig_proportion,num_passing_correlation,proportion_passing_correlation,num_passing_coherence,median_coherence,num_metaprograms_with_genesets,proportion_metaprograms_with_genesets,overall_geneset_specificity,num_significant_cv,proportion_significant_cv,total_samples,is_coherence_elbow,coherence_elbow_passing,geneset_specificity_pvalue,geneset_specificity_adj_pvalue,geneset_specificity_significant,rank_effective_sample_size,rank_correlation,rank_coherence,rank_gene_set_specificity,rank_coefficient_of_variation,mean_rank"
             ]
         ],
-        "timestamp": "2026-10-19T16:54:27.169699",
+        "timestamp": "2026-10-20T10:09:28.579338",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.06.0"

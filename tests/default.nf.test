@@ -23,13 +23,17 @@ nextflow_pipeline {
             def outdir_path = new File(params.outdir).toPath()
             def stable_content = getAllFilesFromDir(params.outdir, ignoreFile: 'tests/.nftignore')
                 .collect { f ->
-                    def content = f.bytes
-                    if (f.name == 'all-k_metaprogram_metrics.tsv') {
-                        // Preserve the header and compare metric rows independently of task completion order.
-                        def lines = f.readLines('UTF-8')
-                        content = (lines.take(1) + lines.drop(1).sort()).join('\n').getBytes('UTF-8')
-                    }
-                    "${outdir_path.relativize(f.toPath())}:md5,${java.security.MessageDigest.getInstance('MD5').digest(content).encodeHex()}".toString()
+                    "${outdir_path.relativize(f.toPath())}:md5,${java.security.MessageDigest.getInstance('MD5').digest(f.bytes).encodeHex()}".toString()
+                }
+                .sort()
+            // metaprogram metrics are calculated from correlations of the cNMF spectra, which vary in the
+            // last digits between platforms, so these files are in tests/.nftignore and only their
+            // structure is recorded, as `<path relative to outdir>:rows=<number of rows>,columns=<header>`
+            def metrics_structure = getAllFilesFromDir(params.outdir)
+                .findAll { it.name ==~ /.*_mp_metrics\.tsv|all-k_(metaprogram|summary)_metrics\.tsv/ }
+                .collect { f ->
+                    def lines = f.readLines('UTF-8')
+                    "${outdir_path.relativize(f.toPath())}:rows=${lines.size() - 1},columns=${lines[0].split('\t').join(',')}".toString()
                 }
                 .sort()
 
@@ -64,7 +68,9 @@ nextflow_pipeline {
                     // All stable path name, with a relative path
                     stable_path,
                     // All files with stable contents
-                    stable_content
+                    stable_content,
+                    // Number of rows and header columns of the metaprogram metrics files
+                    metrics_structure
                 ).match() }
             )
         }
