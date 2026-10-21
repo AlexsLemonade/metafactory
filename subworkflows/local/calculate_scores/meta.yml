@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "calculate_scores"
+description: |
+  Score every library in a group against each set of metaprograms generated for that group,
+  calculate a background score distribution from shuffled metaprograms for each library, and
+  combine the scores from all libraries for each metaprogram set.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - scoring
+components:
+  - score-metaprograms
+  - score-background
+  - combine-scores
+input:
+  - ch_samplesheet:
+      type: file
+      description: |
+        Channel containing the AnnData object for each library.
+        `meta` must contain `unique_id` and `group_id` keys.
+        Structure: [ val(meta), path(h5ad_file) ]
+      pattern: "*.h5ad"
+  - ch_metaprograms:
+      type: file
+      description: |
+        Channel containing each set of metaprograms, as emitted by the `results` output of the
+        generate metaprograms module. Only the python readable export and the shuffled
+        metaprograms are used for scoring.
+        `meta` must contain `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
+        Structure: [ val(meta), path(metaprograms_file), path(metaprograms_export_file),
+        path(shuffled_metaprograms_file) ]
+output:
+  - metaprogram_scores:
+      type: file
+      description: |
+        Channel containing the metaprogram scores for every library combined into a single table
+        for each metaprogram set.
+        Structure: [ val(meta), path(combined_scores_file) ]
+      pattern: "k-*_combined_metaprogram_scores.tsv.gz"
+  - background_scores:
+      type: file
+      description: |
+        Channel containing the background score statistics for every library combined into a
+        single table for each metaprogram set.
+        Structure: [ val(meta), path(combined_background_stats_file) ]
+      pattern: "k-*_combined_background_score_stats.tsv.gz"
+  - library_metaprogram_scores:
+      type: file
+      description: |
+        Channel containing the metaprogram scores for a single library against a single
+        metaprogram set, before they are combined.
+        `meta` contains `unique_id`, `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
+        Structure: [ val(meta), path(scores_file) ]
+      pattern: "*_metaprogram_scores.tsv.gz"
+  - library_background_scores:
+      type: file
+      description: |
+        Channel containing the background score statistics for a single library against a single
+        metaprogram set, before they are combined.
+        `meta` contains `unique_id`, `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
+        Structure: [ val(meta), path(background_stats_file) ]
+      pattern: "*_background_score_stats.tsv.gz"
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"
