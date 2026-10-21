@@ -1,0 +1,324 @@
+// Tests for the channel wiring in the CALCULATE_SCORES subworkflow. Every test runs in stub mode,
+// so no analysis is run and the inputs are empty placeholder files.
+//
+// Each test describes its input as a design map of group_id -> [libraries: [...], k: [...]], where
+// k is the list of n_metaprograms values that metaprogram sets are generated for in that group.
+// The helpers below build the subworkflow input and the expected results from the same design.
+
+// Nextflow code for the two subworkflow inputs. path inputs must exist to be staged, so an empty
+// placeholder is created for every file in a temporary directory
+// every file name holds its unique id or its group and k, so the files
+// staged into each task show which inputs that task received.
+// the metaprogram meta includes unique_ids, as GENERATE_METAPROGRAMS adds it
+def calculateScoresInput = { design ->
+    def input_dir = File.createTempDir()
+    def libraries = design.collectMany { group_id, group ->
+        group.libraries.collect { unique_id ->
+            def h5ad_file = new File(input_dir, "${unique_id}.h5ad")
+            h5ad_file.createNewFile()
+            "[[unique_id: '${unique_id}', group_id: '${group_id}'], file('${h5ad_file}')]"
+        }
+    }
+    def metaprogram_sets = design.collectMany { group_id, group ->
+        group.k.collect { k ->
+            def unique_ids = group.libraries.collect { unique_id -> "'${unique_id}'" }.join(', ')
+            def meta = "[group_id: '${group_id}', n_metaprograms: ${k}, metaprograms_publish_dir: '${group_id}/k-${k}', unique_ids: [${unique_ids}]]"
+            def files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz'].collect { suffix ->
+                def metaprograms_file = new File(input_dir, "${group_id}_k-${k}_${suffix}")
+                metaprograms_file.createNewFile()
+                "file('${metaprograms_file}')"
+            }
+            "[${meta}, ${files.join(', ')}]"
+        }
+    }
+    """
+    input[0] = channel.of(${libraries.join(', ')})
+    input[1] = channel.of(${metaprogram_sets.join(', ')})
+    """
+}
+
+// splits a task name such as `CALCULATE_SCORES:SCORE_METAPROGRAMS (lib1-k4)` into its process and tag
+def parseTaskName = { name ->
+    def (process, tag) = (name =~ /(\w+) \((.+)\)$/)[0][1..2]
+    [process: process, tag: tag]
+}
+
+// sorted tags of the tasks that ran for each process, which captures both how many tasks ran
+// and which library was paired with which metaprogram set
+def taskTags = { trace ->
+    trace.succeeded()*.name
+        .collect { name -> parseTaskName(name) }
+        .groupBy { task -> task.process }
+        .collectEntries { process, tasks -> [process, tasks*.tag.sort()] }
+}
+
+// the task tags expected from a design: every library in a group is scored against every
+// metaprogram set for that group, then the scores are combined once per metaprogram set
+def expectedTaskTags = { design ->
+    def score_tags = design.values().collectMany { group ->
+        [group.libraries, group.k].combinations().collect { unique_id, k -> "${unique_id}-k${k}".toString() }
+    }.sort()
+    def combine_tags = { score_type ->
+        design.collectMany { group_id, group -> group.k.collect { k -> "${group_id}-k${k}-${score_type}".toString() } }.sort()
+    }
+    [
+        SCORE_METAPROGRAMS: score_tags,
+        SCORE_BACKGROUND: score_tags,
+        COMBINE_METAPROGRAM_SCORES: combine_tags('metaprogram_scores'),
+        COMBINE_BACKGROUND_SCORES: combine_tags('background_score_stats'),
+    ]
+}
+
+// checks that each emit has one item per metaprogram set, with a meta map holding only the keys
+// used downstream and a combined file named as in meta.yml inside metaprograms_publish_dir
+def checkOutputs = { out, design ->
+    def expected_sets = design.collectMany { group_id, group -> group.k.collect { k -> [group_id, k] } }.sort()
+    [metaprogram_scores: 'metaprogram_scores', background_scores: 'background_score_stats'].each { emit, score_type ->
+        def items = out."${emit}"
+        assert items.collect { meta, _path -> [meta.group_id, meta.n_metaprograms] }.sort() == expected_sets
+        items.each { meta, path ->
+            def publish_dir = "${meta.group_id}/k-${meta.n_metaprograms}".toString()
+            assert meta == [
+                group_id: meta.group_id,
+                n_metaprograms: meta.n_metaprograms,
+                score_type: score_type,
+                metaprograms_publish_dir: publish_dir,
+            ]
+            assert path.toString().endsWith("/${publish_dir}/k-${meta.n_metaprograms}_combined_${score_type}.tsv.gz")
+        }
+    }
+}
+
+// emitted items as [meta, file name] for snapshots. groupTuple emits items in no fixed order, so
+// they are sorted, and only the file name is kept so the snapshot holds no machine specific paths
+def outputSummary = { items ->
+    items.collect { meta, path -> [meta, new File(path.toString()).name] }
+        .sort { item -> "${item[0].metaprograms_publish_dir}/${item[0].score_type}".toString() }
+}
+
+// the names of the files staged into each task. each task directory has a `.command.run` file
+// whose header names the task (`# NEXTFLOW TASK: <name>` in older Nextflow versions,
+// `### name: '<name>'` in newer ones). inputs are symlinked into the top level of the task
+// directory, while outputs are not symlinks, so the symlinks are exactly the staged inputs
+def stagedInputs = { work_dir ->
+    def tasks = []
+    new File(work_dir.toString()).eachFileRecurse(groovy.io.FileType.FILES) { run_file ->
+        if (run_file.name == '.command.run') {
+            def name = (run_file.text =~ /(?m)^(?:# NEXTFLOW TASK: |### name: ')(.+?)'?$/)[0][1]
+            def staged = run_file.parentFile.listFiles()
+                .findAll { f -> java.nio.file.Files.isSymbolicLink(f.toPath()) }*.name.sort()
+            tasks << (parseTaskName(name) + [staged: staged])
+        }
+    }
+    // the same task found twice (e.g. left over from an earlier run) is only counted once
+    tasks.unique()
+}
+
+// the file names a task should stage, worked out from its process and tag
+def expectedStagedInputs = { task, design ->
+    if (task.process.startsWith('COMBINE_')) {
+        // one score file of the task's own score type per library in the group
+        def (group_id, score_type) = (task.tag =~ /^(.+)-k\d+-(.+)$/)[0][1..2]
+        return design[group_id].libraries.collect { unique_id -> "${unique_id}_${score_type}.tsv.gz".toString() }.sort()
+    }
+    // the RDS file is never staged, and the shuffled metaprograms only go to SCORE_BACKGROUND
+    def (unique_id, k) = (task.tag =~ /^(.+)-k(\d+)$/)[0][1..2]
+    def prefix = "${design.find { _group_id, group -> unique_id in group.libraries }.key}_k-${k}"
+    def files = ["${prefix}_metaprograms.tsv.gz", "${unique_id}.h5ad"]
+    if (task.process == 'SCORE_BACKGROUND') {
+        files << "${prefix}_shuffled_metaprograms.tsv.gz"
+    }
+    files*.toString().sort()
+}
+
+nextflow_workflow {
+
+    name "Test subworkflow CALCULATE_SCORES"
+    script "../main.nf"
+    workflow "CALCULATE_SCORES"
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "calculate_scores"
+    tag "stub"
+
+    // runs the stub block of every module, so these tests check the channel wiring
+    // without running any analysis
+    options "-stub"
+
+    test("one group, 2 libraries, 1 metaprogram set") {
+
+        def design = [
+            groupA: [libraries: ['lib1', 'lib2'], k: [4]],
+        ]
+
+        when {
+            // nf-core lint looks for `outdir = "$outputDir"` in the when block and treats the first
+            // closing brace as the end of the block, so the params block comes before any code with braces
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateScoresInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            // 2 score tasks, 2 background tasks, and one combine task for each score type
+            assert workflow.trace.succeeded().size() == 6
+            assert taskTags(workflow.trace) == expectedTaskTags(design)
+            assert workflow.out.metaprogram_scores.size() == 1
+            assert workflow.out.background_scores.size() == 1
+            checkOutputs(workflow.out, design)
+            assert snapshot(
+                taskTags(workflow.trace),
+                outputSummary(workflow.out.metaprogram_scores),
+                outputSummary(workflow.out.background_scores),
+            ).match()
+        }
+    }
+
+    test("one group, 3 libraries, 2 metaprogram sets") {
+
+        def design = [
+            groupA: [libraries: ['lib1', 'lib2', 'lib3'], k: [4, 5]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateScoresInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            // every library is scored against every metaprogram set
+            def tags = taskTags(workflow.trace)
+            assert tags == expectedTaskTags(design)
+            assert tags.SCORE_METAPROGRAMS.size() == 6
+            assert tags.SCORE_BACKGROUND.size() == 6
+            assert tags.COMBINE_METAPROGRAM_SCORES.size() == 2
+            assert tags.COMBINE_BACKGROUND_SCORES.size() == 2
+            // each emit holds one item per metaprogram set
+            assert workflow.out.metaprogram_scores.size() == 2
+            assert workflow.out.background_scores.size() == 2
+            checkOutputs(workflow.out, design)
+            // each combine task receives the score file from all 3 libraries
+            def combine_tasks = stagedInputs(workDir).findAll { task -> task.process.startsWith('COMBINE_') }
+            assert combine_tasks.size() == 4
+            combine_tasks.each { task -> assert task.staged.size() == 3 }
+            assert snapshot(
+                tags,
+                outputSummary(workflow.out.metaprogram_scores),
+                outputSummary(workflow.out.background_scores),
+            ).match()
+        }
+    }
+
+    test("two groups are scored separately") {
+
+        // the groups use different values of k, so a library scored against
+        // the other group's metaprograms shows up in the task tags
+        def design = [
+            groupA: [libraries: ['lib1', 'lib2'], k: [4, 5]],
+            groupB: [libraries: ['lib3', 'lib4'], k: [6, 7]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateScoresInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            def tags = taskTags(workflow.trace)
+            assert tags == expectedTaskTags(design)
+            // no group B library is paired with a group A metaprogram set, or the other way around
+            ['SCORE_METAPROGRAMS', 'SCORE_BACKGROUND'].each { process ->
+                assert !tags[process].any { tag -> tag ==~ /lib[34]-k[45]/ }
+                assert !tags[process].any { tag -> tag ==~ /lib[12]-k[67]/ }
+            }
+            assert workflow.out.metaprogram_scores.size() == 4
+            assert workflow.out.background_scores.size() == 4
+            checkOutputs(workflow.out, design)
+            assert snapshot(
+                tags,
+                outputSummary(workflow.out.metaprogram_scores),
+                outputSummary(workflow.out.background_scores),
+            ).match()
+        }
+    }
+
+    test("library meta keys are dropped from the output") {
+
+        def design = [
+            groupA: [libraries: ['lib1', 'lib2'], k: [4]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                // unique_ids is always added to the metaprogram meta, as GENERATE_METAPROGRAMS does
+                calculateScoresInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            (workflow.out.metaprogram_scores + workflow.out.background_scores).each { meta, _path ->
+                assert !meta.containsKey('unique_id')
+                assert !meta.containsKey('unique_ids')
+            }
+            // also checks that the meta holds exactly the expected keys and score_type
+            checkOutputs(workflow.out, design)
+            assert snapshot(
+                outputSummary(workflow.out.metaprogram_scores),
+                outputSummary(workflow.out.background_scores),
+            ).match()
+        }
+    }
+
+    test("each process stages only the files it needs") {
+
+        def design = [
+            groupA: [libraries: ['lib1', 'lib2'], k: [4, 5]],
+            groupB: [libraries: ['lib3'], k: [4]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateScoresInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            def staged_tasks = stagedInputs(workDir)
+            // a work directory was found for every task that ran
+            assert staged_tasks.size() == workflow.trace.succeeded().size()
+            assert (staged_tasks.collect { task -> [task.process, task.tag] } as Set) ==
+                (expectedTaskTags(design).collectMany { process, tags -> tags.collect { tag -> [process, tag] } } as Set)
+            // each task stages the files that match its tag, and nothing else
+            staged_tasks.each { task ->
+                assert task.staged == expectedStagedInputs(task, design) : "unexpected files staged for ${task.process} (${task.tag})"
+            }
+            assert snapshot(
+                staged_tasks
+                    .collect { task -> "${task.process} (${task.tag}): ${task.staged.join(', ')}".toString() }
+                    .sort()
+            ).match()
+        }
+    }
+}
