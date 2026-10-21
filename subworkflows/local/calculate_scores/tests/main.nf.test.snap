@@ -29,6 +29,12 @@
     "one group, 2 libraries, 1 metaprogram set": {
         "content": [
             {
+                "COMBINE_BACKGROUND_SCORES": [
+                    "groupA-k4-background_score_stats"
+                ],
+                "COMBINE_METAPROGRAM_SCORES": [
+                    "groupA-k4-metaprogram_scores"
+                ],
                 "SCORE_BACKGROUND": [
                     "lib1-k4",
                     "lib2-k4"
@@ -36,12 +42,6 @@
                 "SCORE_METAPROGRAMS": [
                     "lib1-k4",
                     "lib2-k4"
-                ],
-                "COMBINE_BACKGROUND_SCORES": [
-                    "groupA-k4-background_score_stats"
-                ],
-                "COMBINE_METAPROGRAM_SCORES": [
-                    "groupA-k4-metaprogram_scores"
                 ]
             },
             [
@@ -67,7 +67,7 @@
                 ]
             ]
         ],
-        "timestamp": "2026-10-21T11:57:26.142454",
+        "timestamp": "2026-10-21T12:14:45.247698",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.06.0"
@@ -76,6 +76,14 @@
     "one group, 3 libraries, 2 metaprogram sets": {
         "content": [
             {
+                "COMBINE_BACKGROUND_SCORES": [
+                    "groupA-k4-background_score_stats",
+                    "groupA-k5-background_score_stats"
+                ],
+                "COMBINE_METAPROGRAM_SCORES": [
+                    "groupA-k4-metaprogram_scores",
+                    "groupA-k5-metaprogram_scores"
+                ],
                 "SCORE_BACKGROUND": [
                     "lib1-k4",
                     "lib1-k5",
@@ -91,14 +99,6 @@
                     "lib2-k5",
                     "lib3-k4",
                     "lib3-k5"
-                ],
-                "COMBINE_BACKGROUND_SCORES": [
-                    "groupA-k4-background_score_stats",
-                    "groupA-k5-background_score_stats"
-                ],
-                "COMBINE_METAPROGRAM_SCORES": [
-                    "groupA-k4-metaprogram_scores",
-                    "groupA-k5-metaprogram_scores"
                 ]
             },
             [
@@ -142,7 +142,7 @@
                 ]
             ]
         ],
-        "timestamp": "2026-10-21T11:57:40.054965",
+        "timestamp": "2026-10-21T12:14:59.316634",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.06.0"
@@ -182,15 +182,17 @@
     "two groups are scored separately": {
         "content": [
             {
-                "SCORE_METAPROGRAMS": [
-                    "lib1-k4",
-                    "lib1-k5",
-                    "lib2-k4",
-                    "lib2-k5",
-                    "lib3-k6",
-                    "lib3-k7",
-                    "lib4-k6",
-                    "lib4-k7"
+                "COMBINE_BACKGROUND_SCORES": [
+                    "groupA-k4-background_score_stats",
+                    "groupA-k5-background_score_stats",
+                    "groupB-k6-background_score_stats",
+                    "groupB-k7-background_score_stats"
+                ],
+                "COMBINE_METAPROGRAM_SCORES": [
+                    "groupA-k4-metaprogram_scores",
+                    "groupA-k5-metaprogram_scores",
+                    "groupB-k6-metaprogram_scores",
+                    "groupB-k7-metaprogram_scores"
                 ],
                 "SCORE_BACKGROUND": [
                     "lib1-k4",
@@ -202,17 +204,15 @@
                     "lib4-k6",
                     "lib4-k7"
                 ],
-                "COMBINE_METAPROGRAM_SCORES": [
-                    "groupA-k4-metaprogram_scores",
-                    "groupA-k5-metaprogram_scores",
-                    "groupB-k6-metaprogram_scores",
-                    "groupB-k7-metaprogram_scores"
-                ],
-                "COMBINE_BACKGROUND_SCORES": [
-                    "groupA-k4-background_score_stats",
-                    "groupA-k5-background_score_stats",
-                    "groupB-k6-background_score_stats",
-                    "groupB-k7-background_score_stats"
+                "SCORE_METAPROGRAMS": [
+                    "lib1-k4",
+                    "lib1-k5",
+                    "lib2-k4",
+                    "lib2-k5",
+                    "lib3-k6",
+                    "lib3-k7",
+                    "lib4-k6",
+                    "lib4-k7"
                 ]
             },
             [
@@ -292,7 +292,7 @@
                 ]
             ]
         ],
-        "timestamp": "2026-10-21T11:57:54.613971",
+        "timestamp": "2026-10-21T12:15:14.400823",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.06.0"

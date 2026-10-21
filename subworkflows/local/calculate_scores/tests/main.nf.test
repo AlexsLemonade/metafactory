@@ -44,12 +44,14 @@ def parseTaskName = { name ->
 }
 
 // sorted tags of the tasks that ran for each process, which captures both how many tasks ran
-// and which library was paired with which metaprogram set
+// and which library was paired with which metaprogram set. the processes are sorted too, as
+// groupBy orders them by whichever finished a task first, which changes between runs
 def taskTags = { trace ->
     trace.succeeded()*.name
         .collect { name -> parseTaskName(name) }
         .groupBy { task -> task.process }
         .collectEntries { process, tasks -> [process, tasks*.tag.sort()] }
+        .sort()
 }
 
 // the task tags expected from a design: every library in a group is scored against every
