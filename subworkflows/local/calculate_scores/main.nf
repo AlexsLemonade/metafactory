@@ -99,6 +99,9 @@ workflow CALCULATE_SCORES {
     COMBINE_BACKGROUND_SCORES(background_score_ch)
 
     emit:
-    metaprogram_scores = COMBINE_METAPROGRAM_SCORES.out.results // channel: [ val(meta), combined_scores_file ]
-    background_scores  = COMBINE_BACKGROUND_SCORES.out.results // channel: [ val(meta), combined_background_stats_file ]
+    metaprogram_scores         = COMBINE_METAPROGRAM_SCORES.out.results // channel: [ val(meta), combined_scores_file ]
+    background_scores          = COMBINE_BACKGROUND_SCORES.out.results // channel: [ val(meta), combined_background_stats_file ]
+    // library-level information with full meta, output specifically used in testing
+    library_metaprogram_scores = SCORE_METAPROGRAMS.out.results // channel: [ val(meta), scores_file ]
+    library_background_scores  = SCORE_BACKGROUND.out.results // channel: [ val(meta), background_stats_file ]
 }

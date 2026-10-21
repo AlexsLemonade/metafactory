@@ -47,6 +47,22 @@ output:
         single table for each metaprogram set.
         Structure: [ val(meta), path(combined_background_stats_file) ]
       pattern: "k-*_combined_background_score_stats.tsv.gz"
+  - library_metaprogram_scores:
+      type: file
+      description: |
+        Channel containing the metaprogram scores for a single library against a single
+        metaprogram set, before they are combined.
+        `meta` contains `unique_id`, `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
+        Structure: [ val(meta), path(scores_file) ]
+      pattern: "*_metaprogram_scores.tsv.gz"
+  - library_background_scores:
+      type: file
+      description: |
+        Channel containing the background score statistics for a single library against a single
+        metaprogram set, before they are combined.
+        `meta` contains `unique_id`, `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
+        Structure: [ val(meta), path(background_stats_file) ]
+      pattern: "*_background_score_stats.tsv.gz"
 authors:
   - "@allyhawkins"
 maintainers:
