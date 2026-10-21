@@ -1,0 +1,337 @@
+// Tests for the channel wiring in the GENERATE_REPORTS subworkflow. Every test runs in stub mode,
+// so no report is rendered and the inputs are empty placeholder files.
+//
+// Each test describes its input as a design map of group_id -> [optimal_k: k], where k is the
+// value of k chosen for that group. The helpers below build the subworkflow input and the
+// expected results from the same design.
+
+// the report metrics tables written by the calculate k module for every group
+def reportMetricsSuffixes = [
+    'all-k_metaprogram_metrics.tsv',
+    'all-k_summary_metrics.tsv',
+    'all-k_background_eff_sample_size.tsv.gz',
+    'all-k_background_geneset_specificity.tsv.gz',
+    'all-k_background_cell_score_cv.tsv.gz',
+]
+
+// the files for the metaprogram set chosen as the optimal value of k, in input order
+def optimalSetSuffixes = [
+    'metaprograms.rds',
+    'metaprogram_metrics.tsv',
+    'ora_results.tsv',
+    'geneset_metrics.tsv',
+    'combined_metaprogram_scores.tsv.gz',
+]
+
+// Nextflow code for the three subworkflow inputs. path inputs must exist to be staged, so an empty
+// placeholder is created for every file in a temporary directory
+// every file name holds its group (and k), so the files staged into each task show which
+// group's inputs that task received.
+// with reverse_optimal_k, the optimal k channel lists the groups in reverse order, so the join
+// can only pair the channels correctly by matching the meta, not by position
+def generateReportsInput = { design, reverse_optimal_k = false ->
+    def input_dir = File.createTempDir()
+    def placeholder = { name ->
+        def placeholder_file = new File(input_dir, name)
+        placeholder_file.createNewFile()
+        "file('${placeholder_file}')"
+    }
+    def optimal_k = design.collect { group_id, group ->
+        def optimal_k_file = new File(input_dir, "${group_id}_optimal-k.txt")
+        optimal_k_file.text = "${group.optimal_k}\n"
+        "[[group_id: '${group_id}'], file('${optimal_k_file}')]"
+    }
+    if (reverse_optimal_k) {
+        optimal_k = optimal_k.reverse()
+    }
+    def report_metrics = design.collect { group_id, _group ->
+        def files = reportMetricsSuffixes.collect { suffix -> placeholder("${group_id}_${suffix}") }
+        "[[group_id: '${group_id}'], ${files.join(', ')}]"
+    }
+    def optimal_sets = design.collect { group_id, group ->
+        def files = optimalSetSuffixes.collect { suffix -> placeholder("${group_id}_k-${group.optimal_k}_${suffix}") }
+        "[[group_id: '${group_id}', optimal_k: ${group.optimal_k}], ${files.join(', ')}]"
+    }
+    """
+    input[0] = channel.of(${optimal_k.join(', ')})
+    input[1] = channel.of(${report_metrics.join(', ')})
+    input[2] = channel.of(${optimal_sets.join(', ')})
+    """
+}
+
+// splits a task name such as `GENERATE_REPORTS:RENDER_METRICS_REPORT (groupA)` into its process and tag
+def parseTaskName = { name ->
+    def (process, tag) = (name =~ /(\w+) \((.+)\)$/)[0][1..2]
+    [process: process, tag: tag]
+}
+
+// sorted tags of the tasks that ran for each process. the processes are sorted too, as
+// groupBy orders them by whichever finished a task first, which changes between runs
+def taskTags = { trace ->
+    trace.succeeded()*.name
+        .collect { name -> parseTaskName(name) }
+        .groupBy { task -> task.process }
+        .collectEntries { process, tasks -> [process, tasks*.tag.sort()] }
+        .sort()
+}
+
+// the task tags expected from a design: one metrics report and one individual report per group
+def expectedTaskTags = { design ->
+    [
+        RENDER_INDIVIDUAL_REPORT: design.collect { group_id, group -> "${group_id}-k${group.optimal_k}".toString() }.sort(),
+        RENDER_METRICS_REPORT: design.keySet().collect { group_id -> group_id.toString() }.sort(),
+    ]
+}
+
+// checks that each emit has one item per group, with the input meta passed through unchanged and
+// the report named as in meta.yml inside a directory named for the group
+def checkOutputs = { out, design ->
+    assert out.metrics_report.collect { meta, _path -> meta.group_id }.sort() == design.keySet().sort()
+    out.metrics_report.each { meta, path ->
+        assert meta == [group_id: meta.group_id]
+        assert path.toString().endsWith("/${meta.group_id}/combined-metaprogram-metrics.html")
+    }
+    assert out.individual_report.collect { meta, _path -> meta.group_id }.sort() == design.keySet().sort()
+    out.individual_report.each { meta, path ->
+        assert meta == [group_id: meta.group_id, optimal_k: design[meta.group_id].optimal_k]
+        assert path.toString().endsWith("/${meta.group_id}/individual-metaprogram-evaluation.html")
+    }
+}
+
+// emitted items as [meta, file name] for snapshots. items are emitted in no fixed order, so they
+// are sorted, and only the file name is kept so the snapshot holds no machine specific paths
+def outputSummary = { items ->
+    items.collect { meta, path -> [meta, new File(path.toString()).name] }
+        .sort { item -> item[0].group_id }
+}
+
+// the names of the files staged into each task. each task directory has a `.command.run` file
+// whose header names the task (`# NEXTFLOW TASK: <name>` in older Nextflow versions,
+// `### name: '<name>'` in newer ones). inputs are symlinked into the task directory, while
+// outputs are not symlinks, so the symlinks are exactly the staged inputs. the report rmd is
+// staged into a `report/` subdirectory, so symlinks one directory down are kept too, named by
+// their path relative to the task directory
+def stagedInputs = { work_dir ->
+    def tasks = []
+    new File(work_dir.toString()).eachFileRecurse(groovy.io.FileType.FILES) { run_file ->
+        if (run_file.name == '.command.run') {
+            def name = (run_file.text =~ /(?m)^(?:# NEXTFLOW TASK: |### name: ')(.+?)'?$/)[0][1]
+            def isLink = { f -> java.nio.file.Files.isSymbolicLink(f.toPath()) }
+            def task_dir = run_file.parentFile
+            def staged = task_dir.listFiles().findAll { f -> isLink(f) }*.name
+            task_dir.listFiles().findAll { f -> f.isDirectory() && !isLink(f) && !f.name.startsWith('.') }.each { sub_dir ->
+                staged += sub_dir.listFiles().findAll { f -> isLink(f) }.collect { f -> "${sub_dir.name}/${f.name}".toString() }
+            }
+            tasks << (parseTaskName(name) + [staged: staged.sort()])
+        }
+    }
+    // the same task found twice (e.g. left over from an earlier run) is only counted once
+    tasks.unique()
+}
+
+// the file names a task should stage, worked out from its process and tag
+def expectedStagedInputs = { task, design ->
+    def files = ['report/report.rmd']
+    if (task.process == 'RENDER_METRICS_REPORT') {
+        // every report metrics table for the group, and the group's own optimal k file
+        def group_id = task.tag
+        files += reportMetricsSuffixes.collect { suffix -> "${group_id}_${suffix}" }
+        files << "${group_id}_optimal-k.txt"
+    }
+    else {
+        // the files for the optimal metaprogram set, except the gene set metrics table, which
+        // the individual report does not read
+        def (group_id, k) = (task.tag =~ /^(.+)-k(\d+)$/)[0][1..2]
+        files += (optimalSetSuffixes - 'geneset_metrics.tsv').collect { suffix -> "${group_id}_k-${k}_${suffix}" }
+    }
+    files*.toString().sort()
+}
+
+nextflow_workflow {
+
+    name "Test subworkflow GENERATE_REPORTS"
+    script "../main.nf"
+    workflow "GENERATE_REPORTS"
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "generate_reports"
+    tag "stub"
+
+    // runs the stub block of every module, so these tests check the channel wiring
+    // without rendering any report
+    options "-stub"
+
+    test("one group generates the expected outputs") {
+
+        def design = [
+            groupA: [optimal_k: 4],
+        ]
+
+        when {
+            // nf-core lint looks for `outdir = "$outputDir"` in the when block and treats the first
+            // closing brace as the end of the block, so the params block comes before any code with braces
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                generateReportsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            // one metrics report and one individual report
+            assert workflow.trace.succeeded().size() == 2
+            assert taskTags(workflow.trace) == expectedTaskTags(design)
+            assert workflow.out.metrics_report.size() == 1
+            assert workflow.out.individual_report.size() == 1
+            checkOutputs(workflow.out, design)
+            assert snapshot(
+                taskTags(workflow.trace),
+                outputSummary(workflow.out.metrics_report),
+                outputSummary(workflow.out.individual_report),
+            ).match()
+        }
+    }
+
+    test("several groups with different optimal k") {
+
+        def design = [
+            groupA: [optimal_k: 4],
+            groupB: [optimal_k: 6],
+            groupC: [optimal_k: 5],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                generateReportsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            def tags = taskTags(workflow.trace)
+            assert tags == expectedTaskTags(design)
+            // each individual report is tagged with its own group's optimal k
+            assert tags.RENDER_INDIVIDUAL_REPORT == ['groupA-k4', 'groupB-k6', 'groupC-k5']
+            assert workflow.out.metrics_report.size() == 3
+            assert workflow.out.individual_report.size() == 3
+            checkOutputs(workflow.out, design)
+            assert snapshot(
+                tags,
+                outputSummary(workflow.out.metrics_report),
+                outputSummary(workflow.out.individual_report),
+            ).match()
+        }
+    }
+
+    test("optimal k is joined to the report metrics by group, not by order") {
+
+        def design = [
+            groupA: [optimal_k: 4],
+            groupB: [optimal_k: 6],
+            groupC: [optimal_k: 5],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                // the optimal k channel lists the groups in the reverse order of the report metrics
+                generateReportsInput(design, true)
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert taskTags(workflow.trace) == expectedTaskTags(design)
+            // each metrics report stages its own group's optimal k file next to its own metrics tables
+            def metrics_tasks = stagedInputs(workDir).findAll { task -> task.process == 'RENDER_METRICS_REPORT' }
+            assert metrics_tasks.size() == 3
+            metrics_tasks.each { task ->
+                assert task.staged == expectedStagedInputs(task, design) : "unexpected files staged for ${task.process} (${task.tag})"
+            }
+            checkOutputs(workflow.out, design)
+            assert snapshot(
+                metrics_tasks
+                    .collect { task -> "${task.process} (${task.tag}): ${task.staged.join(', ')}".toString() }
+                    .sort()
+            ).match()
+        }
+    }
+
+    test("output meta is passed through unchanged") {
+
+        def design = [
+            groupA: [optimal_k: 4],
+            groupB: [optimal_k: 6],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                generateReportsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            workflow.out.metrics_report.each { meta, _path ->
+                assert meta.keySet() == ['group_id'] as Set
+            }
+            workflow.out.individual_report.each { meta, _path ->
+                assert meta.keySet() == ['group_id', 'optimal_k'] as Set
+                assert meta.optimal_k instanceof Integer
+            }
+            // also checks the meta values and the report paths for each group
+            checkOutputs(workflow.out, design)
+            assert snapshot(
+                outputSummary(workflow.out.metrics_report),
+                outputSummary(workflow.out.individual_report),
+            ).match()
+        }
+    }
+
+    test("each process stages only the files it needs") {
+
+        def design = [
+            groupA: [optimal_k: 4],
+            groupB: [optimal_k: 6],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                generateReportsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            def staged_tasks = stagedInputs(workDir)
+            // a work directory was found for every task that ran
+            assert staged_tasks.size() == workflow.trace.succeeded().size()
+            assert (staged_tasks.collect { task -> [task.process, task.tag] } as Set) ==
+                (expectedTaskTags(design).collectMany { process, tags -> tags.collect { tag -> [process, tag] } } as Set)
+            // each task stages the files that match its tag, and nothing else. this also checks
+            // that the gene set metrics table never reaches the individual report, and that the
+            // report rmd is staged into the report subdirectory
+            staged_tasks.each { task ->
+                assert task.staged == expectedStagedInputs(task, design) : "unexpected files staged for ${task.process} (${task.tag})"
+            }
+            assert snapshot(
+                staged_tasks
+                    .collect { task -> "${task.process} (${task.tag}): ${task.staged.join(', ')}".toString() }
+                    .sort()
+            ).match()
+        }
+    }
+}

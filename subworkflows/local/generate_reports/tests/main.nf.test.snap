@@ -1,0 +1,168 @@
+{
+    "optimal k is joined to the report metrics by group, not by order": {
+        "content": [
+            [
+                "RENDER_METRICS_REPORT (groupA): groupA_all-k_background_cell_score_cv.tsv.gz, groupA_all-k_background_eff_sample_size.tsv.gz, groupA_all-k_background_geneset_specificity.tsv.gz, groupA_all-k_metaprogram_metrics.tsv, groupA_all-k_summary_metrics.tsv, groupA_optimal-k.txt, report/report.rmd",
+                "RENDER_METRICS_REPORT (groupB): groupB_all-k_background_cell_score_cv.tsv.gz, groupB_all-k_background_eff_sample_size.tsv.gz, groupB_all-k_background_geneset_specificity.tsv.gz, groupB_all-k_metaprogram_metrics.tsv, groupB_all-k_summary_metrics.tsv, groupB_optimal-k.txt, report/report.rmd",
+                "RENDER_METRICS_REPORT (groupC): groupC_all-k_background_cell_score_cv.tsv.gz, groupC_all-k_background_eff_sample_size.tsv.gz, groupC_all-k_background_geneset_specificity.tsv.gz, groupC_all-k_metaprogram_metrics.tsv, groupC_all-k_summary_metrics.tsv, groupC_optimal-k.txt, report/report.rmd"
+            ]
+        ],
+        "timestamp": "2026-10-21T13:24:29.966199",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.06.0"
+        }
+    },
+    "each process stages only the files it needs": {
+        "content": [
+            [
+                "RENDER_INDIVIDUAL_REPORT (groupA-k4): groupA_k-4_combined_metaprogram_scores.tsv.gz, groupA_k-4_metaprogram_metrics.tsv, groupA_k-4_metaprograms.rds, groupA_k-4_ora_results.tsv, report/report.rmd",
+                "RENDER_INDIVIDUAL_REPORT (groupB-k6): groupB_k-6_combined_metaprogram_scores.tsv.gz, groupB_k-6_metaprogram_metrics.tsv, groupB_k-6_metaprograms.rds, groupB_k-6_ora_results.tsv, report/report.rmd",
+                "RENDER_METRICS_REPORT (groupA): groupA_all-k_background_cell_score_cv.tsv.gz, groupA_all-k_background_eff_sample_size.tsv.gz, groupA_all-k_background_geneset_specificity.tsv.gz, groupA_all-k_metaprogram_metrics.tsv, groupA_all-k_summary_metrics.tsv, groupA_optimal-k.txt, report/report.rmd",
+                "RENDER_METRICS_REPORT (groupB): groupB_all-k_background_cell_score_cv.tsv.gz, groupB_all-k_background_eff_sample_size.tsv.gz, groupB_all-k_background_geneset_specificity.tsv.gz, groupB_all-k_metaprogram_metrics.tsv, groupB_all-k_summary_metrics.tsv, groupB_optimal-k.txt, report/report.rmd"
+            ]
+        ],
+        "timestamp": "2026-10-21T13:24:53.917572",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.06.0"
+        }
+    },
+    "one group generates the expected outputs": {
+        "content": [
+            {
+                "RENDER_INDIVIDUAL_REPORT": [
+                    "groupA-k4"
+                ],
+                "RENDER_METRICS_REPORT": [
+                    "groupA"
+                ]
+            },
+            [
+                [
+                    {
+                        "group_id": "groupA"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "optimal_k": 4
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-21T13:24:04.05618",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.06.0"
+        }
+    },
+    "several groups with different optimal k": {
+        "content": [
+            {
+                "RENDER_INDIVIDUAL_REPORT": [
+                    "groupA-k4",
+                    "groupB-k6",
+                    "groupC-k5"
+                ],
+                "RENDER_METRICS_REPORT": [
+                    "groupA",
+                    "groupB",
+                    "groupC"
+                ]
+            },
+            [
+                [
+                    {
+                        "group_id": "groupA"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ],
+                [
+                    {
+                        "group_id": "groupB"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ],
+                [
+                    {
+                        "group_id": "groupC"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "optimal_k": 4
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "optimal_k": 6
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ],
+                [
+                    {
+                        "group_id": "groupC",
+                        "optimal_k": 5
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-21T13:24:17.34448",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.06.0"
+        }
+    },
+    "output meta is passed through unchanged": {
+        "content": [
+            [
+                [
+                    {
+                        "group_id": "groupA"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ],
+                [
+                    {
+                        "group_id": "groupB"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "optimal_k": 4
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "optimal_k": 6
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-21T13:24:41.836411",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.06.0"
+        }
+    }
+}
