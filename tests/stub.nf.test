@@ -96,8 +96,8 @@ nextflow_pipeline {
             def output = (workflow.stdout + workflow.stderr).join('\n')
             assert output.contains('Cannot find the optimal value of k for group')
             assert output.contains('optimal-k.txt is empty')
-            // the check runs before the reports, so neither report is rendered
-            assert !workflow.trace.succeeded()*.name.any { name -> name.contains('RENDER_') }
+            // only the individual report depends on the validated optimal-k channel
+            assert !workflow.trace.succeeded()*.name.any { name -> name.contains('RENDER_INDIVIDUAL_REPORT') }
         }
     }
 }
