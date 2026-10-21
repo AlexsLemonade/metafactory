@@ -46,6 +46,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # the full pipeline test only runs on pull requests to main and on releases
+      - name: Skip full pipeline test
+        if: ${{ !(github.event_name == 'release' || github.base_ref == 'master' || github.base_ref == 'main') }}
+        run: rm -f tests/default.nf.test
+
       - name: get number of shards
         id: set-shards
         uses: ./.github/actions/get-shards
@@ -72,12 +77,14 @@ jobs:
         profile: [conda, docker, singularity]
         isMain:
           - ${{ github.base_ref == 'master' || github.base_ref == 'main' }}
-        # Exclude conda and singularity on dev
+        # Exclude conda, singularity, and the latest Nextflow version on non-main branches
         exclude:
           - isMain: false
             profile: "conda"
           - isMain: false
             profile: "singularity"
+          - isMain: false
+            NXF_VER: "latest-everything"
         NXF_VER:
           - "25.10.4"
           - "latest-everything"
@@ -89,6 +96,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+
+      # the full pipeline test only runs on pull requests to main and on releases
+      - name: Skip full pipeline test
+        if: ${{ !(github.event_name == 'release' || github.base_ref == 'master' || github.base_ref == 'main') }}
+        run: rm -f tests/default.nf.test
 
       - name: Run nf-test
         id: run_nf_test
