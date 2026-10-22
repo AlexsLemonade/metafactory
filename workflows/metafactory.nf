@@ -77,7 +77,7 @@ workflow METAFACTORY {
     def repeat_cnmf = params.repeat_cnmf.toString().toBoolean()
     def ch_cnmf_input = ch_samplesheet.branch { meta, _h5ad_file ->
         def cnmf_meta_file = file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json")
-        def cnmf_meta = cnmf_meta_file.exists() ? new groovy.json.JsonSlurper().parseText(cnmf_meta_file.text) : [:]
+        def cnmf_meta = !repeat_cnmf && cnmf_meta_file.exists() ? new groovy.json.JsonSlurper().parseText(cnmf_meta_file.text) : [:]
         skip_cnmf: !repeat_cnmf && cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
         run_cnmf: true
     }
