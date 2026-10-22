@@ -64,8 +64,10 @@ output:
           type: directory
           description: |
             Directory of cNMF output files for the sample, named by unique_id. Contains
-            factorization results, consensus spectra, and usage matrices for each tested
-            value of k.
+            only the consensus gene spectra score files for each tested value of k
+            (`*.gene_spectra_score.k_*.dt_*.txt`) and a `cnmf-meta.json` file recording the
+            parameters used to run cNMF (`cnmf_k_lower`, `cnmf_k_upper`, `cnmf_k_step_size`,
+            `celltype_annotation_column`, `analysis_celltypes`, and `seed`).
           pattern: "*/"
   - versions:
       - "versions.yml":

@@ -24,6 +24,17 @@ process CNMF {
     """
     mkdir -p "${meta.unique_id}_cnmf"
 
+    cat <<-END_META > "${meta.unique_id}_cnmf/cnmf-meta.json"
+    {
+      "cnmf_k_lower": ${options.cnmf_k_lower},
+      "cnmf_k_upper": ${options.cnmf_k_upper},
+      "cnmf_k_step_size": ${options.cnmf_k_step_size},
+      "celltype_annotation_column": "${options.celltype_annotation_column}",
+      "analysis_celltypes": "${options.analysis_celltypes}",
+      "seed": ${options.seed}
+    }
+    END_META
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         stub: x.y.z

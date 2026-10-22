@@ -58,24 +58,44 @@ workflow METAFACTORY {
     //
     // MODULE: Run cNMF on each sample
     //
+
+    // these options are passed to cNMF and recorded in the cnmf-meta.json file of each checkpoint
+    def cnmf_options = [
+        cnmf_k_lower: params.cnmf_k_lower,
+        cnmf_k_upper: params.cnmf_k_upper,
+        cnmf_k_step_size: params.cnmf_k_step_size,
+        celltype_annotation_column: params.celltype_annotation_column,
+        analysis_celltypes: params.analysis_celltypes,
+        seed: params.seed,
+    ]
+
+    // cNMF is skipped for any sample that already has a checkpoint created with the same options
+    // values are compared as strings so that numbers read from JSON match numbers set in params
+    def ch_cnmf_input = ch_samplesheet.branch { meta, _h5ad_file ->
+        def cnmf_meta_file = file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json")
+        def cnmf_meta = cnmf_meta_file.exists() ? new groovy.json.JsonSlurper().parseText(cnmf_meta_file.text) : [:]
+        skip_cnmf: cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
+        run_cnmf: true
+    }
+
     CNMF(
-        ch_samplesheet,
-        [
-            cnmf_k_lower: params.cnmf_k_lower,
-            cnmf_k_upper: params.cnmf_k_upper,
-            cnmf_k_step_size: params.cnmf_k_step_size,
-            celltype_annotation_column: params.celltype_annotation_column,
-            analysis_celltypes: params.analysis_celltypes,
-            seed: params.seed,
-        ],
+        ch_cnmf_input.run_cnmf,
+        cnmf_options,
     )
+
+    // skipped samples use the existing checkpoint directory, matching the output of the CNMF process
+    def ch_cnmf_skipped = ch_cnmf_input.skip_cnmf.map { meta, _h5ad_file ->
+        [meta, file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf")]
+    }
+
+    def ch_cnmf_results = CNMF.out.results.mix(ch_cnmf_skipped)
 
     //
     // MODULE: Generate metaprograms for each group of samples across all values of n_metaprograms
     //
 
     // group cNMF results from all unique_ids that share the same group_id
-    def ch_cnmf_by_group = CNMF.out.results
+    def ch_cnmf_by_group = ch_cnmf_results
         .map { meta, cnmf_output ->
             [meta.group_id, meta.unique_id, cnmf_output]
         }
