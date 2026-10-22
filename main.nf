@@ -16,6 +16,18 @@
 include { METAFACTORY  } from './workflows/metafactory'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_metafactory_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_metafactory_pipeline'
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    TYPED PARAMETERS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+// command line values are not converted to booleans with the strict syntax parser, so flags are
+// declared here with a type to allow them to be used without a value (e.g. `--repeat_cnmf`)
+params {
+    repeat_cnmf: Boolean = false
+}
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     NAMED WORKFLOWS FOR PIPELINE

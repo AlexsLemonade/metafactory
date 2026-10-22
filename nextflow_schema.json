@@ -148,6 +148,12 @@
                     "default": 5,
                     "description": "Step size for the range of k components tested in cNMF.",
                     "fa_icon": "fas fa-hashtag"
+                },
+                "repeat_cnmf": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Re-run cNMF for every sample, even if a checkpoint created with the same cNMF options already exists.",
+                    "fa_icon": "fas fa-redo"
                 }
             }
         },

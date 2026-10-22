@@ -104,11 +104,14 @@ The parameters most relevant to an analysis are described below.
 
 These control the range of components (`k`) used when running cNMF within each sample.
 
-| Parameter            | Default | Description                                            |
-| -------------------- | ------- | ------------------------------------------------------ |
-| `--cnmf_k_lower`     | `5`     | Lower bound of the range of components tested in cNMF. |
-| `--cnmf_k_upper`     | `15`    | Upper bound of the range of components tested in cNMF. |
-| `--cnmf_k_step_size` | `5`     | Step size across that range.                           |
+By default, cNMF is skipped for any sample that already has results in `checkpoints/cnmf` created with the same cNMF options, and those existing results are used instead.
+
+| Parameter            | Default | Description                                                                                     |
+| -------------------- | ------- | ----------------------------------------------------------------------------------------------- |
+| `--cnmf_k_lower`     | `5`     | Lower bound of the range of components tested in cNMF.                                          |
+| `--cnmf_k_upper`     | `15`    | Upper bound of the range of components tested in cNMF.                                          |
+| `--cnmf_k_step_size` | `5`     | Step size across that range.                                                                    |
+| `--repeat_cnmf`      | `false` | Re-run cNMF for every sample, even if existing results were created with the same cNMF options. |
 
 ### Metaprogram options
 

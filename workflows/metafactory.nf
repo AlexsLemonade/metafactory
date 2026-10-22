@@ -3,17 +3,17 @@
 IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-include { paramsSummaryMap                             } from 'plugin/nf-schema'
-include { softwareVersionsToYAML                       } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText                       } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
-include { CNMF                                         } from '../modules/local/cnmf/main'
-include { GENERATE_METAPROGRAMS                        } from '../modules/local/generate-metaprograms/main'
-include { CALCULATE_METRICS_METAPROGRAMS               } from '../modules/local/calculate-metrics/metaprograms/main'
-include { CALCULATE_METRICS_GENESETS                   } from '../modules/local/calculate-metrics/genesets/main'
-include { CALCULATE_K                                  } from '../modules/local/calculate-k/main'
-include { PUBLISH_METAPROGRAMS                         } from '../modules/local/publish-metaprograms/main'
-include { CALCULATE_SCORES                             } from '../subworkflows/local/calculate_scores/main'
-include { GENERATE_REPORTS                             } from '../subworkflows/local/generate_reports/main'
+include { paramsSummaryMap               } from 'plugin/nf-schema'
+include { softwareVersionsToYAML         } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText         } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
+include { CNMF                           } from '../modules/local/cnmf/main'
+include { GENERATE_METAPROGRAMS          } from '../modules/local/generate-metaprograms/main'
+include { CALCULATE_METRICS_METAPROGRAMS } from '../modules/local/calculate-metrics/metaprograms/main'
+include { CALCULATE_METRICS_GENESETS     } from '../modules/local/calculate-metrics/genesets/main'
+include { CALCULATE_K                    } from '../modules/local/calculate-k/main'
+include { PUBLISH_METAPROGRAMS           } from '../modules/local/publish-metaprograms/main'
+include { CALCULATE_SCORES               } from '../subworkflows/local/calculate_scores/main'
+include { GENERATE_REPORTS               } from '../subworkflows/local/generate_reports/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,12 +69,13 @@ workflow METAFACTORY {
         seed: params.seed,
     ]
 
-    // cNMF is skipped for any sample that already has a checkpoint created with the same options
+    // cNMF is skipped for any sample that already has a checkpoint created with the same options,
+    // unless --repeat_cnmf is set, in which case cNMF is run for every sample
     // values are compared as strings so that numbers read from JSON match numbers set in params
     def ch_cnmf_input = ch_samplesheet.branch { meta, _h5ad_file ->
         def cnmf_meta_file = file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json")
         def cnmf_meta = cnmf_meta_file.exists() ? new groovy.json.JsonSlurper().parseText(cnmf_meta_file.text) : [:]
-        skip_cnmf: cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
+        skip_cnmf: !params.repeat_cnmf && cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
         run_cnmf: true
     }
 
