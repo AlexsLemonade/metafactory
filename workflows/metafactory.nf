@@ -72,10 +72,13 @@ workflow METAFACTORY {
     // cNMF is skipped for any sample that already has a checkpoint created with the same options,
     // unless --repeat_cnmf is set, in which case cNMF is run for every sample
     // values are compared as strings so that numbers read from JSON match numbers set in params
+    // the strict syntax parser passes command line values as strings, so repeat_cnmf may be "true"
+    // or "false" rather than a boolean and is converted here
+    def repeat_cnmf = params.repeat_cnmf.toString().toBoolean()
     def ch_cnmf_input = ch_samplesheet.branch { meta, _h5ad_file ->
         def cnmf_meta_file = file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json")
         def cnmf_meta = cnmf_meta_file.exists() ? new groovy.json.JsonSlurper().parseText(cnmf_meta_file.text) : [:]
-        skip_cnmf: !params.repeat_cnmf && cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
+        skip_cnmf: !repeat_cnmf && cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
         run_cnmf: true
     }
 

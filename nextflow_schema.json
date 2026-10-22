@@ -150,7 +150,10 @@
                     "fa_icon": "fas fa-hashtag"
                 },
                 "repeat_cnmf": {
-                    "type": "boolean",
+                    "anyOf": [
+                        { "type": "boolean" },
+                        { "type": "string", "enum": ["true", "false"] }
+                    ],
                     "default": false,
                     "description": "Re-run cNMF for every sample, even if a checkpoint created with the same cNMF options already exists.",
                     "fa_icon": "fas fa-redo"
