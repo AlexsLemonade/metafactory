@@ -164,7 +164,7 @@ def main():
 
     output_dir = pathlib.Path(f"{unique_id}_cnmf")
 
-    # clean output directory, keeping only files that are needed for generating metaprograms down stream 
+    # clean output directory, keeping only files that are needed for generating metaprograms down stream
     for path in output_dir.iterdir():
         if path.is_file() and path.match(SPECTRA_GLOB):
             continue
