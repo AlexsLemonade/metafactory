@@ -213,8 +213,15 @@ workflow METAFACTORY {
     // the optimal value of k is written to a file so that it survives as a process output, and is
     // read back here as the number of metaprograms to use for the report and for determining which files to publish to results
     // we need group id and optimal k for joining as the first element of the tuple
+    // a file without a number in it means no value of k could be chosen for the group, so fail
+    // with a clear message rather than a failed integer conversion
     def ch_optimal_k = CALCULATE_K.out.optimal_k.map { meta, optimal_k_file ->
-        [[meta.group_id, optimal_k_file.text.trim().toInteger()]]
+        def optimal_k = optimal_k_file.text.trim()
+        if (!optimal_k.isInteger()) {
+            def problem = optimal_k ? "contains '${optimal_k}' instead of a single number" : "is empty"
+            error("Cannot find the optimal value of k for group ${meta.group_id}: ${optimal_k_file.name} ${problem}")
+        }
+        [[meta.group_id, optimal_k.toInteger()]]
     }
 
     // pull out files from each of the calculation steps for later joining, reporting and publishing

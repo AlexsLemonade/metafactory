@@ -1,3 +1,27 @@
+// the h5ad paths in the stub samplesheet are relative to the project directory, but nf-test
+// launches each test from its own directory, so a copy of the samplesheet with absolute paths is
+// written to the test's directory (the parent of outputDir), which keeps it out of the output
+// directory that is snapshotted
+// the stub samplesheet points at placeholder h5ad files in stub/data, which is not committed, so
+// empty placeholders are created here. stub modules do not read them, but they must exist to pass
+// samplesheet validation. the when block runs in full before the pipeline is launched, so these
+// files exist when the pipeline starts
+def writeStubSamplesheet = { output_dir, project_dir ->
+    def stub_samplesheet = new File(new File(output_dir.toString()).parent, 'stub-samplesheet.csv')
+
+    def stub_lines = new File("${project_dir}/stub/samplesheet.csv").readLines()
+    stub_lines.drop(1).each { line ->
+        def h5ad_file = new File("${project_dir}/${line.tokenize(',')[-1]}")
+        h5ad_file.parentFile.mkdirs()
+        h5ad_file.createNewFile()
+    }
+
+    stub_samplesheet.parentFile.mkdirs()
+    stub_samplesheet.text = stub_lines.join('\n')
+        .replace('stub/data/', "${project_dir}/stub/data/")
+    stub_samplesheet
+}
+
 nextflow_pipeline {
 
     name "Test pipeline stub"
@@ -12,11 +36,7 @@ nextflow_pipeline {
     test("-profile test -stub") {
 
         when {
-            // the h5ad paths in the stub samplesheet are relative to the project directory,
-            // but nf-test launches each test from its own directory, so a copy of the
-            // samplesheet with absolute paths is written to the test's directory (the parent of
-            // outputDir), which keeps it out of the output directory that is snapshotted
-            def stub_samplesheet = new File(new File(outputDir).parent, 'stub-samplesheet.csv')
+            def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
 
             // nf-core lint looks for `outdir = "$outputDir"` in the when block and treats the first
             // closing brace as the end of the block, so the params block comes before any code with braces
@@ -24,21 +44,6 @@ nextflow_pipeline {
                 outdir = "$outputDir"
                 input  = stub_samplesheet.toString()
             }
-
-            // the stub samplesheet points at placeholder h5ad files in stub/data, which is not
-            // committed, so empty placeholders are created here. stub modules do not read them,
-            // but they must exist to pass samplesheet validation. the when block runs in full
-            // before the pipeline is launched, so these files exist when the pipeline starts
-            def stub_lines = new File("${projectDir}/stub/samplesheet.csv").readLines()
-            stub_lines.drop(1).each { line ->
-                def h5ad_file = new File("${projectDir}/${line.tokenize(',')[-1]}")
-                h5ad_file.parentFile.mkdirs()
-                h5ad_file.createNewFile()
-            }
-
-            stub_samplesheet.parentFile.mkdirs()
-            stub_samplesheet.text = stub_lines.join('\n')
-                .replace('stub/data/', "${projectDir}/stub/data/")
         }
 
         then {
@@ -68,6 +73,31 @@ nextflow_pipeline {
                     stable_content
                 ).match() }
             )
+        }
+    }
+
+    test("-profile test -stub fails when no optimal k is found") {
+
+        // makes the CALCULATE_K stub write an empty optimal k file for every group
+        config "./empty-optimal-k.config"
+
+        when {
+            def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
+
+            params {
+                outdir = "$outputDir"
+                input  = stub_samplesheet.toString()
+            }
+        }
+
+        then {
+            assert workflow.failed
+            // the message names whichever group fails first, so the group is not checked
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('Cannot find the optimal value of k for group')
+            assert output.contains('optimal-k.txt is empty')
+            // only the individual report depends on the validated optimal-k channel
+            assert !workflow.trace.succeeded()*.name.any { name -> name.contains('RENDER_INDIVIDUAL_REPORT') }
         }
     }
 }

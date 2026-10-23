@@ -14,6 +14,7 @@ keywords:
   - report
 components:
   - generate-reports/metrics-report
+  - generate-reports/individual-report
 input:
   - optimal_k_ch:
       type: file
@@ -34,6 +35,18 @@ input:
         Structure: [ val(meta), path(metaprogram_metrics_file), path(k_metrics_file),
         path(neff_background_file), path(specificity_background_file), path(cv_background_file) ]
       pattern: "all-k_*.{tsv,tsv.gz}"
+  - ch_optimal_metaprogram_set:
+      type: file
+      description: |
+        Channel containing the files for the metaprogram set chosen as the optimal value of k for
+        each group, used to build the individual report: the metaprograms RDS file, the per
+        metaprogram metrics, the ORA results, the gene set metrics, and the combined cell scores.
+        The gene set metrics file is not read by the individual report and is dropped before it
+        is rendered.
+        `meta` must contain the `group_id` and `optimal_k` keys.
+        Structure: [ val(meta), path(metaprograms_file), path(metaprogram_metrics_file),
+        path(ora_results_file), path(geneset_metrics_file), path(combined_scores_file) ]
+      pattern: "k-*_*.{rds,tsv,tsv.gz}"
 output:
   - metrics_report:
       type: file
@@ -42,6 +55,14 @@ output:
         each group, written to `<group_id>/combined-metaprogram-metrics.html`.
         Structure: [ val(meta), path(report) ]
       pattern: "combined-metaprogram-metrics.html"
+  - individual_report:
+      type: file
+      description: |
+        Channel containing the self contained HTML report evaluating the metaprogram set chosen as
+        the optimal value of k for each group, written to
+        `<group_id>/individual-metaprogram-evaluation.html`.
+        Structure: [ val(meta), path(report) ]
+      pattern: "individual-metaprogram-evaluation.html"
 authors:
   - "@allyhawkins"
 maintainers:

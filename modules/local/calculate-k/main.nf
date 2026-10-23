@@ -66,7 +66,11 @@ process CALCULATE_K {
     // the optimal value of k can only be found from real metrics, so the first metaprogram set
     // staged stands in for it here. file names are sorted because the order of the staged files
     // depends on task completion order, and the stub output needs to be the same on every run
-    stub_k = [mp_metrics_files].flatten()*.name.sort().first().tokenize('_')[0].replace('k-', '')
+    // tests can set ext.stub_optimal_k to control what is written to the optimal k file, such as
+    // an empty string to check that the pipeline fails when no value of k is chosen
+    stub_k = task.ext.stub_optimal_k != null
+        ? task.ext.stub_optimal_k
+        : [mp_metrics_files].flatten()*.name.sort().first().tokenize('_')[0].replace('k-', '')
     """
     mkdir -p "${reports_dir}"
 
