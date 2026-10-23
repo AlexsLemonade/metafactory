@@ -438,4 +438,28 @@ nextflow_workflow {
             ).match()
         }
     }
+
+    test("metrics report fails when the optimal k file is empty") {
+
+        tag "render"
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                // empty the optimal k file, as when no value of k could be chosen for the group
+                renderReportsInput("${moduleTestDir}/data", ['optimal-k.txt': { lines -> [] }])
+            }
+        }
+
+        then {
+            assert workflow.failed
+            // the metrics report is the only report that reads the optimal k file, so the
+            // individual report may or may not finish before the run stops and is not checked
+            assert !workflow.trace.succeeded()*.name.any { name -> name.contains('RENDER_METRICS_REPORT') }
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('The optimal k file must contain a single value of k')
+        }
+    }
 }
