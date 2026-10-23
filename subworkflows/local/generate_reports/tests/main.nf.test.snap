@@ -13,6 +13,32 @@
             "nextflow": "26.10.3"
         }
     },
+    "individual report renders with no ORA results": {
+        "content": [
+            [
+                [
+                    {
+                        "group_id": "SCPCP000001"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "SCPCP000001",
+                        "optimal_k": 6
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-23T11:20:24.955687",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.3"
+        }
+    },
     "each process stages only the files it needs": {
         "content": [
             [
@@ -23,6 +49,32 @@
             ]
         ],
         "timestamp": "2026-10-21T15:27:20.444641",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.3"
+        }
+    },
+    "renders both reports from pipeline outputs": {
+        "content": [
+            [
+                [
+                    {
+                        "group_id": "SCPCP000001"
+                    },
+                    "combined-metaprogram-metrics.html"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "SCPCP000001",
+                        "optimal_k": 6
+                    },
+                    "individual-metaprogram-evaluation.html"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-23T11:19:33.039786",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.10.3"

@@ -1,9 +1,13 @@
-// Tests for the channel wiring in the GENERATE_REPORTS subworkflow. Every test runs in stub mode,
-// so no report is rendered and the inputs are empty placeholder files.
+// Tests for the GENERATE_REPORTS subworkflow.
 //
-// Each test describes its input as a design map of group_id -> [optimal_k: k], where k is the
-// value of k chosen for that group. The helpers below build the subworkflow input and the
-// expected results from the same design.
+// The tests tagged "stub" check the channel wiring. They run in stub mode, so no report is
+// rendered and the inputs are empty placeholder files. Each of these tests describes its input as a
+// design map of group_id -> [optimal_k: k], where k is the value of k chosen for that group. The
+// helpers below build the subworkflow input and the expected results from the same design.
+//
+// The other tests render both reports from the outputs of a real run of the pipeline with the test
+// profile, which are saved in `data/`. To regenerate these files, for example after the output of
+// a module upstream of the reports changes, run `update-test-data.sh` in this directory.
 
 // the report metrics tables written by the calculate k module for every group
 def reportMetricsSuffixes = [
@@ -145,6 +149,42 @@ def expectedStagedInputs = { task, design ->
     files*.toString().sort()
 }
 
+// the group in the test samplesheet, which the files in `data/` were generated for
+def dataGroupId = 'SCPCP000001'
+
+// the optimal value of k chosen in the pipeline run the files in `data/` were generated from
+def dataOptimalK = { data_dir ->
+    new File(data_dir, 'optimal-k.txt').text.trim().toInteger()
+}
+
+// Nextflow code for the three subworkflow inputs, using the pipeline outputs in `data/`.
+// modify argument maps the name of an input file to a closure that takes the lines of that file and returns
+// the lines to use in their place, so that a test can change an input to check an edge case. the
+// name is the file name in `data/` without the `k-<optimal k>_` prefix of the files for the optimal
+// metaprogram set, e.g. `ora_results.tsv`. only uncompressed files can be modified. modified files
+// are written to a temporary directory, so the files in `data/` are never changed
+def renderReportsInput = { data_dir, modify = [:] ->
+    def optimal_k = dataOptimalK(data_dir)
+    def modified_dir = File.createTempDir()
+    def inputFile = { name, data_name ->
+        def input_file = new File(data_dir, data_name)
+        if (modify.containsKey(name)) {
+            def modified_file = new File(modified_dir, input_file.name)
+            modified_file.text = modify[name](input_file.readLines()).join('\n') + '\n'
+            input_file = modified_file
+        }
+        "file('${input_file}')"
+    }
+    def report_metrics = reportMetricsSuffixes.collect { name -> inputFile(name, "reports/${name}") }
+    def optimal_set = ['metaprograms.rds', 'mp_metrics.tsv', 'ora_results.tsv', 'geneset_metrics.tsv', 'combined_metaprogram_scores.tsv.gz']
+        .collect { name -> inputFile(name, "k-${optimal_k}_${name}") }
+    """
+    input[0] = channel.of([[group_id: '${dataGroupId}'], ${inputFile('optimal-k.txt', 'optimal-k.txt')}])
+    input[1] = channel.of([[group_id: '${dataGroupId}'], ${report_metrics.join(', ')}])
+    input[2] = channel.of([[group_id: '${dataGroupId}', optimal_k: ${optimal_k}], ${optimal_set.join(', ')}])
+    """
+}
+
 nextflow_workflow {
 
     name "Test subworkflow GENERATE_REPORTS"
@@ -153,13 +193,12 @@ nextflow_workflow {
     tag "subworkflows"
     tag "subworkflows_local"
     tag "generate_reports"
-    tag "stub"
-
-    // runs the stub block of every module, so these tests check the channel wiring
-    // without rendering any report
-    options "-stub"
 
     test("one group generates the expected outputs") {
+
+
+        tag "stub"
+        options "-stub"
 
         def design = [
             groupA: [optimal_k: 4],
@@ -193,6 +232,9 @@ nextflow_workflow {
     }
 
     test("several groups with different optimal k") {
+
+        tag "stub"
+        options "-stub"
 
         def design = [
             groupA: [optimal_k: 4],
@@ -228,6 +270,9 @@ nextflow_workflow {
     }
 
     test("optimal k is joined to the report metrics by group, not by order") {
+
+        tag "stub"
+        options "-stub"
 
         def design = [
             groupA: [optimal_k: 4],
@@ -265,6 +310,9 @@ nextflow_workflow {
 
     test("output meta is passed through unchanged") {
 
+        tag "stub"
+        options "-stub"
+
         def design = [
             groupA: [optimal_k: 4],
             groupB: [optimal_k: 6],
@@ -300,6 +348,9 @@ nextflow_workflow {
 
     test("each process stages only the files it needs") {
 
+        tag "stub"
+        options "-stub"
+
         def design = [
             groupA: [optimal_k: 4],
             groupB: [optimal_k: 6],
@@ -330,6 +381,60 @@ nextflow_workflow {
                 staged_tasks
                     .collect { task -> "${task.process} ${taskId(task.meta)}: ${task.staged.join(', ')}".toString() }
                     .sort()
+            ).match()
+        }
+    }
+
+    test("renders both reports from pipeline outputs") {
+
+        tag "render"
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                renderReportsInput("${moduleTestDir}/data")
+            }
+        }
+
+        then {
+            def optimal_k = dataOptimalK("${moduleTestDir}/data")
+            assert workflow.success
+            // one metrics report and one individual report
+            assert workflow.trace.succeeded().size() == 2
+            assert taskMetas(workflow.out) == expectedTaskMetas([(dataGroupId): [optimal_k: optimal_k]])
+            checkOutputs(workflow.out)
+            // the rendered html is not stable between runs, so only the report names are recorded
+            assert snapshot(
+                outputSummary(workflow.out.metrics_report),
+                outputSummary(workflow.out.individual_report),
+            ).match()
+        }
+    }
+
+    test("individual report renders with no ORA results") {
+
+        tag "render"
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                // keep only the header of the ORA results, as when no gene set is significant for
+                // any metaprogram
+                renderReportsInput("${moduleTestDir}/data", ['ora_results.tsv': { lines -> lines.take(1) }])
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 2
+            checkOutputs(workflow.out)
+            assert snapshot(
+                outputSummary(workflow.out.metrics_report),
+                outputSummary(workflow.out.individual_report),
             ).match()
         }
     }
