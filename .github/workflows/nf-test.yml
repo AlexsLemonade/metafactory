@@ -97,11 +97,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # the full pipeline test only runs on pull requests to main and on releases
-      - name: Skip full pipeline test
-        if: ${{ !(github.event_name == 'release' || github.base_ref == 'master' || github.base_ref == 'main') }}
-        run: rm -f tests/default.nf.test
-
       - name: Run nf-test
         id: run_nf_test
         uses: ./.github/actions/nf-test
