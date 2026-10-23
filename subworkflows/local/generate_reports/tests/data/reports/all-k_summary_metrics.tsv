@@ -1,0 +1,5 @@
+n_metaprograms	is_excluded	is_optimal_k	num_metaprograms	neff_sig_number	neff_sig_proportion	num_passing_correlation	proportion_passing_correlation	num_passing_coherence	median_coherence	num_metaprograms_with_genesets	proportion_metaprograms_with_genesets	overall_geneset_specificity	num_significant_cv	proportion_significant_cv	total_samples	is_coherence_elbow	coherence_elbow_passing	geneset_specificity_pvalue	geneset_specificity_adj_pvalue	geneset_specificity_significant	rank_effective_sample_size	rank_correlation	rank_coherence	rank_gene_set_specificity	rank_coefficient_of_variation	mean_rank
+4	FALSE	FALSE	4	0	0	4	1	4	0.20421750860841392	0	0	NA	0	0	7	FALSE	0.5	NA	NA	NA	1	1	0.75	0.5	1	0.85
+5	FALSE	FALSE	5	0	0	5	1	5	0.3033087471913063	0	0	NA	0	0	7	FALSE	0.5	NA	NA	NA	1	1	0.75	0.75	1	0.9
+6	FALSE	TRUE	6	0	0	6	1	6	0.40037221170265147	0	0	NA	0	0	7	TRUE	1	NA	NA	NA	1	1	1	1	1	1
+7	FALSE	FALSE	7	0	0	7	1	7	0.432267636697042	1	0.14285714285714285	1	0	0	7	FALSE	0	1	1	0	1	1	0.25	0.25	1	0.7
