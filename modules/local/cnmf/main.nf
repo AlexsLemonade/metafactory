@@ -24,6 +24,11 @@ process CNMF {
     """
     mkdir -p "${meta.unique_id}_cnmf"
 
+    # one consensus spectra file per value of k, matching the cnmf.py SPECTRA_GLOB
+    for k in \$(seq ${options.cnmf_k_lower} ${options.cnmf_k_step_size} ${options.cnmf_k_upper}); do
+        touch "${meta.unique_id}_cnmf/${meta.unique_id}_cnmf.gene_spectra_score.k_\${k}.dt_0_1.txt"
+    done
+
     cat <<-END_META > "${meta.unique_id}_cnmf/cnmf-meta.json"
     {
       "cnmf_k_lower": ${options.cnmf_k_lower},
