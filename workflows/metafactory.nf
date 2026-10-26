@@ -3,17 +3,16 @@
 IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-include { paramsSummaryMap               } from 'plugin/nf-schema'
-include { softwareVersionsToYAML         } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText         } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
-include { CNMF                           } from '../modules/local/cnmf/main'
-include { GENERATE_METAPROGRAMS          } from '../modules/local/generate-metaprograms/main'
-include { CALCULATE_METRICS_METAPROGRAMS } from '../modules/local/calculate-metrics/metaprograms/main'
-include { CALCULATE_METRICS_GENESETS     } from '../modules/local/calculate-metrics/genesets/main'
-include { CALCULATE_K                    } from '../modules/local/calculate-k/main'
-include { PUBLISH_METAPROGRAMS           } from '../modules/local/publish-metaprograms/main'
-include { CALCULATE_SCORES               } from '../subworkflows/local/calculate_scores/main'
-include { GENERATE_REPORTS               } from '../subworkflows/local/generate_reports/main'
+include { paramsSummaryMap       } from 'plugin/nf-schema'
+include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_metafactory_pipeline'
+include { CNMF                   } from '../modules/local/cnmf/main'
+include { GENERATE_METAPROGRAMS  } from '../modules/local/generate-metaprograms/main'
+include { CALCULATE_METRICS      } from '../subworkflows/local/calculate_metrics/main'
+include { CALCULATE_K            } from '../modules/local/calculate-k/main'
+include { PUBLISH_METAPROGRAMS   } from '../modules/local/publish-metaprograms/main'
+include { CALCULATE_SCORES       } from '../subworkflows/local/calculate_scores/main'
+include { GENERATE_REPORTS       } from '../subworkflows/local/generate_reports/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -146,7 +145,7 @@ workflow METAFACTORY {
     )
 
     //
-    // MODULE: Calculate metrics for each set of metaprograms
+    // SUBWORKFLOW: Calculate metaprogram and gene set metrics for each set of metaprograms
     //
 
     // only the RDS object is needed to calculate metrics, so the python readable exports are
@@ -155,32 +154,7 @@ workflow METAFACTORY {
         [meta, metaprograms_file]
     }
 
-    CALCULATE_METRICS_METAPROGRAMS(
-        ch_metaprograms_rds,
-        [
-            seed: params.seed,
-            nreps: params.nreps,
-        ],
-    )
-
-    //
-    // MODULE: Annotate each set of metaprograms with gene sets using ORA and calculate gene set metrics
-    //
-
-    // the gene sets are the same for every metaprogram set, so they are staged as a value channel
-    // that every task can reuse. this has to be a `path` input on the process rather than an entry
-    // in the options map, so that the file is staged into the task work directory and is readable
-    // on executors that do not share a filesystem with the launch environment
-    def ch_term2gene = channel.value(file(params.msigdb_gene_sets))
-
-    CALCULATE_METRICS_GENESETS(
-        ch_metaprograms_rds,
-        ch_term2gene,
-        [
-            seed: params.seed,
-            nreps: params.nreps,
-        ],
-    )
+    CALCULATE_METRICS(ch_metaprograms_rds)
 
     //
     // SUBWORKFLOW: Score every library in a group against each set of metaprograms and build a background score distribution
@@ -196,7 +170,7 @@ workflow METAFACTORY {
 
     // this process runs once per group rather than once per metaprogram set, so the output for
     // every value of k is grouped by group_id here
-    def ch_metrics_by_group = CALCULATE_METRICS_METAPROGRAMS.out.metaprogram_metrics
+    def ch_metrics_by_group = CALCULATE_METRICS.out.metaprogram_metrics
         .map { meta, metrics_file, background_file ->
             [meta.group_id, metrics_file, background_file]
         }
@@ -204,7 +178,7 @@ workflow METAFACTORY {
 
     // the ORA results are not used to compare values of k, so only the gene set metrics and their
     // background are grouped here
-    def ch_geneset_metrics_by_group = CALCULATE_METRICS_GENESETS.out.ora_metrics
+    def ch_geneset_metrics_by_group = CALCULATE_METRICS.out.geneset_metrics
         .map { meta, _ora_results_file, metrics_file, background_file ->
             [meta.group_id, metrics_file, background_file]
         }
@@ -255,11 +229,11 @@ workflow METAFACTORY {
         [[meta.group_id, meta.n_metaprograms], metaprograms_rds_file]
     }
 
-    def metaprogram_metrics_ch = CALCULATE_METRICS_METAPROGRAMS.out.metaprogram_metrics.map { meta, metaprogram_metrics_file, _background_file ->
+    def metaprogram_metrics_ch = CALCULATE_METRICS.out.metaprogram_metrics.map { meta, metaprogram_metrics_file, _background_file ->
         [[meta.group_id, meta.n_metaprograms], metaprogram_metrics_file]
     }
 
-    def geneset_metrics_ch = CALCULATE_METRICS_GENESETS.out.ora_metrics.map { meta, ora_results_file, geneset_metrics_file, _background_file ->
+    def geneset_metrics_ch = CALCULATE_METRICS.out.geneset_metrics.map { meta, ora_results_file, geneset_metrics_file, _background_file ->
         [[meta.group_id, meta.n_metaprograms], ora_results_file, geneset_metrics_file]
     }
 
