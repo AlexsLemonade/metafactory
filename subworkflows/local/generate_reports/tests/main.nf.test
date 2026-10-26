@@ -72,7 +72,8 @@ def taskId = { meta ->
 }
 
 // the emitted items for each process. each task emits one item, and the meta in that item is
-// the meta the task ran with
+// the meta the task ran with. each report is written to a directory named for the group inside
+// the task directory, so the output depth passed to SubworkflowTestUtils.stagedInputs is 1
 def taskEmits = { out ->
     [
         RENDER_INDIVIDUAL_REPORT: out.individual_report,
@@ -101,12 +102,6 @@ def checkOutputs = { out ->
     }
 }
 
-// the task directory of an emitted item, for SubworkflowTestUtils.stagedInputs. each report is
-// written to a directory named for the group inside the task directory, so the task directory is
-// found by going up from the report
-def taskDir = { _meta, path ->
-    new File(path.toString()).parentFile.parentFile
-}
 
 // the file names a task should stage, worked out from its process and meta
 def expectedStagedInputs = { task, design ->
@@ -260,7 +255,7 @@ nextflow_workflow {
             assert workflow.success
             assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
             // each metrics report stages its own group's optimal k file next to its own metrics tables
-            def metrics_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), taskDir).findAll { task -> task.process == 'RENDER_METRICS_REPORT' }
+            def metrics_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), 1).findAll { task -> task.process == 'RENDER_METRICS_REPORT' }
             assert metrics_tasks.size() == 3
             metrics_tasks.each { task ->
                 assert task.staged == expectedStagedInputs(task, design) : "unexpected files staged for ${task.process} ${taskId(task.meta)}"
@@ -334,7 +329,7 @@ nextflow_workflow {
         then {
             assert workflow.success
             assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
-            def staged_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), taskDir)
+            def staged_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), 1)
             // every task that ran emitted an item, so all of their staged inputs are checked
             assert staged_tasks.size() == workflow.trace.succeeded().size()
             // each task stages the files that match its meta, and nothing else. this also checks
