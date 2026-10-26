@@ -436,6 +436,60 @@ nextflow_workflow {
         }
     }
 
+    test("no gene sets when no metaprogram overlaps the gene sets") {
+
+        tag "metrics"
+
+        // a term2gene file holding only the background gene set from `k-<k>_term2gene.tsv`. the
+        // background genes are in none of the metaprograms' top genes, so ORA has no result for any
+        // metaprogram
+        def data_dir = SubworkflowTestUtils.dataDir(baseDir)
+        def background_rows = SubworkflowTestUtils.readTsv(
+            SubworkflowTestUtils.dataFile(data_dir, SubworkflowTestUtils.dataOptimalK(data_dir), 'term2gene.tsv')
+        ).findAll { row -> row.gs_name == 'SET_BACKGROUND' }
+        assert background_rows : "term2gene file has no SET_BACKGROUND gene set"
+        def term2gene_file = SubworkflowTestUtils.writeLines(
+            ['gs_name\tensembl_gene'] + background_rows.collect { row -> "${row.gs_name}\t${row.ensembl_gene}".toString() },
+            File.createTempDir(),
+            'background_only_term2gene.tsv',
+        )
+
+        when {
+            params {
+                outdir = "$outputDir"
+                msigdb_gene_sets = term2gene_file.toString()
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir))
+            }
+        }
+
+        then {
+            def k = SubworkflowTestUtils.dataOptimalK(data_dir)
+            assert workflow.success
+            checkOutputs(workflow.out)
+            def (_meta, ora_results_file, geneset_metrics_file, background_file) = workflow.out.geneset_metrics[0]
+
+            // ORA has no result for any metaprogram, so the ORA results only have a header, with the
+            // same columns as the pipeline run, where ORA ran but found no significant gene sets
+            assert SubworkflowTestUtils.tsvLines(ora_results_file).findAll { line -> line } ==
+                SubworkflowTestUtils.tsvLines(SubworkflowTestUtils.dataFile(data_dir, k, 'ora_results.tsv')).take(1)
+
+            // every metaprogram is still reported, with no gene sets and no specificity
+            def geneset_metrics = SubworkflowTestUtils.readTsv(geneset_metrics_file)
+            assert geneset_metrics*.metaprogram.sort() ==
+                SubworkflowTestUtils.readTsv(SubworkflowTestUtils.dataFile(data_dir, k, 'geneset_metrics.tsv'))*.metaprogram.sort()
+            geneset_metrics.each { row ->
+                assert row.num_sig_genesets == '0' : "num_sig_genesets for ${row.metaprogram} is ${row.num_sig_genesets}"
+                assert row.mean_geneset_specificity == 'NA' : "mean_geneset_specificity for ${row.metaprogram} is ${row.mean_geneset_specificity}"
+            }
+
+            // the background still has one row per metaprogram per replicate
+            def background = SubworkflowTestUtils.readTsv(background_file)
+            assert background.size() == backgroundNreps(background) * k
+        }
+    }
+
     test("fails when the number of replicates is 0") {
 
         tag "metrics"

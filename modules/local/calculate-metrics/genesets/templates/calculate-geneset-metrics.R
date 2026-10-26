@@ -53,12 +53,34 @@ run_ora <- function(mp_top_list, gene_universe, term2gene_df, sig_cutoff) {
       )
     })
 
-  # combine ora results into a single dataframe
   # enricher returns NULL rather than a result when none of the top genes are in any gene set,
   # so those metaprograms are dropped here, as they have no significant gene sets
+  ora_results <- purrr::compact(ora_results)
+
+  # if no metaprogram has a result there are no tables to take the columns from, so use a zero-row
+  # table with the columns enricher returns. this is the same table as when ORA runs but finds no
+  # significant gene sets, so the outputs have the same columns either way
+  if (length(ora_results) == 0) {
+    return(data.frame(
+      metaprogram = character(),
+      ID = character(),
+      Description = character(),
+      GeneRatio = character(),
+      BgRatio = character(),
+      RichFactor = numeric(),
+      FoldEnrichment = numeric(),
+      zScore = numeric(),
+      pvalue = numeric(),
+      p.adjust = numeric(),
+      qvalue = numeric(),
+      geneID = character(),
+      Count = integer()
+    ))
+  }
+
+  # combine ora results into a single dataframe
   # only keep gene sets with an adjusted pvalue at or below the cutoff
   ora_results_df <- ora_results |>
-    purrr::compact() |>
     purrr::map(function(ora) ora@result) |>
     purrr::list_rbind(names_to = "metaprogram") |>
     dplyr::filter(p.adjust <= sig_cutoff)
