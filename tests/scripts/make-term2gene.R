@@ -6,7 +6,13 @@
 #   SET_MP01: 20 genes unique to MP01
 #   SET_MP02: 20 genes unique to MP02
 #   SET_MP01_MP02: 10 genes unique to MP01 and 10 unique to MP02
-# Every set has at least 10 genes, the default minimum gene set size used by enricher.
+#   SET_BACKGROUND: 200 genes from the gene universe that are not in the top genes of any metaprogram
+# Every set has at least 10 genes, the default minimum gene set size used by enricher, and at most
+# 500, the default maximum.
+# enricher restricts the universe to genes in at least one gene set. Without the background set the
+# universe would only be the 40 genes unique to MP01 and MP02, and SET_MP01_MP02 would overlap each
+# of them exactly as much as expected by chance, so it would never be significant. The background
+# set is never significant, as it holds none of the top genes.
 
 # Called by update-test-data.sh after it copies the metaprograms RDS into `tests/data/`.
 # It requires the `optparse` and `tidyverse` packages.
@@ -43,6 +49,8 @@ stopifnot(
 # number of genes in a gene set for a single metaprogram, and half of the shared gene set
 N_GENES <- 20
 N_SHARED_GENES <- 10
+# number of genes in the background gene set
+N_BACKGROUND_GENES <- 200
 
 # Find unique top genes --------------------------------------------------------
 
@@ -54,7 +62,12 @@ unique_genes <- names(top_genes) |>
   purrr::set_names() |>
   purrr::map(\(mp) setdiff(top_genes[[mp]], unlist(top_genes[names(top_genes) != mp])))
 
+# genes in the universe that are not in the top genes of any metaprogram
+background_genes <- setdiff(mp_object[["gene_universe"]], unlist(top_genes))
+
 stopifnot(
+  "Gene universe must have enough genes outside the top genes" =
+    length(background_genes) >= N_BACKGROUND_GENES,
   "Metaprograms object must have MP01 and MP02" = all(c("MP01", "MP02") %in% names(top_genes)),
   "MP01 and MP02 must each have enough unique top genes" =
     all(lengths(unique_genes[c("MP01", "MP02")]) >= N_GENES),
@@ -70,7 +83,8 @@ gene_sets <- list(
   SET_MP01_MP02 = c(
     head(unique_genes[["MP01"]], N_SHARED_GENES),
     head(unique_genes[["MP02"]], N_SHARED_GENES)
-  )
+  ),
+  SET_BACKGROUND = head(background_genes, N_BACKGROUND_GENES)
 )
 
 term2gene_df <- gene_sets |>
