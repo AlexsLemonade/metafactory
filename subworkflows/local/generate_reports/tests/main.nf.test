@@ -6,8 +6,9 @@
 // helpers below build the subworkflow input and the expected results from the same design.
 //
 // The other tests render both reports from the outputs of a real run of the pipeline with the test
-// profile, which are saved in `data/`. To regenerate these files, for example after the output of
-// a module upstream of the reports changes, run `update-test-data.sh` in this directory.
+// profile, which are saved in `tests/data/` at the root of the repository and shared with the
+// CALCULATE_METRICS tests. To regenerate these files, for example after the output of a module
+// upstream of the reports changes, run `tests/scripts/update-test-data.sh`.
 
 // the report metrics tables written by the calculate k module for every group
 def reportMetricsSuffixes = [
@@ -394,12 +395,12 @@ nextflow_workflow {
                 outdir = "$outputDir"
             }
             workflow {
-                renderReportsInput("${moduleTestDir}/data")
+                renderReportsInput("${baseDir}/tests/data")
             }
         }
 
         then {
-            def optimal_k = dataOptimalK("${moduleTestDir}/data")
+            def optimal_k = dataOptimalK("${baseDir}/tests/data")
             assert workflow.success
             // one metrics report and one individual report
             assert workflow.trace.succeeded().size() == 2
@@ -424,7 +425,7 @@ nextflow_workflow {
             workflow {
                 // keep only the header of the ORA results, as when no gene set is significant for
                 // any metaprogram
-                renderReportsInput("${moduleTestDir}/data", ['ora_results.tsv': { lines -> lines.take(1) }])
+                renderReportsInput("${baseDir}/tests/data", ['ora_results.tsv': { lines -> lines.take(1) }])
             }
         }
 
@@ -449,7 +450,7 @@ nextflow_workflow {
             }
             workflow {
                 // empty the optimal k file, as when no value of k could be chosen for the group
-                renderReportsInput("${moduleTestDir}/data", ['optimal-k.txt': { lines -> [] }])
+                renderReportsInput("${baseDir}/tests/data", ['optimal-k.txt': { lines -> [] }])
             }
         }
 
