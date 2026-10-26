@@ -415,9 +415,10 @@ nextflow_workflow {
             checkOutputs(workflow.out)
             def (_meta, ora_results_file, geneset_metrics_file, background_file) = workflow.out.geneset_metrics[0]
 
-            // each gene set is significant for exactly the metaprograms it was built from
+            // each gene set is significant for exactly the metaprograms it was built from. lists are
+            // not Comparable, so the pairs are sorted by their joined string rather than with sort()
             def ora_results = SubworkflowTestUtils.readTsv(ora_results_file)
-            assert ora_results.collect { row -> [row.metaprogram, row.ID] }.sort() == [
+            assert ora_results.collect { row -> [row.metaprogram, row.ID] }.sort { pair -> pair.join(' ') } == [
                 ['MP01', 'SET_MP01'],
                 ['MP01', 'SET_MP01_MP02'],
                 ['MP02', 'SET_MP01_MP02'],
