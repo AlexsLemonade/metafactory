@@ -1,14 +1,19 @@
 #!/bin/bash
 set -euo pipefail
-# Regenerates the input files used by the GENERATE_REPORTS subworkflow tests that render the reports.
+# Regenerates the test data shared by the GENERATE_REPORTS and CALCULATE_METRICS subworkflow tests.
 # Runs the full pipeline with the test profile, then copies the files the two reports read for the
-# single group in the test samplesheet into `data/` next to this script.
+# single group in the test samplesheet into `tests/data/`. The CALCULATE_METRICS tests
+# use the metaprograms RDS as their input and the metrics tables as their expected outputs.
+# Also writes a small term2gene table built from the top genes in the metaprograms RDS, so that the
+# CALCULATE_METRICS tests can check ORA results with significant gene sets.
 # Rerun this whenever the output of a module upstream of the reports changes.
-# Usage: ./update-test-data.sh [additional nextflow run arguments]
+# Requires R with the `optparse` and `tidyverse` packages, to run make-term2gene.R.
+# Usage, from the root of the repository: tests/scripts/update-test-data.sh [additional nextflow run arguments]
 # Any additional arguments are passed on to `nextflow run`, e.g. `-resume`
 
-tests_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_dir="$(cd "${tests_dir}/../../../.." && pwd)"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+tests_dir="$(cd "${script_dir}/.." && pwd)"
+repo_dir="$(cd "${tests_dir}/.." && pwd)"
 data_dir="${tests_dir}/data"
 
 # the only group in tests/assets/samplesheet.csv
@@ -53,6 +58,13 @@ for suffix in \
 do
     cp "${group_dir}/k-${optimal_k}_${suffix}" "${data_dir}/"
 done
+
+# term2gene table with gene sets that ORA finds significant for known metaprograms. The test
+# profile run finds no significant gene sets with the default gene sets, so this is built from the
+# top genes of the metaprograms instead; see make-term2gene.R for the gene sets.
+Rscript "${script_dir}/make-term2gene.R" \
+    --metaprograms_file "${data_dir}/k-${optimal_k}_metaprograms.rds" \
+    --output_file "${data_dir}/k-${optimal_k}_term2gene.tsv"
 
 echo "Copied test data for ${group_id} with an optimal k of ${optimal_k} to ${data_dir}:"
 du -ah "${data_dir}"
