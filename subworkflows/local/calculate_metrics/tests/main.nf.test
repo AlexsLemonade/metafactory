@@ -1,0 +1,309 @@
+// Tests for the CALCULATE_METRICS subworkflow.
+//
+// The tests tagged "stub" check the channel wiring. They run in stub mode, so no metrics are
+// calculated and the inputs are empty placeholder files. Each of these tests describes its input as
+// a design map of group_id -> [k: [...]], where k is the list of n_metaprograms values that
+// metaprogram sets are generated for in that group. The helpers below build the subworkflow input
+// and the expected results from the same design.
+//
+// Helpers shared with the other subworkflow tests are in `tests/lib/SubworkflowTestUtils.groovy`.
+
+// the unique ids in every input meta. GENERATE_METAPROGRAMS adds the libraries a metaprogram set
+// was built from to its meta, so the input meta includes them too
+def uniqueIds = ['lib1', 'lib2']
+
+// Nextflow code for the subworkflow input. path inputs must exist to be staged, so an empty
+// placeholder RDS file is created for every metaprogram set in a temporary directory. each file
+// name holds its group and k, so the files staged into each task show which set it received
+def calculateMetricsInput = { design ->
+    def input_dir = File.createTempDir()
+    def metaprogram_sets = design.collectMany { group_id, group ->
+        group.k.collect { k ->
+            def rds_file = new File(input_dir, "${group_id}_k-${k}_metaprograms.rds")
+            rds_file.createNewFile()
+            "[[group_id: '${group_id}', n_metaprograms: ${k}, metaprograms_publish_dir: '${group_id}/k-${k}', unique_ids: ${uniqueIds.inspect()}], file('${rds_file}')]"
+        }
+    }
+    "input[0] = channel.of(${metaprogram_sets.join(', ')})"
+}
+
+// identifies a task from its meta: the metaprogram set
+def taskId = { meta -> meta.metaprograms_publish_dir }
+
+// the emitted items for each process. each task emits one item, with the meta it ran with
+def taskEmits = { out ->
+    [CALCULATE_METRICS_GENESETS: out.geneset_metrics, CALCULATE_METRICS_METAPROGRAMS: out.metaprogram_metrics]
+}
+
+// the task metas expected from a design: one task per metaprogram set for each process, each with
+// the input meta passed through unchanged
+def expectedTaskMetas = { design ->
+    def metas = design.collectMany { group_id, group ->
+        group.k.collect { k ->
+            [group_id: group_id, n_metaprograms: k, metaprograms_publish_dir: "${group_id}/k-${k}".toString(), unique_ids: uniqueIds]
+        }
+    }.sort { meta -> taskId(meta) }
+    [CALCULATE_METRICS_GENESETS: metas, CALCULATE_METRICS_METAPROGRAMS: metas]
+}
+
+// checks that each emitted file is named as in meta.yml inside metaprograms_publish_dir, in the
+// order the files are emitted after the meta
+def checkOutputs = { out ->
+    [
+        metaprogram_metrics: ['mp_metrics.tsv', 'background_mp_stats.tsv.gz'],
+        geneset_metrics: ['ora_results.tsv', 'geneset_metrics.tsv', 'background_specificity.tsv.gz'],
+    ].each { emit, suffixes ->
+        out."${emit}".each { item ->
+            def meta = item[0]
+            assert item.size() == suffixes.size() + 1
+            suffixes.eachWithIndex { suffix, i ->
+                assert item[i + 1].toString().endsWith("/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_${suffix}")
+            }
+        }
+    }
+}
+
+// the task directory of an emitted item, for SubworkflowTestUtils.stagedInputs. every
+// metaprograms_publish_dir in these tests is `<group>/k-<k>`, so outputs are written two
+// directories down from the task directory
+def taskDir = { _meta, path -> new File(path.toString()).parentFile.parentFile.parentFile }
+
+// the file names a task should stage: the RDS file for its own metaprogram set, plus the gene sets
+// file for the gene sets task
+def expectedStagedInputs = { task, gene_sets_name = 'msigdb-gene-set-genes.tsv.gz' ->
+    def rds_name = "${task.meta.group_id}_k-${task.meta.n_metaprograms}_metaprograms.rds".toString()
+    task.process == 'CALCULATE_METRICS_GENESETS' ? [gene_sets_name, rds_name].sort() : [rds_name]
+}
+
+
+nextflow_workflow {
+
+    name "Test subworkflow CALCULATE_METRICS"
+    script "../main.nf"
+    workflow "CALCULATE_METRICS"
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "calculate_metrics"
+
+    test("one metaprogram set generates the expected outputs") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4]],
+        ]
+
+        when {
+            // nf-core lint looks for `outdir = "$outputDir"` in the when block and treats the first
+            // closing brace as the end of the block, so the params block comes before any code with braces
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            // one metaprogram metrics task and one gene set metrics task
+            assert workflow.trace.succeeded().size() == 2
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
+            assert workflow.out.metaprogram_metrics.size() == 1
+            assert workflow.out.geneset_metrics.size() == 1
+            checkOutputs(workflow.out)
+            assert snapshot(
+                SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.metaprogram_metrics, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.geneset_metrics, taskId),
+            ).match()
+        }
+    }
+
+    test("several groups with several values of k") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4, 5]],
+            groupB: [k: [4, 6, 7]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            // one task per metaprogram set for each process
+            assert workflow.trace.succeeded().size() == 10
+            def metas = SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId)
+            assert metas == expectedTaskMetas(design)
+            // each task carries its own metaprogram set
+            metas.each { _process, process_metas ->
+                assert process_metas.collect { meta -> [meta.group_id, meta.n_metaprograms] } ==
+                    [['groupA', 4], ['groupA', 5], ['groupB', 4], ['groupB', 6], ['groupB', 7]]
+            }
+            assert workflow.out.metaprogram_metrics.size() == 5
+            assert workflow.out.geneset_metrics.size() == 5
+            checkOutputs(workflow.out)
+            assert snapshot(
+                metas,
+                SubworkflowTestUtils.outputSummary(workflow.out.metaprogram_metrics, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.geneset_metrics, taskId),
+            ).match()
+        }
+    }
+
+    test("each process stages only the files it needs") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4, 5]],
+            groupB: [k: [6]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
+            def staged_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), taskDir)
+            // every task that ran emitted an item, so all of their staged inputs are checked
+            assert staged_tasks.size() == workflow.trace.succeeded().size()
+            // each task stages the RDS file for its own metaprogram set and nothing else, except
+            // the gene sets task, which also stages the gene sets file
+            staged_tasks.each { task ->
+                assert task.staged == expectedStagedInputs(task) : "unexpected files staged for ${task.process} ${taskId(task.meta)}"
+            }
+            // the gene sets file is a value channel, so it reaches every gene sets task, not just the first
+            def geneset_tasks = staged_tasks.findAll { task -> task.process == 'CALCULATE_METRICS_GENESETS' }
+            assert geneset_tasks.size() == 3
+            assert geneset_tasks.every { task -> 'msigdb-gene-set-genes.tsv.gz' in task.staged }
+            assert snapshot(
+                staged_tasks
+                    .collect { task -> "${task.process} ${taskId(task.meta)}: ${task.staged.join(', ')}".toString() }
+                    .sort()
+            ).match()
+        }
+    }
+
+    test("gene sets file comes from params.msigdb_gene_sets") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4, 5]],
+        ]
+
+        // the contents are never read in stub mode, only the file name is checked
+        def custom_gene_sets = SubworkflowTestUtils.writeLines(
+            ['gs_name\tensembl_gene'],
+            File.createTempDir(),
+            'custom_term2gene.tsv',
+        )
+
+        when {
+            params {
+                outdir = "$outputDir"
+                msigdb_gene_sets = custom_gene_sets.toString()
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            def geneset_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), taskDir)
+                .findAll { task -> task.process == 'CALCULATE_METRICS_GENESETS' }
+            assert geneset_tasks.size() == 2
+            // every gene sets task stages the custom file in place of the default gene sets
+            geneset_tasks.each { task ->
+                assert task.staged == expectedStagedInputs(task, 'custom_term2gene.tsv') : "unexpected files staged for ${task.process} ${taskId(task.meta)}"
+            }
+        }
+    }
+
+    test("output meta is passed through unchanged") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4]],
+            groupB: [k: [6]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            taskEmits(workflow.out).each { _process, items ->
+                items.each { item ->
+                    def meta = item[0]
+                    assert meta.keySet() == ['group_id', 'n_metaprograms', 'metaprograms_publish_dir', 'unique_ids'] as Set
+                    assert meta.n_metaprograms instanceof Integer
+                    assert meta.unique_ids == uniqueIds
+                }
+            }
+            // also checks the meta values and the output paths for each metaprogram set
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
+            checkOutputs(workflow.out)
+            assert snapshot(
+                SubworkflowTestUtils.outputSummary(workflow.out.metaprogram_metrics, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.geneset_metrics, taskId),
+            ).match()
+        }
+    }
+
+    test("empty input runs no tasks") {
+
+        tag "stub"
+        options "-stub"
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                """
+                input[0] = channel.empty()
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 0
+            assert workflow.trace.tasks().size() == 0
+            // an emit that never emitted may be reported as empty or missing, so both are accepted
+            assert !workflow.out.metaprogram_metrics
+            assert !workflow.out.geneset_metrics
+        }
+    }
+}
