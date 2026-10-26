@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "calculate_metrics"
+description: |
+  Calculate metrics for each set of metaprograms, and annotate each set of metaprograms with
+  gene sets using over-representation analysis (ORA) to calculate gene set metrics.
+  Each set of metrics is accompanied by a permuted background distribution.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - metrics
+  - gene sets
+  - ORA
+components:
+  - calculate-metrics/metaprograms
+  - calculate-metrics/genesets
+input:
+  - ch_metaprograms_rds:
+      type: file
+      description: |
+        Channel containing the RDS file for each set of metaprograms, as emitted by the
+        generate metaprograms module with the python readable exports removed.
+        `meta` must contain `n_metaprograms` and `metaprograms_publish_dir` keys.
+        Structure: [ val(meta), path(metaprograms_file) ]
+      pattern: "k-*_metaprograms.rds"
+output:
+  - metaprogram_metrics:
+      type: file
+      description: |
+        Channel containing the per metaprogram metrics and the permuted background metrics for
+        each metaprogram set.
+        Structure: [ val(meta), path(metrics_file), path(background_file) ]
+      pattern: "k-*_{mp_metrics.tsv,background_mp_stats.tsv.gz}"
+  - geneset_metrics:
+      type: file
+      description: |
+        Channel containing the full ORA results, the ORA derived gene set metrics, and the
+        permuted background gene set specificity for each metaprogram set.
+        Structure: [ val(meta), path(ora_results_file), path(metrics_file), path(background_file) ]
+      pattern: "k-*_{ora_results.tsv,geneset_metrics.tsv,background_specificity.tsv.gz}"
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"
