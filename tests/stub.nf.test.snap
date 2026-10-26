@@ -61,7 +61,13 @@
                 "checkpoints/background_scores/GROUP01/k-7_filtered_0.3/STUB02_background_score_stats.tsv.gz",
                 "checkpoints/cnmf",
                 "checkpoints/cnmf/STUB01_cnmf",
+                "checkpoints/cnmf/STUB01_cnmf/STUB01_cnmf.gene_spectra_score.k_10.dt_0_1.txt",
+                "checkpoints/cnmf/STUB01_cnmf/STUB01_cnmf.gene_spectra_score.k_5.dt_0_1.txt",
+                "checkpoints/cnmf/STUB01_cnmf/cnmf-meta.json",
                 "checkpoints/cnmf/STUB02_cnmf",
+                "checkpoints/cnmf/STUB02_cnmf/STUB02_cnmf.gene_spectra_score.k_10.dt_0_1.txt",
+                "checkpoints/cnmf/STUB02_cnmf/STUB02_cnmf.gene_spectra_score.k_5.dt_0_1.txt",
+                "checkpoints/cnmf/STUB02_cnmf/cnmf-meta.json",
                 "checkpoints/combined_scores",
                 "checkpoints/combined_scores/GROUP01",
                 "checkpoints/combined_scores/GROUP01/k-4_filtered_0.3",
@@ -162,6 +168,12 @@
                 "checkpoints/background_scores/GROUP01/k-6_filtered_0.3/STUB02_background_score_stats.tsv.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "checkpoints/background_scores/GROUP01/k-7_filtered_0.3/STUB01_background_score_stats.tsv.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "checkpoints/background_scores/GROUP01/k-7_filtered_0.3/STUB02_background_score_stats.tsv.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "checkpoints/cnmf/STUB01_cnmf/STUB01_cnmf.gene_spectra_score.k_10.dt_0_1.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "checkpoints/cnmf/STUB01_cnmf/STUB01_cnmf.gene_spectra_score.k_5.dt_0_1.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "checkpoints/cnmf/STUB01_cnmf/cnmf-meta.json:md5,318e7905ab0e0331608e2031a9fdbe0f",
+                "checkpoints/cnmf/STUB02_cnmf/STUB02_cnmf.gene_spectra_score.k_10.dt_0_1.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "checkpoints/cnmf/STUB02_cnmf/STUB02_cnmf.gene_spectra_score.k_5.dt_0_1.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "checkpoints/cnmf/STUB02_cnmf/cnmf-meta.json:md5,318e7905ab0e0331608e2031a9fdbe0f",
                 "checkpoints/combined_scores/GROUP01/k-4_filtered_0.3/k-4_combined_background_score_stats.tsv.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "checkpoints/combined_scores/GROUP01/k-4_filtered_0.3/k-4_combined_metaprogram_scores.tsv.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
                 "checkpoints/combined_scores/GROUP01/k-5_filtered_0.3/k-5_combined_background_score_stats.tsv.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
@@ -225,10 +237,10 @@
                 "results/GROUP01/reports/all-k_summary_metrics.tsv:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-10-16T17:08:58.097106",
+        "timestamp": "2026-10-23T12:52:25.752801",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.06.0"
+            "nextflow": "26.10.3"
         }
     }
 }

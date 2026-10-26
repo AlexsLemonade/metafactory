@@ -2,6 +2,9 @@
 """Run cNMF on a processed AnnData object to identify consensus gene expression programs."""
 
 from importlib.metadata import version
+import json
+import pathlib
+import shutil
 import sys
 
 import anndata
@@ -25,6 +28,9 @@ SEED                       = int(${options.seed})
 N_ITER            = 100
 MAX_NMF_ITER      = 2000
 DENSITY_THRESHOLD = 0.1
+
+# Only the consensus spectra are used downstream, so all other cNMF output is removed
+SPECTRA_GLOB = "*.gene_spectra_score.k_*.dt_*.txt"
 
 
 def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
@@ -59,6 +65,28 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
         )
 
     return adata[cell_mask].copy()
+
+
+def write_cnmf_meta(output_dir):
+    """Write a cnmf-meta.json file recording the parameters used to run cNMF.
+
+    The workflow compares these parameters to the current run to decide whether cNMF can be skipped.
+
+    Parameters
+    ----------
+    output_dir:
+        pathlib.Path to the cNMF output directory.
+    """
+    cnmf_meta = {
+        "cnmf_k_lower": k_lower,
+        "cnmf_k_upper": k_upper,
+        "cnmf_k_step_size": k_step_size,
+        "celltype_annotation_column": celltype_annotation_column,
+        "analysis_celltypes": analysis_celltypes,
+        "seed": SEED,
+    }
+    with open(output_dir / "cnmf-meta.json", "w") as fh:
+        json.dump(cnmf_meta, fh, indent=2)
 
 
 def write_versions(process_name):
@@ -133,6 +161,20 @@ def main():
             cnmf_obj.consensus(k=k, density_threshold=DENSITY_THRESHOLD)
         except RuntimeError as e:
             print(f"WARNING: consensus failed for k={k}: {e}")
+
+    output_dir = pathlib.Path(f"{unique_id}_cnmf")
+
+    # clean output directory, keeping only files that are needed for generating metaprograms down stream
+    for path in output_dir.iterdir():
+        if path.is_file() and path.match(SPECTRA_GLOB):
+            continue
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+    # save metadata file with parameters used for this cNMF run
+    write_cnmf_meta(output_dir)
 
     write_versions(process_name)
 
