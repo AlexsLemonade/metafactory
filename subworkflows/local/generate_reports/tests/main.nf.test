@@ -9,6 +9,8 @@
 // profile, which are saved in `tests/data/` at the root of the repository and shared with the
 // CALCULATE_METRICS tests. To regenerate these files, for example after the output of a module
 // upstream of the reports changes, run `tests/scripts/update-test-data.sh`.
+//
+// Helpers shared with the other subworkflow tests are in `tests/lib/SubworkflowTestUtils.groovy`.
 
 // the report metrics tables written by the calculate k module for every group
 def reportMetricsSuffixes = [
@@ -78,13 +80,6 @@ def taskEmits = { out ->
     ]
 }
 
-// the meta of each task that ran, by process. sorted, as tasks finish in no fixed order
-def taskMetas = { out ->
-    taskEmits(out).collectEntries { process, items ->
-        [process, items.collect { meta, _path -> meta }.sort { meta -> taskId(meta) }]
-    }
-}
-
 // the task metas expected from a design: one metrics report and one individual report per group,
 // each with the input meta passed through unchanged
 def expectedTaskMetas = { design ->
@@ -106,31 +101,11 @@ def checkOutputs = { out ->
     }
 }
 
-// emitted items as [meta, file name] for snapshots. items are emitted in no fixed order, so they
-// are sorted, and only the file name is kept so the snapshot holds no machine specific paths
-def outputSummary = { items ->
-    items.collect { meta, path -> [meta, new File(path.toString()).name] }
-        .sort { item -> taskId(item[0]) }
-}
-
-// the names of the files staged into the task that emitted an item, with the task's process and
-// meta. each report is written to a directory named for the group inside the task directory, so
-// the task directory is found by going up from the report. inputs are symlinked into the task
-// directory, while outputs are not symlinks, so the symlinks are exactly the staged inputs. the
-// report rmd is staged into a `report/` subdirectory, so symlinks one directory down are kept
-// too, named by their path relative to the task directory
-def stagedInputs = { out ->
-    def isLink = { f -> java.nio.file.Files.isSymbolicLink(f.toPath()) }
-    taskEmits(out).collectMany { process, items ->
-        items.collect { meta, path ->
-            def task_dir = new File(path.toString()).parentFile.parentFile
-            def staged = task_dir.listFiles().findAll { f -> isLink(f) }*.name
-            task_dir.listFiles().findAll { f -> f.isDirectory() && !isLink(f) && !f.name.startsWith('.') }.each { sub_dir ->
-                staged += sub_dir.listFiles().findAll { f -> isLink(f) }.collect { f -> "${sub_dir.name}/${f.name}".toString() }
-            }
-            [process: process, meta: meta, staged: staged.sort()]
-        }
-    }
+// the task directory of an emitted item, for SubworkflowTestUtils.stagedInputs. each report is
+// written to a directory named for the group inside the task directory, so the task directory is
+// found by going up from the report
+def taskDir = { _meta, path ->
+    new File(path.toString()).parentFile.parentFile
 }
 
 // the file names a task should stage, worked out from its process and meta
@@ -150,29 +125,19 @@ def expectedStagedInputs = { task, design ->
     files*.toString().sort()
 }
 
-// the group in the test samplesheet, which the files in `data/` were generated for
-def dataGroupId = 'SCPCP000001'
-
-// the optimal value of k chosen in the pipeline run the files in `data/` were generated from
-def dataOptimalK = { data_dir ->
-    new File(data_dir, 'optimal-k.txt').text.trim().toInteger()
-}
-
-// Nextflow code for the three subworkflow inputs, using the pipeline outputs in `data/`.
+// Nextflow code for the three subworkflow inputs, using the pipeline outputs in `tests/data/`.
 // modify argument maps the name of an input file to a closure that takes the lines of that file and returns
 // the lines to use in their place, so that a test can change an input to check an edge case. the
-// name is the file name in `data/` without the `k-<optimal k>_` prefix of the files for the optimal
-// metaprogram set, e.g. `ora_results.tsv`. only uncompressed files can be modified. modified files
-// are written to a temporary directory, so the files in `data/` are never changed
+// name is the file name in `tests/data/` without the `k-<optimal k>_` prefix of the files for the
+// optimal metaprogram set, e.g. `ora_results.tsv`. only uncompressed files can be modified. modified
+// files are written to a temporary directory, so the files in `tests/data/` are never changed
 def renderReportsInput = { data_dir, modify = [:] ->
-    def optimal_k = dataOptimalK(data_dir)
+    def optimal_k = SubworkflowTestUtils.dataOptimalK(data_dir)
     def modified_dir = File.createTempDir()
     def inputFile = { name, data_name ->
         def input_file = new File(data_dir, data_name)
         if (modify.containsKey(name)) {
-            def modified_file = new File(modified_dir, input_file.name)
-            modified_file.text = modify[name](input_file.readLines()).join('\n') + '\n'
-            input_file = modified_file
+            input_file = SubworkflowTestUtils.modifiedFile(input_file, modify[name], modified_dir)
         }
         "file('${input_file}')"
     }
@@ -180,9 +145,9 @@ def renderReportsInput = { data_dir, modify = [:] ->
     def optimal_set = ['metaprograms.rds', 'mp_metrics.tsv', 'ora_results.tsv', 'geneset_metrics.tsv', 'combined_metaprogram_scores.tsv.gz']
         .collect { name -> inputFile(name, "k-${optimal_k}_${name}") }
     """
-    input[0] = channel.of([[group_id: '${dataGroupId}'], ${inputFile('optimal-k.txt', 'optimal-k.txt')}])
-    input[1] = channel.of([[group_id: '${dataGroupId}'], ${report_metrics.join(', ')}])
-    input[2] = channel.of([[group_id: '${dataGroupId}', optimal_k: ${optimal_k}], ${optimal_set.join(', ')}])
+    input[0] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}'], ${inputFile('optimal-k.txt', 'optimal-k.txt')}])
+    input[1] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}'], ${report_metrics.join(', ')}])
+    input[2] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}', optimal_k: ${optimal_k}], ${optimal_set.join(', ')}])
     """
 }
 
@@ -220,14 +185,14 @@ nextflow_workflow {
             assert workflow.success
             // one metrics report and one individual report
             assert workflow.trace.succeeded().size() == 2
-            assert taskMetas(workflow.out) == expectedTaskMetas(design)
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
             assert workflow.out.metrics_report.size() == 1
             assert workflow.out.individual_report.size() == 1
             checkOutputs(workflow.out)
             assert snapshot(
-                taskMetas(workflow.out),
-                outputSummary(workflow.out.metrics_report),
-                outputSummary(workflow.out.individual_report),
+                SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.metrics_report, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.individual_report, taskId),
             ).match()
         }
     }
@@ -254,7 +219,7 @@ nextflow_workflow {
 
         then {
             assert workflow.success
-            def metas = taskMetas(workflow.out)
+            def metas = SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId)
             assert metas == expectedTaskMetas(design)
             // each individual report carries its own group's optimal k
             assert metas.RENDER_INDIVIDUAL_REPORT.collect { meta -> [meta.group_id, meta.optimal_k] } ==
@@ -264,8 +229,8 @@ nextflow_workflow {
             checkOutputs(workflow.out)
             assert snapshot(
                 metas,
-                outputSummary(workflow.out.metrics_report),
-                outputSummary(workflow.out.individual_report),
+                SubworkflowTestUtils.outputSummary(workflow.out.metrics_report, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.individual_report, taskId),
             ).match()
         }
     }
@@ -293,9 +258,9 @@ nextflow_workflow {
 
         then {
             assert workflow.success
-            assert taskMetas(workflow.out) == expectedTaskMetas(design)
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
             // each metrics report stages its own group's optimal k file next to its own metrics tables
-            def metrics_tasks = stagedInputs(workflow.out).findAll { task -> task.process == 'RENDER_METRICS_REPORT' }
+            def metrics_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), taskDir).findAll { task -> task.process == 'RENDER_METRICS_REPORT' }
             assert metrics_tasks.size() == 3
             metrics_tasks.each { task ->
                 assert task.staged == expectedStagedInputs(task, design) : "unexpected files staged for ${task.process} ${taskId(task.meta)}"
@@ -338,11 +303,11 @@ nextflow_workflow {
                 assert meta.optimal_k instanceof Integer
             }
             // also checks the meta values and the report paths for each group
-            assert taskMetas(workflow.out) == expectedTaskMetas(design)
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
             checkOutputs(workflow.out)
             assert snapshot(
-                outputSummary(workflow.out.metrics_report),
-                outputSummary(workflow.out.individual_report),
+                SubworkflowTestUtils.outputSummary(workflow.out.metrics_report, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.individual_report, taskId),
             ).match()
         }
     }
@@ -368,8 +333,8 @@ nextflow_workflow {
 
         then {
             assert workflow.success
-            assert taskMetas(workflow.out) == expectedTaskMetas(design)
-            def staged_tasks = stagedInputs(workflow.out)
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
+            def staged_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), taskDir)
             // every task that ran emitted an item, so all of their staged inputs are checked
             assert staged_tasks.size() == workflow.trace.succeeded().size()
             // each task stages the files that match its meta, and nothing else. this also checks
@@ -395,21 +360,21 @@ nextflow_workflow {
                 outdir = "$outputDir"
             }
             workflow {
-                renderReportsInput("${baseDir}/tests/data")
+                renderReportsInput(SubworkflowTestUtils.dataDir(baseDir))
             }
         }
 
         then {
-            def optimal_k = dataOptimalK("${baseDir}/tests/data")
+            def optimal_k = SubworkflowTestUtils.dataOptimalK(SubworkflowTestUtils.dataDir(baseDir))
             assert workflow.success
             // one metrics report and one individual report
             assert workflow.trace.succeeded().size() == 2
-            assert taskMetas(workflow.out) == expectedTaskMetas([(dataGroupId): [optimal_k: optimal_k]])
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas([(SubworkflowTestUtils.DATA_GROUP_ID): [optimal_k: optimal_k]])
             checkOutputs(workflow.out)
             // the rendered html is not stable between runs, so only the report names are recorded
             assert snapshot(
-                outputSummary(workflow.out.metrics_report),
-                outputSummary(workflow.out.individual_report),
+                SubworkflowTestUtils.outputSummary(workflow.out.metrics_report, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.individual_report, taskId),
             ).match()
         }
     }
@@ -425,7 +390,7 @@ nextflow_workflow {
             workflow {
                 // keep only the header of the ORA results, as when no gene set is significant for
                 // any metaprogram
-                renderReportsInput("${baseDir}/tests/data", ['ora_results.tsv': { lines -> lines.take(1) }])
+                renderReportsInput(SubworkflowTestUtils.dataDir(baseDir), ['ora_results.tsv': { lines -> lines.take(1) }])
             }
         }
 
@@ -434,8 +399,8 @@ nextflow_workflow {
             assert workflow.trace.succeeded().size() == 2
             checkOutputs(workflow.out)
             assert snapshot(
-                outputSummary(workflow.out.metrics_report),
-                outputSummary(workflow.out.individual_report),
+                SubworkflowTestUtils.outputSummary(workflow.out.metrics_report, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.individual_report, taskId),
             ).match()
         }
     }
@@ -450,7 +415,7 @@ nextflow_workflow {
             }
             workflow {
                 // empty the optimal k file, as when no value of k could be chosen for the group
-                renderReportsInput("${baseDir}/tests/data", ['optimal-k.txt': { lines -> [] }])
+                renderReportsInput(SubworkflowTestUtils.dataDir(baseDir), ['optimal-k.txt': { lines -> [] }])
             }
         }
 
