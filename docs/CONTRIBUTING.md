@@ -71,7 +71,7 @@ tests/scripts/update-test-data.sh
 ```
 
 This runs the pipeline with `-profile test,docker` in a temporary directory and copies the files into `tests/data/`, replacing what is there.
-Any additional arguments are passed on to `nextflow run`, for example `-resume`.
+The script does not forward additional arguments to `nextflow run` and uses a fresh temporary run directory each time.
 The script requires R with the `optparse` and `tidyverse` packages.
 
 To run a single test file or a subset of tests by tag:

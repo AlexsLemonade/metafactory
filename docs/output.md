@@ -77,7 +77,7 @@ Note that any value of `k` with at least one metaprogram made up of a single spe
 3. **Coherence**: Whether the value of `k` is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
    Values of `k` at the elbow score 1, values below the elbow score 0.5, and values above the elbow score 0.
    If no elbow can be found, every value of `k` scores 0.5.
-4. **Gene set specificity**: Whether the overall gene set specificity is significantly greater than the null distribution.
+4. **Gene set specificity**: Whether the overall gene set specificity differs significantly from the null distribution, using a two-sided permutation test.
 5. **Variation in cell scores**: The proportion of metaprograms with a CV of cell scores significantly greater than the null distribution.
 
 Each metric is ranked across all values of `k` and the ranks are normalized to a 0-1 scale.
@@ -178,7 +178,7 @@ If `--celltype_annotation_column` and `--analysis_celltypes` are provided, only 
 | `total_samples`                                                           | Number of libraries with cell scores                                                                       |
 | `is_coherence_elbow`                                                      | Whether this value of `k` is the elbow of the median coherence curve                                       |
 | `coherence_elbow_passing`                                                 | Coherence score used for ranking: 1 at the elbow, 0.5 below the elbow or if there is no elbow, 0 above     |
-| `geneset_specificity_pvalue`, `geneset_specificity_adj_pvalue`            | P-value and adjusted p-value for the overall gene set specificity being greater than the null distribution |
+| `geneset_specificity_pvalue`, `geneset_specificity_adj_pvalue`            | P-value and adjusted p-value for the overall gene set specificity being significantly different compared to the null distribution using a two-sided permutation test |
 | `geneset_specificity_significant`                                         | Whether the overall gene set specificity is significant (1) or not (0)                                     |
 | `rank_effective_sample_size`                                              | Normalized rank of `neff_sig_proportion`                                                                   |
 | `rank_correlation`                                                        | Normalized rank of `proportion_passing_correlation`                                                        |
@@ -258,6 +258,6 @@ Use `--repeat_cnmf` to run cNMF for every library, even if existing results were
 
 </details>
 
-`<timestamp>` is the date and time the pipeline was launched, in the format `yyyy-MM-dd_HH-mm-ss`, and can be changed with `--trace_report_suffix`.
+`<timestamp>` uses the format `yyyy-MM-dd_HH-mm-ss` by default. For the execution report, timeline, trace, and DAG filenames, the suffix can be changed with `--trace_report_suffix`. The parameters JSON filename uses a separately generated timestamp and is not affected by this option.
 
 [Nextflow](https://docs.seqera.io/platform-cloud/reports/overview) provides excellent functionality for generating various reports relevant to the running and execution of the pipeline. This will allow you to troubleshoot errors with the running of the pipeline, and also provide you with other information such as launch commands, run times and resource usage.
