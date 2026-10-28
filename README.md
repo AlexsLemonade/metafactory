@@ -99,7 +99,7 @@ A full, automatically generated description of every parameter is also available
 
 ## Credits
 
-AlexsLemonade/metafactory was originally written by Ally Hawkins.
+AlexsLemonade/metafactory was originally written by Allegra G. Hawkins.
 
 We thank the following people for their extensive assistance in the development of this pipeline:
 
