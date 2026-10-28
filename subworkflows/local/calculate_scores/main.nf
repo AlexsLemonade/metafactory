@@ -10,6 +10,7 @@ workflow CALCULATE_SCORES {
     take:
     ch_samplesheet // channel: [ meta, h5ad_file ]
     ch_metaprograms // channel: [ meta, metaprograms_file, metaprograms_export_file, shuffled_metaprograms_file ]
+    options // value channel: [ celltype_annotation_column, analysis_celltypes, n_top_genes, seed ]
 
     main:
 
@@ -48,12 +49,7 @@ workflow CALCULATE_SCORES {
 
     SCORE_METAPROGRAMS(
         ch_score_input,
-        [
-            celltype_annotation_column: params.celltype_annotation_column,
-            analysis_celltypes: params.analysis_celltypes,
-            n_top_genes: params.n_top_genes,
-            seed: params.seed,
-        ],
+        options,
     )
 
     // combine the metaprogram scores for each library into a single channel for downstream processing
@@ -74,13 +70,16 @@ workflow CALCULATE_SCORES {
     //
     // MODULE: Calculate a background score distribution from shuffled metaprograms for each library
     //
+
+    // the background does not use n_top_genes, so it is dropped from the options here so that
+    // changing it does not invalidate the cached background tasks
+    def background_options = options.map { opts ->
+        opts.subMap(['celltype_annotation_column', 'analysis_celltypes', 'seed'])
+    }
+
     SCORE_BACKGROUND(
         ch_metaprograms_by_library,
-        [
-            celltype_annotation_column: params.celltype_annotation_column,
-            analysis_celltypes: params.analysis_celltypes,
-            seed: params.seed,
-        ],
+        background_options,
     )
 
     // combine all background scores

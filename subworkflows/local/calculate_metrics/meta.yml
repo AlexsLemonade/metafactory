@@ -25,6 +25,17 @@ input:
         `meta` must contain `n_metaprograms` and `metaprograms_publish_dir` keys.
         Structure: [ val(meta), path(metaprograms_file) ]
       pattern: "k-*_metaprograms.rds"
+  - ch_term2gene:
+      type: file
+      description: |
+        Value channel containing the gene sets used for ORA, with one row per gene set and gene.
+        Every gene set metrics task stages the same file.
+      pattern: "*.{tsv,tsv.gz}"
+  - options:
+      type: map
+      description: |
+        Value channel containing a map of options passed to the metrics modules.
+        Must contain the `seed` and `nreps` keys.
 output:
   - metaprogram_metrics:
       type: file

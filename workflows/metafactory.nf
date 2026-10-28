@@ -154,7 +154,22 @@ workflow METAFACTORY {
         [meta, metaprograms_file]
     }
 
-    CALCULATE_METRICS(ch_metaprograms_rds)
+    // the gene sets are the same for every metaprogram set, so they are staged as a value channel
+    // that every task can reuse. this has to be a `path` input on the process rather than an entry
+    // in the options map, so that the file is staged into the task work directory and is readable
+    // on executors that do not share a filesystem with the launch environment
+    def ch_term2gene = channel.value(file(params.msigdb_gene_sets))
+
+    CALCULATE_METRICS(
+        ch_metaprograms_rds,
+        ch_term2gene,
+        channel.value(
+            [
+                seed: params.seed,
+                nreps: params.nreps,
+            ]
+        ),
+    )
 
     //
     // SUBWORKFLOW: Score every library in a group against each set of metaprograms and build a background score distribution
@@ -162,6 +177,14 @@ workflow METAFACTORY {
     CALCULATE_SCORES(
         ch_samplesheet,
         GENERATE_METAPROGRAMS.out.results,
+        channel.value(
+            [
+                celltype_annotation_column: params.celltype_annotation_column,
+                analysis_celltypes: params.analysis_celltypes,
+                n_top_genes: params.n_top_genes,
+                seed: params.seed,
+            ]
+        ),
     )
 
     //
@@ -265,6 +288,12 @@ workflow METAFACTORY {
         CALCULATE_K.out.optimal_k,
         CALCULATE_K.out.report_metrics,
         ch_optimal_metaprogram_set,
+        channel.value(
+            [
+                n_top_genes: params.n_top_genes,
+                seed: params.seed,
+            ]
+        ),
     )
 
     // bundle the same files into a single list for the publish module, which copies them as is
