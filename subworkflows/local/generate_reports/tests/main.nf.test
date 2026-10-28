@@ -63,6 +63,7 @@ def generateReportsInput = { design, reverse_optimal_k = false ->
     input[0] = channel.of(${optimal_k.join(', ')})
     input[1] = channel.of(${report_metrics.join(', ')})
     input[2] = channel.of(${optimal_sets.join(', ')})
+    input[3] = channel.value([n_top_genes: params.n_top_genes, seed: params.seed])
     """
 }
 
@@ -143,6 +144,7 @@ def renderReportsInput = { data_dir, modify = [:] ->
     input[0] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}'], ${inputFile('optimal-k.txt', 'optimal-k.txt')}])
     input[1] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}'], ${report_metrics.join(', ')}])
     input[2] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}', optimal_k: ${optimal_k}], ${optimal_set.join(', ')}])
+    input[3] = channel.value([n_top_genes: params.n_top_genes, seed: params.seed])
     """
 }
 
