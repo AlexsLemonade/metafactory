@@ -49,7 +49,7 @@ The `+` adds `docker` to the `test` profile that nf-test uses by default (set in
 The pipeline-level tests live in `tests/` and are all tagged `pipeline`:
 
 - `tests/default.nf.test` runs the full pipeline with `-profile test` on the test libraries in `tests/assets/samplesheet.csv`
-- `tests/stub.nf.test` runs the full pipeline with `-stub` on the samplesheet in `stub/` (the empty placeholder `.h5ad` files in `stub/data/` are created by the test), which checks the channel wiring between modules in a few seconds
+- `tests/stub.nf.test` runs the full pipeline with `-stub` on the samplesheet in `stub/` (which points at the empty placeholder `.h5ad` files in `stub/data/`), which checks the channel wiring between modules in a few seconds
 - `tests/params.nf.test` checks that invalid parameters and samplesheets fail
 
 To run a single test file or a subset of tests by tag:
