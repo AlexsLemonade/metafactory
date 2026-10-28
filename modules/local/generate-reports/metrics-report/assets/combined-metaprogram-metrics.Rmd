@@ -121,6 +121,11 @@ cv_background_df <- readr::read_tsv(params$cv_background_file, show_col_types = 
 # the optimal value of k, reported as a number
 optimal_k <- readr::read_lines(params$optimal_k_file) |>
   as.numeric()
+
+# an empty file or a file without a number means no value of k was chosen
+stopifnot(
+  "The optimal k file must contain a single value of k" = length(optimal_k) == 1 && !is.na(optimal_k)
+)
 ```
 
 ```{r}

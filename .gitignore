@@ -1,6 +1,8 @@
 .nextflow*
 work/
 data/
+# synthetic test data for the GENERATE_REPORTS subworkflow tests
+!subworkflows/local/generate_reports/tests/data/
 results/
 .DS_Store
 testing/
