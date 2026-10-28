@@ -8,6 +8,8 @@ include { CALCULATE_METRICS_GENESETS     } from '../../../modules/local/calculat
 workflow CALCULATE_METRICS {
     take:
     ch_metaprograms_rds // channel: [ meta, metaprograms_file ]
+    ch_term2gene // value channel: gene sets file used for ORA
+    options // value channel: [ seed, nreps ]
 
     main:
 
@@ -16,29 +18,17 @@ workflow CALCULATE_METRICS {
     //
     CALCULATE_METRICS_METAPROGRAMS(
         ch_metaprograms_rds,
-        [
-            seed: params.seed,
-            nreps: params.nreps,
-        ],
+        options,
     )
 
     //
     // MODULE: Annotate each set of metaprograms with gene sets using ORA and calculate gene set metrics
     //
 
-    // the gene sets are the same for every metaprogram set, so they are staged as a value channel
-    // that every task can reuse. this has to be a `path` input on the process rather than an entry
-    // in the options map, so that the file is staged into the task work directory and is readable
-    // on executors that do not share a filesystem with the launch environment
-    def ch_term2gene = channel.value(file(params.msigdb_gene_sets))
-
     CALCULATE_METRICS_GENESETS(
         ch_metaprograms_rds,
         ch_term2gene,
-        [
-            seed: params.seed,
-            nreps: params.nreps,
-        ],
+        options,
     )
 
     emit:

@@ -19,6 +19,13 @@
 // was built from to its meta, so the input meta includes them too
 def uniqueIds = ['lib1', 'lib2']
 
+// Nextflow code for the gene sets and options inputs, which the pipeline builds from params. they
+// are built from params here too, so that tests can set them in the params block
+def optionsInput = """
+    input[1] = channel.value(file(params.msigdb_gene_sets))
+    input[2] = channel.value([seed: params.seed, nreps: params.nreps])
+    """
+
 // Nextflow code for the subworkflow input. path inputs must exist to be staged, so an empty
 // placeholder RDS file is created for every metaprogram set in a temporary directory. each file
 // name holds its group and k, so the files staged into each task show which set it received
@@ -31,7 +38,7 @@ def calculateMetricsInput = { design ->
             "[[group_id: '${group_id}', n_metaprograms: ${k}, metaprograms_publish_dir: '${group_id}/k-${k}', unique_ids: ${uniqueIds.inspect()}], file('${rds_file}')]"
         }
     }
-    "input[0] = channel.of(${metaprogram_sets.join(', ')})"
+    "input[0] = channel.of(${metaprogram_sets.join(', ')})" + optionsInput
 }
 
 // identifies a task from its meta: the metaprogram set
@@ -94,7 +101,7 @@ def backgroundNreps = { rows ->
 def metricsInput = { data_dir, rds_file = null ->
     def k = SubworkflowTestUtils.dataOptimalK(data_dir)
     rds_file = rds_file ?: SubworkflowTestUtils.dataFile(data_dir, k, 'metaprograms.rds')
-    "input[0] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}', n_metaprograms: ${k}, metaprograms_publish_dir: '${SubworkflowTestUtils.DATA_GROUP_ID}/k-${k}', unique_ids: ${uniqueIds.inspect()}], file('${rds_file}')])"
+    "input[0] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}', n_metaprograms: ${k}, metaprograms_publish_dir: '${SubworkflowTestUtils.DATA_GROUP_ID}/k-${k}', unique_ids: ${uniqueIds.inspect()}], file('${rds_file}')])" + optionsInput
 }
 
 nextflow_workflow {
@@ -312,9 +319,7 @@ nextflow_workflow {
                 outdir = "$outputDir"
             }
             workflow {
-                """
-                input[0] = channel.empty()
-                """
+                "input[0] = channel.empty()" + optionsInput
             }
         }
 

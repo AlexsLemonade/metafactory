@@ -47,6 +47,12 @@ input:
         Structure: [ val(meta), path(metaprograms_file), path(metaprogram_metrics_file),
         path(ora_results_file), path(geneset_metrics_file), path(combined_scores_file) ]
       pattern: "k-*_*.{rds,tsv,tsv.gz}"
+  - options:
+      type: map
+      description: |
+        Value channel containing a map of options passed to the report modules.
+        Must contain the `n_top_genes` and `seed` keys. `n_top_genes` is only passed to the
+        metrics report.
 output:
   - metrics_report:
       type: file
