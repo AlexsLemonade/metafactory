@@ -104,8 +104,8 @@ A full, automatically generated description of every parameter is also available
 
 ## Credits
 
-AlexsLemonade/metafactory was originally written by Allegra G. Hawkins. 
-Additional contributors include: 
+AlexsLemonade/metafactory was originally written by Allegra G. Hawkins.
+Additional contributors include:
 
 - Joshua A. Shapiro
 
