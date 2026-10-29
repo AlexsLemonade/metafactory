@@ -8,6 +8,9 @@ lint:
     - assets/sendmail_template.txt
     - assets/email_template.txt
     - assets/nf-core-metafactory_logo_light.png
+    - docs/images/nf-core-metafactory_logo_light.png
+    - docs/images/nf-core-metafactory_logo_dark.png
+    - CODE_OF_CONDUCT.md
   files_unchanged:
     - docs/CONTRIBUTING.md
     - assets/sendmail_template.txt
@@ -16,10 +19,16 @@ lint:
   nextflow_config:
     - config_defaults:
         - params.msigdb_gene_sets
-nf_core_version: 4.1.0
+  nf_test_content:
+    - tests/params.nf.test
+    - tests/nextflow.config
+  template_strings:
+    - modules/local/generate-reports/metrics-report/assets/combined-metaprogram-metrics.Rmd
+    - modules/local/generate-reports/individual-report/assets/individual-metaprogram-evaluation.Rmd
+nf_core_version: 4.2.1
 repository_type: pipeline
 template:
-  author: Ally Hawkins
+  author: Allegra G. Hawkins
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
     RNA-sequencing samples
   force: false
@@ -33,4 +42,3 @@ template:
     - fastqc
     - codespaces
     - email
-  version: 1.0.0dev
