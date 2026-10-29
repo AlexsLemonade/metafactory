@@ -49,8 +49,30 @@ The `+` adds `docker` to the `test` profile that nf-test uses by default (set in
 The pipeline-level tests live in `tests/` and are all tagged `pipeline`:
 
 - `tests/default.nf.test` runs the full pipeline with `-profile test` on the test libraries in `tests/assets/samplesheet.csv`
-- `tests/stub.nf.test` runs the full pipeline with `-stub` on the samplesheet in `stub/` (the empty placeholder `.h5ad` files in `stub/data/` are created by the test), which checks the channel wiring between modules in a few seconds
+- `tests/stub.nf.test` runs the full pipeline with `-stub` on the samplesheet in `stub/` (which points at the empty placeholder `.h5ad` files in `stub/data/`), which checks the channel wiring between modules in a few seconds
 - `tests/params.nf.test` checks that invalid parameters and samplesheets fail
+
+Each local subworkflow also has its own tests, tagged `subworkflows_local` and the name of the subworkflow:
+
+- `subworkflows/local/calculate_metrics/tests/main.nf.test`
+- `subworkflows/local/calculate_scores/tests/main.nf.test`
+- `subworkflows/local/generate_reports/tests/main.nf.test`
+
+Most of these tests run with `-stub` and are also tagged `stub`.
+The rest run the real analysis on the files in `tests/data/`, so they need a container profile.
+Helpers shared by the subworkflow tests are in `tests/lib/SubworkflowTestUtils.groovy`.
+
+`tests/data/` holds output from a full run of the pipeline with `-profile test` for the one group in `tests/assets/samplesheet.csv`.
+These files are the inputs to the `CALCULATE_METRICS` and `GENERATE_REPORTS` subworkflow tests, and the expected outputs for some of the `CALCULATE_METRICS` tests.
+If you change the output of any module upstream of the reports, regenerate them from the root of the repository with:
+
+```bash
+tests/scripts/update-test-data.sh
+```
+
+This runs the pipeline with `-profile test,docker` in a temporary directory and copies the files into `tests/data/`, replacing what is there.
+The script does not forward additional arguments to `nextflow run` and uses a fresh temporary run directory each time.
+The script requires R with the `optparse` and `tidyverse` packages.
 
 To run a single test file or a subset of tests by tag:
 
@@ -120,13 +142,13 @@ Please also refer to the [pipeline-specific contribution guidelines](#pipeline-s
 
 - [ ] Define the corresponding [input channel](#channel-naming-schemes) into your new process from the expected previous process channel.
 - [ ] Install a module with nf-core/tools, or write a local module (see [default processes resource requirements](#default-processes-resource-requirements)), and add it to the target `<workflow>.nf`.
-- [ ] Define the output channel if needed. Mix the version output channel into `ch_versions` and relevant files into `ch_multiqc`.
+- [ ] Define the output channel if needed. Emit software versions from the process with `path "versions.yml", emit: versions, topic: versions`, so that they are collected from the `versions` topic channel and added to the software versions file automatically.
 - [ ] Add new or updated parameters to `nextflow.config` with a [default value](#default-parameter-values).
 - [ ] Add new or updated parameters and relevant help text to `nextflow_schema.json` with [nf-core/tools](#default-parameter-values).
-- [ ] Add validation for relevant parameters to the pipeline utilisation section of `utils_nfcore_\_pipeline/main.nf` subworkflow.
+- [ ] Add validation for relevant parameters to the pipeline utilisation section of `utils_nfcore_metafactory_pipeline/main.nf` subworkflow.
 - [ ] Perform local tests to validate that the new code works as expected.
   - [ ] If applicable, add a new test in the `tests` directory.
-- [ ] Update `usage.md`, `output.md`, and `citation.md` as appropriate.
+- [ ] Update `usage.md`, `output.md`, and `CITATIONS.md` as appropriate.
 - [ ] [Lint](#lint-tests) the code with nf-core/tools.
 - [ ] Update any diagrams or pipeline images as necessary.
 
@@ -178,4 +200,37 @@ If you update images or graphics, follow the nf-core [style guidelines](https://
 
 ## Pipeline specific contribution guidelines
 
-<!-- TODO nf-core: Add any pipeline specific contribution guidelines here, such as coding styles, procedures, checklists etc. -->
+### Local modules
+
+All modules in this pipeline are local modules in `modules/local/`, each with a `main.nf`, `meta.yml`, and `environment.yml`.
+
+- **Templates:** The analysis code for a module lives in an R or Python script in the module's `templates/` directory and is called from the `script:` block with `template('<script-name>')`.
+  Only modules that run a simple shell command, such as `publish-metaprograms`, write the command directly in the `script:` block.
+  Nextflow variables (for example `${meta.unique_id}` or `${options.seed}`) are interpolated into the script before it runs, so define all input variables at the top of the script.
+  The script should also write the `versions.yml` file.
+- **Options:** Any pipeline parameters a module needs are passed to it as a map in a `val options` input from the workflow or subworkflow, rather than read from `params` inside the module.
+- **Stub blocks:** Every module must have a `stub:` block that creates empty files with the same names as the real outputs and a `versions.yml` file with `stub: x.y.z` as the version.
+  The stub tests (`tests/stub.nf.test` and the subworkflow tests tagged `stub`) rely on these to check the channel wiring between modules.
+
+### Output directories
+
+- **`metaprograms_publish_dir`:** Every module that runs once per set of metaprograms writes its output inside the directory stored in `meta.metaprograms_publish_dir`, which is set in `workflows/metafactory.nf` as `<group_id>/k-<k>_<filtered_<cutoff>|unfiltered>`.
+  This keeps all output for a set of metaprograms together in each checkpoint directory.
+- **Publishing:** Where output is published is set in `conf/modules.config`, not in the module.
+  Intermediate output is published to a subdirectory of `checkpoints/` with a `withName:` selector.
+  Final results are published to `results/` by adding the `results` label to the process, and should be written inside a directory named for the group (`${meta.group_id}`).
+- Update [`docs/output.md`](output.md) when adding or changing any published file.
+
+### Containers
+
+Modules use a container built with [Seqera Wave](https://seqera.io/wave/) from the module's `environment.yml`.
+The exception is `publish-metaprograms`, which only copies files and uses the `ubuntu` image from Docker Hub.
+To build the containers after creating or updating `environment.yml`, run:
+
+```bash
+scripts/build-wave.sh modules/local/<module>
+```
+
+This requires the `TOWER_ACCESS_TOKEN` environment variable to be set to a valid Seqera Platform token.
+The script builds both a Docker image and a Singularity image, and prints a `container` directive with both image URIs.
+Copy that directive into the module's `main.nf`, replacing the existing one if there is one.

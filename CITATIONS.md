@@ -10,6 +10,10 @@
 
 ## Pipeline tools
 
+- [cNMF](https://pubmed.ncbi.nlm.nih.gov/31282856/)
+
+  > Kotliar D, Veres A, Nagy MA, Tabrizi S, Hodis E, Melton DA, Sabeti PC. Identifying gene expression programs of cell-type identity and cellular activity with single-cell RNA-Seq. Elife. 2019 Jul 8;8:e43803. doi: 10.7554/eLife.43803. PubMed PMID: 31282856; PubMed Central PMCID: PMC6639075.
+
 ## Software packaging/containerisation tools
 
 - [Anaconda](https://anaconda.com)

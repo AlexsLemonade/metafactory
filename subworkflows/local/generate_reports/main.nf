@@ -9,6 +9,7 @@ workflow GENERATE_REPORTS {
     optimal_k_ch // channel: [ meta, optimal_k_file ]
     report_metrics_ch // channel: [ meta, report metrics files ]
     ch_optimal_metaprogram_set // channel: [ meta, metaprograms_file, metaprogram_metrics_file, ora_results_file, geneset_metrics_file, combined_scores_file ]
+    options // value channel: [ n_top_genes, seed ]
 
     main:
 
@@ -28,19 +29,19 @@ workflow GENERATE_REPORTS {
     RENDER_METRICS_REPORT(
         ch_metrics_report_input,
         file("${projectDir}/modules/local/generate-reports/metrics-report/assets/combined-metaprogram-metrics.Rmd"),
-        [
-            n_top_genes: params.n_top_genes,
-            seed: params.seed,
-        ],
+        options,
     )
 
     // the individual report evaluates the metaprogram set chosen as the optimal value of k, so it
     // is built from the per metaprogram set files for that k rather than from the metrics
     // summarized across every value of k
+    // the individual report does not use n_top_genes, so only the seed is passed on
+    def individual_report_options = options.map { opts -> opts.subMap(['seed']) }
+
     RENDER_INDIVIDUAL_REPORT(
         ch_individual_report_input,
         file("${projectDir}/modules/local/generate-reports/individual-report/assets/individual-metaprogram-evaluation.Rmd"),
-        [seed: params.seed],
+        individual_report_options,
     )
 
     emit:

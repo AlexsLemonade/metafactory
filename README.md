@@ -11,8 +11,6 @@
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 [![Launch on Seqera Platform](https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Seqera%20Platform-%234256e7)](https://cloud.seqera.io/launch?pipeline=https://github.com/AlexsLemonade/metafactory)
 
-<!--TODO: Update overview diagram to include individual steps -->
-
 ![Overview of metafactory](./assets/diagrams/NMF-metaprogram-overview.png)
 
 ## Introduction
@@ -42,9 +40,10 @@ Because the number of metaprograms (`k`) present in a cohort is not known ahead 
    These include: normalized effective sample size, correlation, coherence of individual gene expression programs within a metaprogram, gene set specificity, and coefficient of variation of cell scores.
 6. **Choose the optimal value of `k`.**
    All values of `k` tested for a group are compared using the five metrics described in step 5.
-   Each metric is ranked across values of `k`, and the value of `k` with the highest mean rank is selected.
-
-**Caution:** `metafactory` is in active development and may be unstable.
+   Coherence is scored by whether each value of `k` is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
+   Each metric is ranked across values of `k`, the ranks are normalized to a 0-1 scale, and the value of `k` with the highest mean rank is selected.
+7. **Generate reports.**
+   A metrics report comparing every value of `k` tested for a group and an evaluation report for the metaprograms at the optimal value of `k` are generated.
 
 ## Usage
 
@@ -84,13 +83,19 @@ nextflow run AlexsLemonade/metafactory \
 Final results are written to `<OUTDIR>/results/<group_id>/`, with one directory per group.
 For each group, the pipeline produces:
 
+- **Optimal value of `k`** — a text file (`optimal-k.txt`) holding the value of `k` chosen for the group.
 - **Metaprograms for the optimal value of `k`** — the metaprograms object holding the gene weights for each metaprogram, the spectra assigned to it, and the parameters used to build it.
-- **Metrics report** — a report summarizing the metrics calculated for every value of `k` tested, the metrics used to rank them, and the value of `k` that was selected.
+- **Metaprogram and gene set metrics** — tables of the metrics calculated for each metaprogram at the optimal value of `k`, including effective sample size, correlation, coherence, and gene set specificity.
 - **ORA results** — the gene sets significantly associated with each metaprogram, as identified by overrepresentation analysis of its top genes.
 - **Metaprogram scores** — a table of scores for every cell in every library of the group against each metaprogram.
+- **Metrics report** — a report summarizing the metrics calculated for every value of `k` tested, the metrics used to rank them, and the value of `k` that was selected.
+- **Individual metaprogram evaluation report** — a report evaluating the metaprograms at the optimal value of `k`, including their redundancy, library diversity, gene set annotations, and cell scores.
+- **Metrics for all values of `k`** — the tables used to build the metrics report, holding the metrics and null distributions for every value of `k` tested, in a `reports/` subdirectory.
 
 Intermediate output from each step, including the results for the values of `k` that were not selected, is written to `<OUTDIR>/checkpoints/`.
-Nextflow execution reports, the validated samplesheet, the parameters used, and the software versions are written to `<OUTDIR>/pipeline_info/`.
+Nextflow execution reports, the parameters used, and the software versions are written to `<OUTDIR>/pipeline_info/`.
+
+See [`docs/output.md`](docs/output.md) for a full description of every output file and its contents.
 
 ## Parameters
 
@@ -99,11 +104,10 @@ A full, automatically generated description of every parameter is also available
 
 ## Credits
 
-AlexsLemonade/metafactory was originally written by Ally Hawkins.
+AlexsLemonade/metafactory was originally written by Allegra G. Hawkins.
+Additional contributors include:
 
-We thank the following people for their extensive assistance in the development of this pipeline:
-
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+- Joshua A. Shapiro
 
 ## Contributions and Support
 

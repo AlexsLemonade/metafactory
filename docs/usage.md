@@ -72,10 +72,13 @@ n_metaprograms: "8,9,10,11"
 > Do not use `-c <file>` to specify parameters as this will result in errors.
 > Custom config files specified with `-c` must only be used for [tuning process resource specifications](https://nf-co.re/docs/running/run-pipelines#configuring-pipelines), other infrastructural tweaks, or module arguments (`args`).
 
-To check that the pipeline is able to run in your environment without running any analysis, you can run the workflow with the `stub` profile:
+To check that the pipeline is able to run in your environment without running any analysis, you can run the workflow with the `stub` profile.
+The stub samplesheet points to empty placeholder `.h5ad` files in `stub/data/` using paths relative to the root of the repository, so the stub run must be launched from the root of a clone of the repository:
 
 ```bash
-nextflow run AlexsLemonade/metafactory -profile stub -stub
+git clone https://github.com/AlexsLemonade/metafactory.git
+cd metafactory
+nextflow run . -profile stub -stub
 ```
 
 ## Parameters
@@ -134,46 +137,45 @@ These control how the spectra from all samples in a group are clustered into met
 Use this parameter to choose a configuration profile.
 Profiles can give configuration presets for different compute environments, and multiple profiles can be combined, for example `-profile stub,docker` — the order matters, as later profiles overwrite earlier ones.
 
-Profiles for running the pipeline software are bundled with the pipeline: `docker`, `singularity`, `apptainer`, `podman`, `shifter`, `charliecloud`, `conda`, `mamba`, and `wave`.
+If `-profile` is not specified, the pipeline will run locally and expect all software to be installed and available on the `PATH`.
+This is _not_ recommended, since it can lead to different results on different machines dependent on the computer environment.
 
 > [!IMPORTANT]
 > We highly recommend the use of Docker or Singularity containers for full pipeline reproducibility.
 > If this is not possible, Conda is also supported.
 
-Below are a set of custom profiles bundled with the pipeline:
+The following profiles are bundled with the pipeline:
 
-- `stub` — runs the pipeline against a small bundled stub dataset; use together with `-stub`.
+**Software profiles**
+
+- `docker` — use [Docker](https://docker.com/) containers.
+- `singularity` — use [Singularity](https://sylabs.io/docs/) containers.
+- `apptainer` — use [Apptainer](https://apptainer.org/) containers.
+- `podman` — use [Podman](https://podman.io/) containers.
+- `shifter` — use [Shifter](https://nersc.gitlab.io/development/shifter/how-to-use/) containers.
+- `charliecloud` — use [Charliecloud](https://charliecloud.io/) containers.
+- `wave` — build containers on the fly with [Wave](https://seqera.io/wave/). Use together with one of the container profiles above.
+- `conda` and `mamba` — use [Conda](https://conda.io/docs/) environments. Please only use Conda as a last resort, i.e. when it's not possible to run the pipeline with any of the container profiles above.
+
+**Test profiles**
+
+- `test` — runs the pipeline on a small set of test libraries with reduced settings (fewer permutation replicates and values of `k`), so it needs no other parameters.
+  Use together with a software profile, for example `-profile test,docker`.
+- `test_full` — runs the pipeline on the same test libraries as `test`, but with the default pipeline parameters.
+- `stub` — runs the pipeline on a placeholder stub dataset; use together with `-stub` (see [Running the pipeline](#running-the-pipeline)).
+
+**Hardware and debugging profiles**
+
 - `arm64` and `emulate_amd64` — for running on ARM-based machines (e.g. Apple Silicon).
+- `gpu` — passes GPU access through to Docker, Singularity, and Apptainer containers.
+- `debug` — keeps the work directory after the run, prints the hostname for each task, and enables warnings for process selectors in config files that do not match any process.
+
+**ALSF profiles**
+
 - `batch`, `dev`, `scpca_testing`, and `scpca_staging` — ALSF-specific profiles for running on AWS Batch, defined in [`conf/alsf-profiles.config`](../conf/alsf-profiles.config).
 
 The pipeline also dynamically loads configurations from [https://github.com/nf-core/configs](https://github.com/nf-core/configs) when it runs, making multiple config profiles for various institutional clusters available at run time.
 For more information and to check if your system is supported, please see the [nf-core/configs documentation](https://github.com/nf-core/configs#documentation).
-
-Note that multiple profiles can be loaded, for example: `-profile test,docker` - the order of arguments is important!
-They are loaded in sequence, so later profiles can overwrite earlier profiles.
-
-If `-profile` is not specified, the pipeline will run locally and expect all software to be installed and available on the `PATH`.
-This is _not_ recommended, since it can lead to different results on different machines dependent on the computer environment.
-
-- `test`
-  - A profile with a complete configuration for automated testing
-  - Includes links to test data so needs no other parameters
-- `docker`
-  - A generic configuration profile to be used with [Docker](https://docker.com/)
-- `singularity`
-  - A generic configuration profile to be used with [Singularity](https://sylabs.io/docs/)
-- `podman`
-  - A generic configuration profile to be used with [Podman](https://podman.io/)
-- `shifter`
-  - A generic configuration profile to be used with [Shifter](https://nersc.gitlab.io/development/shifter/how-to-use/)
-- `charliecloud`
-  - A generic configuration profile to be used with [Charliecloud](https://charliecloud.io/)
-- `apptainer`
-  - A generic configuration profile to be used with [Apptainer](https://apptainer.org/)
-- `wave`
-  - A generic configuration profile to enable [Wave](https://seqera.io/wave/) containers. Use together with one of the above (requires Nextflow `24.03.0-edge` or later).
-- `conda`
-  - A generic configuration profile to be used with [Conda](https://conda.io/docs/). Please only use Conda as a last resort i.e. when it's not possible to run the pipeline with Docker, Singularity, Podman, Shifter, Charliecloud, or Apptainer.
 
 ### `-resume`
 
@@ -197,9 +199,11 @@ To change the resource requests, please see the [max resources](https://nf-co.re
 
 ### Custom Containers
 
-In some cases, you may wish to change the container or conda environment used by a pipeline steps for a particular tool. By default, nf-core pipelines use containers and software from the [biocontainers](https://biocontainers.pro/) or [bioconda](https://bioconda.github.io/) projects. However, in some cases the pipeline specified version maybe out of date.
+Most steps of the pipeline use a container built with [Seqera Wave](https://seqera.io/wave/) and hosted on the `community.wave.seqera.io` registry, built from the conda environment defined in the `environment.yml` file in each module directory.
+When running with `-profile conda` or `-profile mamba`, those same `environment.yml` files are used to create the conda environments.
 
-To use a different container from the default container or conda environment specified in a pipeline, please see the [updating tool versions](https://nf-co.re/docs/running/configuration/nextflow-for-your-system#update-tool-versions) section of the nf-core website.
+In some cases, you may wish to change the container or conda environment used by a step of the pipeline.
+To do so, please see the [updating tool versions](https://nf-co.re/docs/running/configuration/nextflow-for-your-system#update-tool-versions) section of the nf-core website.
 
 ### Custom Tool Arguments
 
@@ -209,11 +213,10 @@ To learn how to provide additional arguments to a particular tool of the pipelin
 
 ### nf-core/configs
 
-In most cases, you will only need to create a custom config as a one-off but if you and others within your organisation are likely to be running nf-core pipelines regularly and need to use the same settings regularly it may be a good idea to request that your custom config file is uploaded to the `nf-core/configs` git repository. Before you do this please can you test that the config file works with your pipeline of choice using the `-c` parameter. You can then create a pull request to the `nf-core/configs` repository with the addition of your config file, associated documentation file (see examples in [`nf-core/configs/docs`](https://github.com/nf-core/configs/tree/master/docs)), and amending [`nfcore_custom.config`](https://github.com/nf-core/configs/blob/master/nfcore_custom.config) to include your custom profile.
+Institutional profiles from the [`nf-core/configs`](https://github.com/nf-core/configs) repository are loaded automatically and can be used with `-profile` (see [`-profile`](#-profile)).
+If your institution does not have a profile, you can provide your own config file with `-c`.
 
 See the main [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for more information about creating your own configuration files.
-
-If you have any questions or issues please send us a message on [Slack](https://nf-co.re/join/slack) on the [`#configs` channel](https://nfcore.slack.com/channels/configs).
 
 ## Updating the pipeline
 
@@ -227,7 +230,7 @@ nextflow pull AlexsLemonade/metafactory
 ## Reproducibility
 
 It is a good idea to specify the pipeline version when running the pipeline on your data, so that the same version of the code and software is used every time.
-Find the latest version on the [releases page](https://github.com/AlexsLemonade/metafactory/releases) and specify it with `-r`, e.g. `-r 1.3.1`.
+Find the latest version on the [releases page](https://github.com/AlexsLemonade/metafactory/releases) and specify it with `-r`, e.g. `-r v1.0.0`.
 This version number is logged in the reports produced by the run.
 
 Sharing and reusing [parameter files](#running-the-pipeline) also helps repeat runs with the same settings.

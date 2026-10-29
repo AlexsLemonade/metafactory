@@ -1,8 +1,10 @@
 .nextflow*
 work/
 data/
-# synthetic test data for the GENERATE_REPORTS subworkflow tests
-!subworkflows/local/generate_reports/tests/data/
+# test data shared by the GENERATE_REPORTS and CALCULATE_METRICS subworkflow tests
+!tests/data/
+# empty placeholder h5ad files used by the stub samplesheet
+!stub/data/
 results/
 .DS_Store
 testing/

@@ -32,6 +32,12 @@ input:
         `meta` must contain `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
         Structure: [ val(meta), path(metaprograms_file), path(metaprograms_export_file),
         path(shuffled_metaprograms_file) ]
+  - options:
+      type: map
+      description: |
+        Value channel containing a map of options passed to the scoring modules.
+        Must contain the `celltype_annotation_column`, `analysis_celltypes`, `n_top_genes`, and
+        `seed` keys. `n_top_genes` is only passed to the metaprogram scoring module.
 output:
   - metaprogram_scores:
       type: file

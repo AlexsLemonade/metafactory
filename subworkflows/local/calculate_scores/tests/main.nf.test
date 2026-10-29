@@ -34,6 +34,7 @@ def calculateScoresInput = { design ->
     """
     input[0] = channel.of(${libraries.join(', ')})
     input[1] = channel.of(${metaprogram_sets.join(', ')})
+    input[2] = channel.value([celltype_annotation_column: params.celltype_annotation_column, analysis_celltypes: params.analysis_celltypes, n_top_genes: params.n_top_genes, seed: params.seed])
     """
 }
 
