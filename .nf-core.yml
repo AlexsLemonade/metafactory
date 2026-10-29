@@ -15,6 +15,7 @@ lint:
     - docs/CONTRIBUTING.md
     - assets/sendmail_template.txt
     - .prettierignore
+    - .github/PULL_REQUEST_TEMPLATE.md
   multiqc_config: false
   nextflow_config:
     - config_defaults:
