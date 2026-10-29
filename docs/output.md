@@ -91,52 +91,55 @@ Significance for all metrics is determined using an adjusted p-value cutoff of 0
 
 `k-<k>_metaprograms.rds` is an RDS file holding a list with the following items:
 
-| Item                    | Description                                                                                                          |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `metaprogram_list`      | Gene weights for each metaprogram                                                                                    |
-| `clusters`              | Cluster (metaprogram) assignment for each spectra                                                                    |
-| `cluster_list`          | Spectra assigned to each metaprogram                                                                                 |
-| `cor_matrix`            | Correlation matrix of all spectra                                                                                    |
-| `spectra_cor_df`        | Data frame with correlation information for all spectra                                                              |
-| `shuffled_metaprograms` | Shuffled metaprograms (top genes only) for each permutation replicate, used to build null distributions              |
-| `gene_universe`         | All genes used to calculate metaprograms                                                                             |
-| `top_genes`             | The top `--n_top_genes` gene IDs for each metaprogram, ordered by decreasing weight                                  |
-| `n_metaprograms`        | Number of metaprograms (`k`)                                                                                         |
-| `n_top_genes`           | Number of top genes kept for each metaprogram                                                                        |
-| `cnmf_k_range`          | Values of `k` used with cNMF                                                                                         |
-| `filter_spectra`        | Whether orphan spectra were removed                                                                                  |
-| `orphan_cutoff`         | Minimum cross-sample correlation required to keep a spectra if orphan spectra were removed, or `-1` if they were not |
-| `unique_ids`            | Unique IDs of the libraries used to build the metaprograms                                                           |
-| `removed_unique_ids`    | Unique IDs of the libraries removed when filtering spectra                                                           |
+<!-- prettier-ignore -->
+| Item                    | Description  
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------
+| `metaprogram_list`      | Gene weights for each metaprogram  
+| `clusters`              | Cluster (metaprogram) assignment for each spectra  
+| `cluster_list`          | Spectra assigned to each metaprogram  
+| `cor_matrix`            | Correlation matrix of all spectra  
+| `spectra_cor_df`        | Data frame with correlation information for all spectra  
+| `shuffled_metaprograms` | Shuffled metaprograms (top genes only) for each permutation replicate, used to build null distributions  
+| `gene_universe`         | All genes used to calculate metaprograms  
+| `top_genes`             | The top `--n_top_genes` gene IDs for each metaprogram, ordered by decreasing weight  
+| `n_metaprograms`        | Number of metaprograms (`k`)  
+| `n_top_genes`           | Number of top genes kept for each metaprogram  
+| `cnmf_k_range`          | Values of `k` used with cNMF  
+| `filter_spectra`        | Whether orphan spectra were removed  
+| `orphan_cutoff`         | Minimum cross-sample correlation required to keep a spectra if orphan spectra were removed, or `-1` if they were not
+| `unique_ids`            | Unique IDs of the libraries used to build the metaprograms  
+| `removed_unique_ids`    | Unique IDs of the libraries removed when filtering spectra
 
 #### Metaprogram metrics
 
 `k-<k>_mp_metrics.tsv` has one row per metaprogram with the following columns:
 
-| Column                               | Description                                                                                        |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `metaprogram`                        | Metaprogram identifier                                                                             |
-| `max_correlation`                    | Maximum correlation of the metaprogram's gene weights to all other metaprograms                    |
-| `median_difference`                  | Coherence, the difference in median correlation of spectra within and between metaprograms         |
-| `num_spectra_per_mp`                 | Number of spectra in the metaprogram                                                               |
-| `num_samples`                        | Number of samples represented in the metaprogram                                                   |
-| `proportion_of_samples`              | Proportion of all samples represented in the metaprogram                                           |
-| `shannon_entropy`                    | Shannon entropy measuring the relative abundance of samples in the metaprogram                     |
-| `shannon_entropy_norm`               | Normalized Shannon entropy                                                                         |
-| `eff_number`                         | Effective sample size                                                                              |
-| `eff_number_norm`                    | Effective sample size normalized by the total samples in the metaprogram                           |
-| `greater_pvalue_eff_number_norm`     | P-value for the normalized effective sample size being greater than the null distribution          |
-| `greater_adj_pvalue_eff_number_norm` | Adjusted p-value for the normalized effective sample size being greater than the null distribution |
+<!-- prettier-ignore -->
+| Column                               | Description  
+| ------------------------------------ | --------------------------------------------------------------------------------------------------
+| `metaprogram`                        | Metaprogram identifier  
+| `max_correlation`                    | Maximum correlation of the metaprogram's gene weights to all other metaprograms  
+| `median_difference`                  | Coherence, the difference in median correlation of spectra within and between metaprograms  
+| `num_spectra_per_mp`                 | Number of spectra in the metaprogram  
+| `num_samples`                        | Number of samples represented in the metaprogram  
+| `proportion_of_samples`              | Proportion of all samples represented in the metaprogram  
+| `shannon_entropy`                    | Shannon entropy measuring the relative abundance of samples in the metaprogram  
+| `shannon_entropy_norm`               | Normalized Shannon entropy  
+| `eff_number`                         | Effective sample size  
+| `eff_number_norm`                    | Effective sample size normalized by the total samples in the metaprogram  
+| `greater_pvalue_eff_number_norm`     | P-value for the normalized effective sample size being greater than the null distribution  
+| `greater_adj_pvalue_eff_number_norm` | Adjusted p-value for the normalized effective sample size being greater than the null distribution
 
 #### Gene set metrics
 
 `k-<k>_geneset_metrics.tsv` has one row per metaprogram with the following columns:
 
-| Column                     | Description                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `metaprogram`              | Metaprogram identifier                                                                                                   |
-| `num_sig_genesets`         | Number of gene sets identified as significant by ORA                                                                     |
-| `mean_geneset_specificity` | Mean specificity of all significant gene sets for the metaprogram. `NA` if the metaprogram has no significant gene sets. |
+<!-- prettier-ignore -->
+| Column                     | Description  
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------
+| `metaprogram`              | Metaprogram identifier  
+| `num_sig_genesets`         | Number of gene sets identified as significant by ORA  
+| `mean_geneset_specificity` | Mean specificity of all significant gene sets for the metaprogram. `NA` if the metaprogram has no significant gene sets.
 
 #### ORA results
 
@@ -148,12 +151,13 @@ The table holds the full results returned by `enricher()`, including the `geneID
 
 `k-<k>_combined_metaprogram_scores.tsv.gz` is a long format table with one row per cell per metaprogram, with the following columns:
 
-| Column        | Description                                 |
-| ------------- | ------------------------------------------- |
-| `metaprogram` | Metaprogram identifier                      |
-| `barcodes`    | Cell barcode                                |
-| `mp_score`    | Score for the cell against the metaprogram  |
-| `unique_id`   | Unique ID of the library the cell came from |
+<!-- prettier-ignore -->
+| Column        | Description  
+| ------------- | -------------------------------------------
+| `metaprogram` | Metaprogram identifier  
+| `barcodes`    | Cell barcode  
+| `mp_score`    | Score for the cell against the metaprogram  
+| `unique_id`   | Unique ID of the library the cell came from
 
 Scores are calculated as the dot product of the gene weights for the top genes in each metaprogram and the quantile-normalized expression of those genes in each cell.
 If `--celltype_annotation_column` and `--analysis_celltypes` are provided, only cells of the selected cell types are scored.
@@ -162,44 +166,46 @@ If `--celltype_annotation_column` and `--analysis_celltypes` are provided, only 
 
 `reports/all-k_summary_metrics.tsv` has one row per value of `k` with the following columns:
 
-| Column                                                                    | Description                                                                                                |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `n_metaprograms`                                                          | Value of `k`                                                                                               |
-| `is_excluded`                                                             | Whether the value of `k` was excluded from the comparison. Excluded values of `k` have no metrics.         |
-| `is_optimal_k`                                                            | Whether this value of `k` was chosen as the optimal value of `k`                                           |
-| `num_metaprograms`                                                        | Number of metaprograms                                                                                     |
-| `neff_sig_number`, `neff_sig_proportion`                                  | Number and proportion of metaprograms with a significant normalized effective sample size                  |
-| `num_passing_correlation`, `proportion_passing_correlation`               | Number and proportion of metaprograms with a maximum correlation at or below 0.5                           |
-| `num_passing_coherence`                                                   | Number of metaprograms with a coherence greater than 0.1                                                   |
-| `median_coherence`                                                        | Median coherence across all metaprograms                                                                   |
-| `num_metaprograms_with_genesets`, `proportion_metaprograms_with_genesets` | Number and proportion of metaprograms with at least one significant gene set                               |
-| `overall_geneset_specificity`                                             | Mean gene set specificity across all metaprograms with at least one significant gene set                   |
-| `num_significant_cv`, `proportion_significant_cv`                         | Number and proportion of metaprograms with a significant CV of cell scores                                 |
-| `total_samples`                                                           | Number of libraries with cell scores                                                                       |
-| `is_coherence_elbow`                                                      | Whether this value of `k` is the elbow of the median coherence curve                                       |
-| `coherence_elbow_passing`                                                 | Coherence score used for ranking: 1 at the elbow, 0.5 below the elbow or if there is no elbow, 0 above     |
-| `geneset_specificity_pvalue`, `geneset_specificity_adj_pvalue`            | P-value and adjusted p-value for the overall gene set specificity being significantly different compared to the null distribution using a two-sided permutation test |
-| `geneset_specificity_significant`                                         | Whether the overall gene set specificity is significant (1) or not (0)                                     |
-| `rank_effective_sample_size`                                              | Normalized rank of `neff_sig_proportion`                                                                   |
-| `rank_correlation`                                                        | Normalized rank of `proportion_passing_correlation`                                                        |
-| `rank_coherence`                                                          | Normalized rank of `coherence_elbow_passing`                                                               |
-| `rank_gene_set_specificity`                                               | Normalized rank of `geneset_specificity_significant`                                                       |
-| `rank_coefficient_of_variation`                                           | Normalized rank of `proportion_significant_cv`                                                             |
-| `mean_rank`                                                               | Mean of the five normalized ranks                                                                          |
+<!-- prettier-ignore -->
+| Column                                                                    | Description  
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------
+| `n_metaprograms`                                                          | Value of `k`  
+| `is_excluded`                                                             | Whether the value of `k` was excluded from the comparison. Excluded values of `k` have no metrics.  
+| `is_optimal_k`                                                            | Whether this value of `k` was chosen as the optimal value of `k`  
+| `num_metaprograms`                                                        | Number of metaprograms  
+| `neff_sig_number`, `neff_sig_proportion`                                  | Number and proportion of metaprograms with a significant normalized effective sample size  
+| `num_passing_correlation`, `proportion_passing_correlation`               | Number and proportion of metaprograms with a maximum correlation at or below 0.5  
+| `num_passing_coherence`                                                   | Number of metaprograms with a coherence greater than 0.1  
+| `median_coherence`                                                        | Median coherence across all metaprograms  
+| `num_metaprograms_with_genesets`, `proportion_metaprograms_with_genesets` | Number and proportion of metaprograms with at least one significant gene set  
+| `overall_geneset_specificity`                                             | Mean gene set specificity across all metaprograms with at least one significant gene set  
+| `num_significant_cv`, `proportion_significant_cv`                         | Number and proportion of metaprograms with a significant CV of cell scores  
+| `total_samples`                                                           | Number of libraries with cell scores  
+| `is_coherence_elbow`                                                      | Whether this value of `k` is the elbow of the median coherence curve  
+| `coherence_elbow_passing`                                                 | Coherence score used for ranking: 1 at the elbow, 0.5 below the elbow or if there is no elbow, 0 above  
+| `geneset_specificity_pvalue`, `geneset_specificity_adj_pvalue`            | P-value and adjusted p-value for the overall gene set specificity being significantly different compared to the null distribution using a two-sided permutation test
+| `geneset_specificity_significant`                                         | Whether the overall gene set specificity is significant (1) or not (0)  
+| `rank_effective_sample_size`                                              | Normalized rank of `neff_sig_proportion`  
+| `rank_correlation`                                                        | Normalized rank of `proportion_passing_correlation`  
+| `rank_coherence`                                                          | Normalized rank of `coherence_elbow_passing`  
+| `rank_gene_set_specificity`                                               | Normalized rank of `geneset_specificity_significant`  
+| `rank_coefficient_of_variation`                                           | Normalized rank of `proportion_significant_cv`  
+| `mean_rank`                                                               | Mean of the five normalized ranks
 
 #### Metrics for every metaprogram across all values of `k`
 
 `reports/all-k_metaprogram_metrics.tsv` has one row per metaprogram per value of `k`, for every value of `k` that was not excluded.
 It holds an `n_metaprograms` column with the value of `k`, all columns of the [metaprogram metrics](#metaprogram-metrics) and [gene set metrics](#gene-set-metrics) tables, and the following additional columns:
 
-| Column                                                   | Description                                                                      |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `neff_is_significant`                                    | Whether the normalized effective sample size is significant                      |
-| `correlation_is_passing`                                 | Whether `max_correlation` is at or below 0.5                                     |
-| `coherence_is_passing`                                   | Whether coherence (`median_difference`) is greater than 0.1                      |
-| `score_var`, `score_cv`                                  | Variance and CV of the metaprogram scores across all cells                       |
-| `greater_pvalue_score_cv`, `greater_adj_pvalue_score_cv` | P-value and adjusted p-value for the CV being greater than the null distribution |
-| `cv_is_significant`                                      | Whether the CV of cell scores is significant                                     |
+<!-- prettier-ignore -->
+| Column                                                   | Description  
+| -------------------------------------------------------- | --------------------------------------------------------------------------------
+| `neff_is_significant`                                    | Whether the normalized effective sample size is significant  
+| `correlation_is_passing`                                 | Whether `max_correlation` is at or below 0.5  
+| `coherence_is_passing`                                   | Whether coherence (`median_difference`) is greater than 0.1  
+| `score_var`, `score_cv`                                  | Variance and CV of the metaprogram scores across all cells  
+| `greater_pvalue_score_cv`, `greater_adj_pvalue_score_cv` | P-value and adjusted p-value for the CV being greater than the null distribution
+| `cv_is_significant`                                      | Whether the CV of cell scores is significant
 
 ## Checkpoints
 
