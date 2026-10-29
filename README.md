@@ -106,7 +106,8 @@ A full, automatically generated description of every parameter is also available
 
 AlexsLemonade/metafactory was originally written by Allegra G. Hawkins. 
 Additional contributors include: 
-* Joshua A. Shapiro
+
+- Joshua A. Shapiro
 
 ## Contributions and Support
 
