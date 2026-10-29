@@ -327,7 +327,7 @@ workflow METAFACTORY {
         .mix(topic_versions_string)
         .collectFile(
             storeDir: "${outdir}/pipeline_info",
-            name: 'metafactory_software_' + 'versions.yml',
+            name:  'metafactory_software_'  + 'versions.yml',
             sort: true,
             newLine: true,
         )
