@@ -37,6 +37,7 @@ lint:
 template:
   org: AlexsLemonade
   name: metafactory
+  author: Allegra G. Hawkins
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
     RNA-sequencing samples
   force: false
