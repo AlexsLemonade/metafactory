@@ -104,11 +104,9 @@ A full, automatically generated description of every parameter is also available
 
 ## Credits
 
-AlexsLemonade/metafactory was originally written by Allegra G. Hawkins.
-
-We thank the following people for their extensive assistance in the development of this pipeline:
-
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+AlexsLemonade/metafactory was originally written by Allegra G. Hawkins. 
+Additional contributors include: 
+* Joshua A. Shapiro
 
 ## Contributions and Support
 
