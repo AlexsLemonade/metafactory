@@ -1,27 +1,5 @@
-repository_type: pipeline
-nf_core_version: 4.1.0
-
 lint:
   actions_nf_test: false
-  nextflow_config:
-    # the default is built from ${projectDir}, so the resolved value in
-    # nextflow.config can never match the literal string in nextflow_schema.json
-    - config_defaults:
-        - params.msigdb_gene_sets
-  files_unchanged:
-    - docs/CONTRIBUTING.md
-    - assets/sendmail_template.txt
-    - .prettierignore
-  template_strings:
-    # ignore the Jinja-like placeholders in the R Markdown reports
-    - modules/local/generate-reports/metrics-report/assets/combined-metaprogram-metrics.Rmd
-    - modules/local/generate-reports/individual-report/assets/individual-metaprogram-evaluation.Rmd
-  nf_test_content:
-    # every test in this file is expected to fail parameter validation, so no versions.yml is written
-    - tests/params.nf.test
-    # the test data is not on nf-core/test-datasets, so the testdata base path params are not used
-    - tests/nextflow.config
-  multiqc_config: false
   files_exist:
     - conf/igenomes.config
     - conf/igenomes_ignored.config
@@ -33,14 +11,32 @@ lint:
     - docs/images/nf-core-metafactory_logo_light.png
     - docs/images/nf-core-metafactory_logo_dark.png
     - CODE_OF_CONDUCT.md
-
+  files_unchanged:
+    - docs/CONTRIBUTING.md
+    - assets/sendmail_template.txt
+    - .prettierignore
+    - .github/PULL_REQUEST_TEMPLATE.md
+    - LICENSE
+  multiqc_config: false
+  nextflow_config:
+    - config_defaults:
+        - params.msigdb_gene_sets
+  nf_test_content:
+    - tests/params.nf.test
+    - tests/nextflow.config
+  template_strings:
+    - modules/local/generate-reports/metrics-report/assets/combined-metaprogram-metrics.Rmd
+    - modules/local/generate-reports/individual-report/assets/individual-metaprogram-evaluation.Rmd
+nf_core_version: 4.2.1
+repository_type: pipeline
 template:
-  org: AlexsLemonade
-  name: metafactory
+  author: Allegra G. Hawkins
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
     RNA-sequencing samples
   force: false
   is_nfcore: false
+  name: metafactory
+  org: AlexsLemonade
   outdir: .
   skip_features:
     - igenomes
