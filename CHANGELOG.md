@@ -9,9 +9,9 @@ Initial release of AlexsLemonade/metafactory, created with the [nf-core](https:/
 
 ### `Added`
 
-Implementation of the `metafactory` workflow which computes metaprograms for a specified group of samples across a range of k values (number of metaprograms). 
-The optimal number of metaprograms is determined by calculating a set of metrics designed to identify biologically interpretable metaprograms. 
-This initial version of the pipeline requires input data to be stored as an `AnnData` object (`.h5ad` file). 
+Implementation of the `metafactory` workflow which computes metaprograms for a specified group of samples across a range of k values (number of metaprograms).
+The optimal number of metaprograms is determined by calculating a set of metrics designed to identify biologically interpretable metaprograms.
+This initial version of the pipeline requires input data to be stored as an `AnnData` object (`.h5ad` file).
 
 Modules (`modules/local/`):
 
