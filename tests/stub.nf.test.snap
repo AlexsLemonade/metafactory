@@ -40,7 +40,7 @@
                     "stub": "x.y.z"
                 },
                 "Workflow": {
-                    "AlexsLemonade/metafactory": "v1.0.0dev"
+                    "AlexsLemonade/metafactory": "v0.1.0"
                 }
             },
             [
@@ -237,7 +237,7 @@
                 "results/GROUP01/reports/all-k_summary_metrics.tsv:md5,d41d8cd98f00b204e9800998ecf8427e"
             ]
         ],
-        "timestamp": "2026-10-23T12:52:25.752801",
+        "timestamp": "2026-10-30T12:27:35.572482",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.10.3"
