@@ -230,7 +230,7 @@ nextflow pull AlexsLemonade/metafactory
 ## Reproducibility
 
 It is a good idea to specify the pipeline version when running the pipeline on your data, so that the same version of the code and software is used every time.
-Find the latest version on the [releases page](https://github.com/AlexsLemonade/metafactory/releases) and specify it with `-r`, e.g. `-r v1.0.0`.
+Find the latest version on the [releases page](https://github.com/AlexsLemonade/metafactory/releases) and specify it with `-r`, e.g. `-r v0.1.0`.
 This version number is logged in the reports produced by the run.
 
 Sharing and reusing [parameter files](#running-the-pipeline) also helps repeat runs with the same settings.
