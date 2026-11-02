@@ -7,8 +7,8 @@ process RENDER_METRICS_REPORT {
     conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-            ? 'oras://community.wave.seqera.io/library/generate-reports:87519be9bfa8691e'
-            : 'community.wave.seqera.io/library/generate-reports:46f55cf65b19fb92'
+            ? 'oras://community.wave.seqera.io/library/generate-reports:793f057fb260cd19'
+            : 'community.wave.seqera.io/library/generate-reports:23cf21ec4e453820'
     }
 
     input:

@@ -5,8 +5,8 @@ process CNMF {
     conda "${moduleDir}/environment.yml"
     container {
         workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-            ? 'oras://community.wave.seqera.io/library/cnmf:464b3c8962877d9d'
-            : 'community.wave.seqera.io/library/cnmf:83812d80a4b86f24'
+            ? 'oras://community.wave.seqera.io/library/cnmf:35466eeefa6c2ce7'
+            : 'community.wave.seqera.io/library/cnmf:eca7fd9ac02ef604'
     }
 
     input:
