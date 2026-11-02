@@ -3,4 +3,5 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - conda-forge::coreutils
+  # pinned to the version in the ubuntu:24.04 image the process uses with containers
+  - coreutils=9.4

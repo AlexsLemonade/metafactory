@@ -8,6 +8,6 @@ dependencies:
 
   # packages used in module
   - r-tidyverse
-  - r-data.table
+  - r-data.table=1.18.4
   - r-glue
   - r-fs

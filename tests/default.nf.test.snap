@@ -31,7 +31,7 @@
                 "CNMF": {
                     "anndata": "0.13.2",
                     "cnmf": "1.7.1",
-                    "python": "3.14.6"
+                    "python": "3.14.7"
                 },
                 "COMBINE_BACKGROUND_SCORES": {
                     "dplyr": "1.2.1",
@@ -89,7 +89,7 @@
                     "ggplot2": "4.0.3",
                     "glue": "1.8.1",
                     "knitr": 1.52,
-                    "pandoc": 3.12,
+                    "pandoc": "3.12.1",
                     "r-base": "4.5.3",
                     "readr": "2.2.0",
                     "rmarkdown": 2.32,
@@ -107,7 +107,7 @@
                     "anndata": "0.13.2",
                     "numpy": "2.5.2",
                     "pandas": "3.0.5",
-                    "python": "3.14.6",
+                    "python": "3.14.7",
                     "qnorm": "0.9.0",
                     "scipy": "1.18.0"
                 },
@@ -314,7 +314,7 @@
                 "results/SCPCP000001/reports/all-k_summary_metrics.tsv:rows=4,columns=n_metaprograms,is_excluded,is_optimal_k,num_metaprograms,neff_sig_number,neff_sig_proportion,num_passing_correlation,proportion_passing_correlation,num_passing_coherence,median_coherence,num_metaprograms_with_genesets,proportion_metaprograms_with_genesets,overall_geneset_specificity,num_significant_cv,proportion_significant_cv,total_samples,is_coherence_elbow,coherence_elbow_passing,geneset_specificity_pvalue,geneset_specificity_adj_pvalue,geneset_specificity_significant,rank_effective_sample_size,rank_correlation,rank_coherence,rank_gene_set_specificity,rank_coefficient_of_variation,mean_rank"
             ]
         ],
-        "timestamp": "2026-10-30T12:26:05.601414",
+        "timestamp": "2026-11-02T16:31:20.594046",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.10.3"

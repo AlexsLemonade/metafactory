@@ -10,7 +10,7 @@ dependencies:
   # rendering the report
   - r-rmarkdown
   - r-knitr
-  - pandoc
+  - pandoc=3.12.1
 
   # packages used in report
   - r-tidyverse
