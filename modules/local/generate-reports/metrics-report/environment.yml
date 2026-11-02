@@ -10,8 +10,7 @@ dependencies:
   # rendering the report
   - r-rmarkdown
   - r-knitr
-  # == so that 3.12.x builds are not matched
-  - pandoc==3.12
+  - pandoc=3.12.1
 
   # packages used in report
   - r-tidyverse
