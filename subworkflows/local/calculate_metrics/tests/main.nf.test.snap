@@ -1,0 +1,434 @@
+{
+    "metrics match the pipeline outputs": {
+        "content": [
+            [
+                [
+                    {
+                        "group_id": "SCPCP000001",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "SCPCP000001/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-6_mp_metrics.tsv",
+                    "k-6_background_mp_stats.tsv.gz"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "SCPCP000001",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "SCPCP000001/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-6_ora_results.tsv",
+                    "k-6_geneset_metrics.tsv",
+                    "k-6_background_specificity.tsv.gz"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-26T15:41:23.097828",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.3"
+        }
+    },
+    "each process stages only the files it needs": {
+        "content": [
+            [
+                "CALCULATE_METRICS_GENESETS groupA/k-4: groupA_k-4_metaprograms.rds, msigdb-gene-set-genes.tsv.gz",
+                "CALCULATE_METRICS_GENESETS groupA/k-5: groupA_k-5_metaprograms.rds, msigdb-gene-set-genes.tsv.gz",
+                "CALCULATE_METRICS_GENESETS groupB/k-6: groupB_k-6_metaprograms.rds, msigdb-gene-set-genes.tsv.gz",
+                "CALCULATE_METRICS_METAPROGRAMS groupA/k-4: groupA_k-4_metaprograms.rds",
+                "CALCULATE_METRICS_METAPROGRAMS groupA/k-5: groupA_k-5_metaprograms.rds",
+                "CALCULATE_METRICS_METAPROGRAMS groupB/k-6: groupB_k-6_metaprograms.rds"
+            ]
+        ],
+        "timestamp": "2026-10-26T15:32:09.80462",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.3"
+        }
+    },
+    "several groups with several values of k": {
+        "content": [
+            {
+                "CALCULATE_METRICS_GENESETS": [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 5,
+                        "metaprograms_publish_dir": "groupA/k-5",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupB/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "groupB/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 7,
+                        "metaprograms_publish_dir": "groupB/k-7",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    }
+                ],
+                "CALCULATE_METRICS_METAPROGRAMS": [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 5,
+                        "metaprograms_publish_dir": "groupA/k-5",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupB/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "groupB/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 7,
+                        "metaprograms_publish_dir": "groupB/k-7",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    }
+                ]
+            },
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_mp_metrics.tsv",
+                    "k-4_background_mp_stats.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 5,
+                        "metaprograms_publish_dir": "groupA/k-5",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-5_mp_metrics.tsv",
+                    "k-5_background_mp_stats.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupB/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_mp_metrics.tsv",
+                    "k-4_background_mp_stats.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "groupB/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-6_mp_metrics.tsv",
+                    "k-6_background_mp_stats.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 7,
+                        "metaprograms_publish_dir": "groupB/k-7",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-7_mp_metrics.tsv",
+                    "k-7_background_mp_stats.tsv.gz"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_ora_results.tsv",
+                    "k-4_geneset_metrics.tsv",
+                    "k-4_background_specificity.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 5,
+                        "metaprograms_publish_dir": "groupA/k-5",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-5_ora_results.tsv",
+                    "k-5_geneset_metrics.tsv",
+                    "k-5_background_specificity.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupB/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_ora_results.tsv",
+                    "k-4_geneset_metrics.tsv",
+                    "k-4_background_specificity.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "groupB/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-6_ora_results.tsv",
+                    "k-6_geneset_metrics.tsv",
+                    "k-6_background_specificity.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 7,
+                        "metaprograms_publish_dir": "groupB/k-7",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-7_ora_results.tsv",
+                    "k-7_geneset_metrics.tsv",
+                    "k-7_background_specificity.tsv.gz"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-26T15:31:53.085064",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.3"
+        }
+    },
+    "one metaprogram set generates the expected outputs": {
+        "content": [
+            {
+                "CALCULATE_METRICS_GENESETS": [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    }
+                ],
+                "CALCULATE_METRICS_METAPROGRAMS": [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    }
+                ]
+            },
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_mp_metrics.tsv",
+                    "k-4_background_mp_stats.tsv.gz"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_ora_results.tsv",
+                    "k-4_geneset_metrics.tsv",
+                    "k-4_background_specificity.tsv.gz"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-26T15:31:33.644714",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.3"
+        }
+    },
+    "output meta is passed through unchanged": {
+        "content": [
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_mp_metrics.tsv",
+                    "k-4_background_mp_stats.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "groupB/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-6_mp_metrics.tsv",
+                    "k-6_background_mp_stats.tsv.gz"
+                ]
+            ],
+            [
+                [
+                    {
+                        "group_id": "groupA",
+                        "n_metaprograms": 4,
+                        "metaprograms_publish_dir": "groupA/k-4",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-4_ora_results.tsv",
+                    "k-4_geneset_metrics.tsv",
+                    "k-4_background_specificity.tsv.gz"
+                ],
+                [
+                    {
+                        "group_id": "groupB",
+                        "n_metaprograms": 6,
+                        "metaprograms_publish_dir": "groupB/k-6",
+                        "unique_ids": [
+                            "lib1",
+                            "lib2"
+                        ]
+                    },
+                    "k-6_ora_results.tsv",
+                    "k-6_geneset_metrics.tsv",
+                    "k-6_background_specificity.tsv.gz"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-26T15:32:38.449694",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.3"
+        }
+    }
+}

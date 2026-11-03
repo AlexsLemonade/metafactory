@@ -1,0 +1,4 @@
+name	collection	subcollection	geneset
+hallmark	H	NA	all
+reactome	C2	CP:REACTOME	all
+oncogenic	C6	NA	all

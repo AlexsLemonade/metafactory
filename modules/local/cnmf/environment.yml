@@ -1,0 +1,9 @@
+name: cnmf
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - python=3.14.7
+  - bioconda::cnmf=1.7.1
+  - anndata=0.13.2

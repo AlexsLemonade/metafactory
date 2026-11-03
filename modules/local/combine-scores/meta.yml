@@ -1,0 +1,77 @@
+name: combine_scores
+description: |
+  Combine the per library score tables generated for a single metaprogram set into one table.
+  All input files must hold the same columns, so one task is run per score type per metaprogram
+  set (group_id/n_metaprograms combination): once for the per cell metaprogram scores from the
+  score metaprograms module and once for the per shuffled metaprogram background score stats from
+  the score background module. The tables are stacked as is, with no columns added or dropped,
+  and the combined table is written alongside the metaprograms and per library scores it was
+  built from.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - scoring
+tools:
+  - tidyverse:
+      description: |
+        The tidyverse is a collection of R packages for data science. The dplyr, purrr, readr and
+        stringr packages are used here to read the individual score tables, stack them and write
+        the combined table.
+      homepage: https://www.tidyverse.org
+      documentation: https://www.tidyverse.org/packages/
+      license: ["MIT"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing metaprogram set and score type information, one map per score
+          type per metaprogram set. Required keys:
+          - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
+          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the scores were
+            calculated against.
+          - `score_type`: Type of score being combined, either `metaprogram_scores` or
+            `background_score_stats`.
+          - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
+            written to, of the form
+            `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
+            in the workflow and shared with the generate metaprograms and scoring modules so that
+            the combined scores are written alongside the per library scores they were built from.
+          Note that `unique_id` is deliberately absent, since each task combines the scores from
+          all libraries in the group.
+    - score_files:
+        type: file
+        description: |
+          List of gzipped TSVs of scores for individual libraries, all of the same score type and
+          all scored against the same metaprogram set. Either the per cell metaprogram scores
+          from the score metaprograms module (columns `metaprogram`, `barcodes`, `mp_score`,
+          `unique_id`) or the background score stats from the score background module (columns
+          `metaprogram`, `replicate`, `num_cells`, `mean_mp_score`, `M2`, `unique_id`).
+        pattern: "*.tsv.gz"
+
+output:
+  - results:
+      - meta:
+          type: map
+          description: Groovy Map of metaprogram set and score type information, passed through unchanged from the input channel.
+      - "*_combined_*.tsv.gz":
+          type: file
+          description: |
+            Gzipped long format TSV, at
+            `<metaprograms_publish_dir>/k-<n_metaprograms>_combined_<score_type>.tsv.gz`, holding
+            every row from every input file. Columns are the columns of the input tables, which
+            include the `unique_id` of the library each row came from.
+          pattern: "*_combined_*.tsv.gz"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"

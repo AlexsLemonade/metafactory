@@ -1,0 +1,10 @@
+name: calculate-k
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  # R interpreter
+  - r-base=4.5
+
+  # packages used in module
+  - r-tidyverse

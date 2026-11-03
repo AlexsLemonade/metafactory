@@ -1,57 +1,75 @@
-# AlexsLemonade/metafactory
+# metafactory
 
 [![GitHub Actions CI Status](https://github.com/AlexsLemonade/metafactory/actions/workflows/nf-test.yml/badge.svg)](https://github.com/AlexsLemonade/metafactory/actions/workflows/nf-test.yml)
-[![GitHub Actions Linting Status](https://github.com/AlexsLemonade/metafactory/actions/workflows/linting.yml/badge.svg)](https://github.com/AlexsLemonade/metafactory/actions/workflows/linting.yml)[![AWS CI](https://img.shields.io/badge/CI%20tests-full%20size-FF9900?labelColor=000000&logo=Amazon%20AWS)](https://nf-co.re/metafactory/results)[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![GitHub Actions Linting Status](https://github.com/AlexsLemonade/metafactory/actions/workflows/linting.yml/badge.svg)](https://github.com/AlexsLemonade/metafactory/actions/workflows/linting.yml)[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
 [![nf-test](https://img.shields.io/badge/unit_tests-nf--test-337ab7.svg)](https://www.nf-test.com)
 
 [![Nextflow](https://img.shields.io/badge/version-%E2%89%A525.10.4-green?style=flat&logo=nextflow&logoColor=white&color=%230DC09D&link=https%3A%2F%2Fnextflow.io)](https://www.nextflow.io/)
-[![nf-core template version](https://img.shields.io/badge/nf--core_template-4.0.2-green?style=flat&logo=nfcore&logoColor=white&color=%2324B064&link=https%3A%2F%2Fnf-co.re)](https://github.com/nf-core/tools/releases/tag/4.0.2)
+[![nf-core template version](https://img.shields.io/badge/nf--core_template-4.1.0-green?style=flat&logo=nfcore&logoColor=white&color=%2324B064&link=https%3A%2F%2Fnf-co.re)](https://github.com/nf-core/tools/releases/tag/4.2.1)
 [![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
-[![Launch on Seqera Platform](https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Seqera%20Platform-%234256e7)](https://cloud.seqera.io/launch?pipeline=https://github.com/nf-core/metafactory)
+[![Launch on Seqera Platform](https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Seqera%20Platform-%234256e7)](https://cloud.seqera.io/launch?pipeline=https://github.com/AlexsLemonade/metafactory)
+
+![Overview of metafactory](./assets/diagrams/NMF-metaprogram-overview.png)
 
 ## Introduction
 
-**nf-core/metafactory** is a bioinformatics pipeline that ...
+`metafactory` is a Nextflow pipeline for identifying _metaprograms_ — recurrent gene expression programs that are shared across samples — from single-cell and single-nuclei RNA-sequencing data.
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+Gene expression programs are first found within each sample independently using consensus non-negative matrix factorization (cNMF).
+The programs from every sample in a cohort are then compared to one another and clustered into metaprograms, so that only the programs that recur across multiple samples are retained.
+Because the number of metaprograms (`k`) present in a cohort is not known ahead of time, the pipeline builds metaprograms across a range of values of `k`, evaluates each set with a panel of metrics, and reports the optimal value of `k` along with the metaprograms, their gene set annotations, and a score for every cell.
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/community/brand/workflow-schematics#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
+### Pipeline summary
+
+1. **Use [`cNMF`](https://github.com/dylkot/cNMF) to identify gene expression programs in each sample.**
+   cNMF is run on the raw counts across a range of components to produce a set of consensus gene expression programs (spectra) for each sample.
+   By default, all cells are used but cells can be optionally subset to the cell types of interest prior to running `cNMF`.
+2. **Build metaprograms for each group of samples.**
+   The spectra from all samples in a group are combined and correlated, low-correlation (orphan) spectra are optionally removed, and the remaining spectra are hierarchically clustered into `k` metaprograms.
+   Each metaprogram is a set of gene weights averaged across the spectra assigned to it.
+   This step is repeated for every value of `k` specified using the `--n_metaprograms` parameter.
+3. **Annotate metaprograms with gene sets.**
+   Overrepresentation analysis (ORA) is run on the top genes of each metaprogram against a set of MSigDB gene sets.
+4. **Score cells against metaprograms.**
+   Every cell in every sample of a group is scored against each metaprogram built for that group.
+   Scores are calculated by taking the dot product of the gene weights for the top genes in each metaprogram and the quantile-normalized expression of those genes in a given cell.
+5. **Calculate metaprogram metrics.**
+   Metrics describing the interpretability of each metaprogram are calculated.
+   These include: normalized effective sample size, correlation, coherence of individual gene expression programs within a metaprogram, gene set specificity, and coefficient of variation of cell scores.
+6. **Choose the optimal value of `k`.**
+   All values of `k` tested for a group are compared using the five metrics described in step 5.
+   Coherence is scored by whether each value of `k` is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
+   Each metric is ranked across values of `k`, the ranks are normalized to a 0-1 scale, and the value of `k` with the highest mean rank is selected.
+7. **Generate reports.**
+   A metrics report comparing every value of `k` tested for a group and an evaluation report for the metaprograms at the optimal value of `k` are generated.
 
 ## Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/get_started/environment_setup/overview) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/get_started/run-your-first-pipeline) with `-profile test` before running the workflow on actual data.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
+### Input
 
-First, prepare a samplesheet with your input data that looks as follows:
+The pipeline takes filtered and normalized single-cell/single-nuclei objects, one per library, provided as AnnData `.h5ad` files.
+Currently, the pipeline has been developed to handle processed `AnnData` objects from [ScPCA](https://scpca.alexslemonade.org), but future work will expand support to other single-cell file types.
+Cells are expected to have already been filtered, and raw counts are expected to be available alongside the normalized data.
 
-`samplesheet.csv`:
+Samples are described in a comma-separated samplesheet with three columns and a header row:
 
-```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-```
+| Column      | Description                                                                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unique_id` | Unique identifier for the library. Used to name all per-library output.                                                                         |
+| `group_id`  | Identifier for the group of samples that metaprograms are built across. All libraries sharing a `group_id` are analyzed together as one cohort. |
+| `h5ad_file` | Path to the filtered and normalized `.h5ad` file for that library. Local and remote (e.g. `s3://`) paths are both supported.                    |
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
+Metaprograms are built once per `group_id`, so a single run can process multiple independent cohorts.
 
--->
-
-Now, you can run the pipeline using:
-
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
+### Running the pipeline
 
 ```bash
-nextflow run nf-core/metafactory \
+nextflow run AlexsLemonade/metafactory \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --outdir <OUTDIR>
@@ -60,38 +78,51 @@ nextflow run nf-core/metafactory \
 > [!WARNING]
 > Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_; see [docs](https://nf-co.re/docs/running/run-pipelines#using-parameter-files).
 
-For more details and further functionality, please refer to the [usage documentation](https://nf-co.re/metafactory/usage) and the [parameter documentation](https://nf-co.re/metafactory/parameters).
+## Output
 
-## Pipeline output
+Final results are written to `<OUTDIR>/results/<group_id>/`, with one directory per group.
+For each group, the pipeline produces:
 
-To see the results of an example test run with a full size dataset refer to the [results](https://nf-co.re/metafactory/results) tab on the nf-core website pipeline page.
-For more details about the output files and reports, please refer to the
-[output documentation](https://nf-co.re/metafactory/output).
+- **Optimal value of `k`** — a text file (`optimal-k.txt`) holding the value of `k` chosen for the group.
+- **Metaprograms for the optimal value of `k`** — the metaprograms object holding the gene weights for each metaprogram, the spectra assigned to it, and the parameters used to build it.
+- **Metaprogram and gene set metrics** — tables of the metrics calculated for each metaprogram at the optimal value of `k`, including effective sample size, correlation, coherence, and gene set specificity.
+- **ORA results** — the gene sets significantly associated with each metaprogram, as identified by overrepresentation analysis of its top genes.
+- **Metaprogram scores** — a table of scores for every cell in every library of the group against each metaprogram.
+- **Metrics report** — a report summarizing the metrics calculated for every value of `k` tested, the metrics used to rank them, and the value of `k` that was selected.
+- **Individual metaprogram evaluation report** — a report evaluating the metaprograms at the optimal value of `k`, including their redundancy, library diversity, gene set annotations, and cell scores.
+- **Metrics for all values of `k`** — the tables used to build the metrics report, holding the metrics and null distributions for every value of `k` tested, in a `reports/` subdirectory.
+
+Intermediate output from each step, including the results for the values of `k` that were not selected, is written to `<OUTDIR>/checkpoints/`.
+Nextflow execution reports, the parameters used, and the software versions are written to `<OUTDIR>/pipeline_info/`.
+
+See [`docs/output.md`](docs/output.md) for a full description of every output file and its contents.
+
+## Parameters
+
+The pipeline parameters, including the samplesheet format and the options controlling cNMF and metaprogram generation, are described in [`docs/usage.md`](docs/usage.md).
+A full, automatically generated description of every parameter is also available with `nextflow run AlexsLemonade/metafactory --help` (or `--help_full` for the complete list).
 
 ## Credits
 
-nf-core/metafactory was originally written by Ally Hawkins.
+AlexsLemonade/metafactory was originally written by Allegra G. Hawkins.
+Additional contributors include:
 
-We thank the following people for their extensive assistance in the development of this pipeline:
-
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+- Joshua A. Shapiro
 
 ## Contributions and Support
 
 If you would like to contribute to this pipeline, please see the [contributing guidelines](docs/CONTRIBUTING.md).
 
-For further information or help, don't hesitate to get in touch on the [Slack `#metafactory` channel](https://nfcore.slack.com/channels/metafactory) (you can join with [this invite](https://nf-co.re/join/slack)).
-
 ## Citations
 
 <!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi and badge at the top of this file. -->
-<!-- If you use nf-core/metafactory for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+<!-- If you use AlexsLemonade/metafactory for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
 
 <!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
 
 An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
 
-You can cite the `nf-core` publication as follows:
+This pipeline uses code and infrastructure developed and maintained by the [nf-core](https://nf-co.re) community, reused here under the [MIT license](https://github.com/nf-core/tools/blob/main/LICENSE).
 
 > **The nf-core framework for community-curated bioinformatics pipelines.**
 >

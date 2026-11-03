@@ -1,0 +1,113 @@
+name: generate_metaprograms
+description: |
+  Cluster cNMF gene expression spectra from all samples in a group into a specified
+  number of metaprograms (MPs) based on spectra correlation. Optionally filters out
+  "orphan" spectra that do not correlate well with spectra from other samples before
+  clustering. Also generates permuted (gene-shuffled) versions of each metaprogram
+  for later use in permutation-based significance testing.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+tools:
+  - r-base:
+      description: |
+        R is a language and environment for statistical computing and graphics.
+      homepage: https://www.r-project.org/
+      documentation: https://www.r-project.org/other-docs.html
+      license: ["GPL-2", "GPL-3"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
+          combination. Required keys:
+          - `group_id`: Group identifier shared by all samples used as input. Used as the output
+            subdirectory name.
+          - `unique_ids`: List of unique sample identifiers whose cNMF results are included in
+            this group.
+          - `n_metaprograms`: Number of metaprograms (k) to generate for this group.
+          - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
+            written to, of the form
+            `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
+            in the workflow and shared with downstream modules so that all output for a
+            metaprogram set is written to the same place.
+    - cnmf_output_dirs:
+        type: directory
+        description: List of per-sample cNMF output directories (one per unique_id in the group) containing gene spectra score files.
+        pattern: "*/"
+  - - options:
+        type: map
+        description: |
+          Groovy Map of the options used to generate the metaprograms, supplied as a single value
+          rather than one input per option. Required keys:
+          - `n_top_genes` (integer): Number of top genes to extract from each metaprogram. Used
+            both for the `top_genes` slot of the RDS file, which downstream modules read rather
+            than recomputing the gene lists themselves, and when generating shuffled metaprograms
+            for permutation testing. Must be at least 1.
+          - `filter_spectra` (boolean): Whether to filter out orphan spectra (spectra that do not
+            correlate well with any spectra from other samples) before generating metaprograms.
+          - `orphan_cutoff` (double): Minimum cross-sample maximum correlation required to keep a
+            spectra when filter_spectra is used.
+          - `cnmf_k_lower` (integer): Lower boundary for the number of components (k) tested in
+            cNMF. Used to restrict which cNMF k values are considered when generating
+            metaprograms.
+          - `cnmf_k_upper` (integer): Upper boundary for the number of components (k) tested in
+            cNMF. Used to restrict which cNMF k values are considered when generating
+            metaprograms.
+          - `cnmf_k_step_size` (integer): Step size for the range of k components tested in cNMF.
+            Used to restrict which cNMF k values are considered when generating metaprograms.
+          - `seed` (integer): Random seed used when clustering and shuffling metaprograms, for
+            reproducibility.
+          - `nreps` (integer): Number of permutation replicates, and so the number of gene shuffled
+            copies of the metaprograms to generate.
+
+output:
+  - results:
+      - meta:
+          type: map
+          description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.
+      - "k-*_metaprograms.rds":
+          type: file
+          description: |
+            RDS file, at `<metaprograms_publish_dir>/k-<n_metaprograms>_metaprograms.rds`,
+            holding the generated metaprograms and associated parameters. Slots are
+            `metaprogram_list`, `clusters`, `cluster_list`, `cor_matrix`, `spectra_cor_df`,
+            `shuffled_metaprograms`, `gene_universe`, `top_genes`, `n_metaprograms`,
+            `n_top_genes`, `cnmf_k_range`, `filter_spectra`, `orphan_cutoff`, `unique_ids` and
+            `removed_unique_ids`. `top_genes` holds the top `n_top_genes` gene IDs of each
+            metaprogram, ordered by decreasing weight, and is calculated here so that every
+            downstream consumer uses the same gene lists.
+          pattern: "k-*_metaprograms.rds"
+      - "k-*_metaprograms.tsv.gz":
+          type: file
+          description: |
+            Gzipped long format TSV, written alongside the RDS file, with one row per gene per
+            metaprogram (columns: `metaprogram`, `gene_id`, `weight`). Holds the same gene weights
+            as the `metaprogram_list` slot of the RDS file, in a format that can be read by
+            downstream python modules.
+          pattern: "k-*_metaprograms.tsv.gz"
+      - "k-*_shuffled_metaprograms.tsv.gz":
+          type: file
+          description: |
+            Gzipped long format TSV, written alongside the RDS file, with one row per gene per
+            metaprogram per permutation replicate (columns: `replicate`, `metaprogram`,
+            `gene_id`, `weight`). Holds the same gene weights as the `shuffled_metaprograms`
+            slot of the RDS file, in a format that can be read by downstream python modules.
+            Only the top `n_top_genes` genes of each shuffled metaprogram are included, so the
+            union of the gene IDs is a subset of the gene universe and not the gene universe
+            itself.
+          pattern: "k-*_shuffled_metaprograms.tsv.gz"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"

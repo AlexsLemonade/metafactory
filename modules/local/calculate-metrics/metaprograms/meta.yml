@@ -1,0 +1,113 @@
+name: calculate_metrics_metaprograms
+description: |
+  Calculate metrics describing each metaprogram in a single metaprogram set. Covers how distinct
+  each metaprogram is from the others (max correlation), how coherent the spectra assigned to it
+  are (the difference in medians between within-metaprogram and between-metaprogram spectra
+  correlation), and how evenly the samples contributing to it are represented (Shannon entropy and
+  effective sample size). A permutation test, which shuffles the metaprogram assignment of each
+  spectra while holding the number of spectra per metaprogram fixed, is used to build a background
+  distribution for the sample diversity stats and to calculate a p-value for the normalized
+  effective sample size. All metrics are derived from the metaprograms RDS object alone, so no
+  sample metadata is required.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - metrics
+  - permutation testing
+tools:
+  - tidyverse:
+      description: |
+        The tidyverse is a collection of R packages for data science. The dplyr, readr, stringr,
+        tibble and tidyr packages are used here to reshape the spectra correlations and cluster
+        assignments, calculate the metrics and write the output tables.
+      homepage: https://www.tidyverse.org
+      documentation: https://www.tidyverse.org/packages/
+      license: ["MIT"]
+  - matrixStats:
+      description: |
+        High-performing functions operating on rows and columns of matrices. Used here to take the
+        maximum correlation of each metaprogram to all other metaprograms.
+      homepage: https://github.com/HenrikBengtsson/matrixStats
+      documentation: https://cran.r-project.org/web/packages/matrixStats/matrixStats.pdf
+      license: ["Artistic-2.0"]
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
+          combination. Required keys:
+          - `group_id`: Group identifier shared by all samples used to generate the metaprograms.
+          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the metrics are
+            calculated for.
+          - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
+            written to, of the form
+            `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
+            in the workflow and shared with the generate metaprograms module so that the metrics
+            are written alongside the metaprograms they were calculated from.
+          Any other keys present in the map, including the `unique_ids` set by the generate
+          metaprograms module, are passed through unchanged and are not read by this process. The
+          total number of samples used as the denominator for `proportion_of_samples` is taken from
+          the `unique_ids` slot of the RDS file rather than from the map.
+    - metaprograms_file:
+        type: file
+        description: |
+          RDS file of metaprograms for a single metaprogram set, as written by the generate
+          metaprograms module. The `metaprogram_list`, `cluster_list`, `spectra_cor_df` and
+          `unique_ids` slots are read.
+        pattern: "*.rds"
+  - - options:
+        type: map
+        description: |
+          Groovy Map of the options used to calculate the metrics, supplied as a single value
+          rather than one input per option. Required keys:
+          - `seed` (integer): Random seed used when shuffling metaprogram assignments to build the
+            background distribution, for reproducibility.
+          - `nreps` (integer): Number of replicates to use for permutation testing. Must be at
+            least 1. The smallest possible p-value is 1 / (nreps + 1), so lower values run faster
+            but give coarser p-values.
+
+output:
+  - metrics:
+      - meta:
+          type: map
+          description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.
+      - "k-*_mp_metrics.tsv":
+          type: file
+          description: |
+            TSV, at `<metaprograms_publish_dir>/k-<n_metaprograms>_mp_metrics.tsv`, with one row
+            per metaprogram (columns: `metaprogram`, `max_correlation`, `median_difference`,
+            `num_spectra_per_mp`, `num_samples`, `proportion_of_samples`, `shannon_entropy`,
+            `shannon_entropy_norm`, `eff_number`, `eff_number_norm`,
+            `greater_pvalue_eff_number_norm`, `greater_adj_pvalue_eff_number_norm`). The p-value
+            columns are one sided, testing whether the observed normalized effective sample size is
+            greater than the background, and are adjusted across metaprograms with the
+            Benjamini-Hochberg method.
+          pattern: "k-*_mp_metrics.tsv"
+  - background:
+      - meta:
+          type: map
+          description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.
+      - "k-*_background_mp_stats.tsv.gz":
+          type: file
+          description: |
+            Gzipped TSV, written alongside the metrics table at
+            `<metaprograms_publish_dir>/k-<n_metaprograms>_background_mp_stats.tsv.gz`, holding the
+            background distribution the `eff_number_norm` p-values are calculated against. One row
+            per metaprogram per permutation replicate (columns: `replicate`, `metaprogram`, then
+            every sample diversity stat in the metrics table). Gzipped because it holds
+            `nreps` times `n_metaprograms` rows.
+          pattern: "k-*_background_mp_stats.tsv.gz"
+  - versions:
+      - "versions.yml":
+          type: file
+          description: File containing software versions for each tool used in the process.
+          pattern: "versions.yml"
+
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"

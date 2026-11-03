@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "generate_reports"
+description: |
+  Generate the reports for each group based on the optimal value of k and the metrics used to
+  choose it.
+keywords:
+  - single-cell
+  - NMF
+  - gene expression programs
+  - cNMF
+  - metaprograms
+  - metrics
+  - model selection
+  - report
+components:
+  - generate-reports/metrics-report
+  - generate-reports/individual-report
+input:
+  - optimal_k_ch:
+      type: file
+      description: |
+        Channel containing the optimal value of k for each group, as emitted by the `optimal_k`
+        output of the calculate k module. The file holds the optimal value of k as a single number.
+        `meta` must contain a `group_id` key, and is used to join this channel with `report_metrics_ch`.
+        Structure: [ val(meta), path(optimal_k_file) ]
+      pattern: "optimal-k.txt"
+  - report_metrics_ch:
+      type: file
+      description: |
+        Channel containing the tables used to build the report for each group, as emitted by the
+        `report_metrics` output of the calculate k module: the per metaprogram metrics for every
+        value of k, the summarized metrics and ranks for every value of k, and the permuted null
+        distributions for the normalized effective sample size, the overall gene set specificity,
+        and the coefficient of variation of the cell scores.
+        Structure: [ val(meta), path(metaprogram_metrics_file), path(k_metrics_file),
+        path(neff_background_file), path(specificity_background_file), path(cv_background_file) ]
+      pattern: "all-k_*.{tsv,tsv.gz}"
+  - ch_optimal_metaprogram_set:
+      type: file
+      description: |
+        Channel containing the files for the metaprogram set chosen as the optimal value of k for
+        each group, used to build the individual report: the metaprograms RDS file, the per
+        metaprogram metrics, the ORA results, the gene set metrics, and the combined cell scores.
+        The gene set metrics file is not read by the individual report and is dropped before it
+        is rendered.
+        `meta` must contain the `group_id` and `optimal_k` keys.
+        Structure: [ val(meta), path(metaprograms_file), path(metaprogram_metrics_file),
+        path(ora_results_file), path(geneset_metrics_file), path(combined_scores_file) ]
+      pattern: "k-*_*.{rds,tsv,tsv.gz}"
+  - options:
+      type: map
+      description: |
+        Value channel containing a map of options passed to the report modules.
+        Must contain the `n_top_genes` and `seed` keys. `n_top_genes` is only passed to the
+        metrics report.
+output:
+  - metrics_report:
+      type: file
+      description: |
+        Channel containing the self contained HTML report of the combined metaprogram metrics for
+        each group, written to `<group_id>/combined-metaprogram-metrics.html`.
+        Structure: [ val(meta), path(report) ]
+      pattern: "combined-metaprogram-metrics.html"
+  - individual_report:
+      type: file
+      description: |
+        Channel containing the self contained HTML report evaluating the metaprogram set chosen as
+        the optimal value of k for each group, written to
+        `<group_id>/individual-metaprogram-evaluation.html`.
+        Structure: [ val(meta), path(report) ]
+      pattern: "individual-metaprogram-evaluation.html"
+authors:
+  - "@allyhawkins"
+maintainers:
+  - "@allyhawkins"

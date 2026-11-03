@@ -1,0 +1,7 @@
+name: publish-metaprograms
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  # pinned to the version in the ubuntu:24.04 image the process uses with containers
+  - coreutils=9.4

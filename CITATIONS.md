@@ -1,4 +1,4 @@
-# nf-core/metafactory: Citations
+# AlexsLemonade/metafactory: Citations
 
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 
@@ -9,6 +9,10 @@
 > Di Tommaso P, Chatzou M, Floden EW, Barja PP, Palumbo E, Notredame C. Nextflow enables reproducible computational workflows. Nat Biotechnol. 2017 Apr 11;35(4):316-319. doi: 10.1038/nbt.3820. PubMed PMID: 28398311.
 
 ## Pipeline tools
+
+- [cNMF](https://pubmed.ncbi.nlm.nih.gov/31282856/)
+
+  > Kotliar D, Veres A, Nagy MA, Tabrizi S, Hodis E, Melton DA, Sabeti PC. Identifying gene expression programs of cell-type identity and cellular activity with single-cell RNA-Seq. Elife. 2019 Jul 8;8:e43803. doi: 10.7554/eLife.43803. PubMed PMID: 31282856; PubMed Central PMCID: PMC6639075.
 
 ## Software packaging/containerisation tools
 

@@ -1,0 +1,601 @@
+// Tests for the CALCULATE_METRICS subworkflow.
+//
+// The tests tagged "stub" check the channel wiring. They run in stub mode, so no metrics are
+// calculated and the inputs are empty placeholder files. Each of these tests describes its input as
+// a design map of group_id -> [k: [...]], where k is the list of n_metaprograms values that
+// metaprogram sets are generated for in that group. The helpers below build the subworkflow input
+// and the expected results from the same design.
+//
+// The tests tagged "metrics" run the R templates on the outputs of a real run of the pipeline with
+// the test profile, which are saved in `tests/data/` at the root of the repository and shared with
+// the GENERATE_REPORTS tests. The metaprograms RDS is the input, and the metrics tables from the
+// same run are the expected outputs. `k-<k>_term2gene.tsv` is a small set of gene sets built from
+// the top genes of the metaprograms, so ORA finds significant gene sets for known metaprograms.
+// To regenerate these files, run `tests/scripts/update-test-data.sh`.
+//
+// Helpers shared with the other subworkflow tests are in `tests/lib/SubworkflowTestUtils.groovy`.
+
+// the unique ids in every input meta. GENERATE_METAPROGRAMS adds the libraries a metaprogram set
+// was built from to its meta, so the input meta includes them too
+def uniqueIds = ['lib1', 'lib2']
+
+// Nextflow code for the gene sets and options inputs, which the pipeline builds from params. they
+// are built from params here too, so that tests can set them in the params block
+def optionsInput = """
+    input[1] = channel.value(file(params.msigdb_gene_sets))
+    input[2] = channel.value([seed: params.seed, nreps: params.nreps])
+    """
+
+// Nextflow code for the subworkflow input. path inputs must exist to be staged, so an empty
+// placeholder RDS file is created for every metaprogram set in a temporary directory. each file
+// name holds its group and k, so the files staged into each task show which set it received
+def calculateMetricsInput = { design ->
+    def input_dir = File.createTempDir()
+    def metaprogram_sets = design.collectMany { group_id, group ->
+        group.k.collect { k ->
+            def rds_file = new File(input_dir, "${group_id}_k-${k}_metaprograms.rds")
+            rds_file.createNewFile()
+            "[[group_id: '${group_id}', n_metaprograms: ${k}, metaprograms_publish_dir: '${group_id}/k-${k}', unique_ids: ${uniqueIds.inspect()}], file('${rds_file}')]"
+        }
+    }
+    "input[0] = channel.of(${metaprogram_sets.join(', ')})" + optionsInput
+}
+
+// identifies a task from its meta: the metaprogram set
+def taskId = { meta -> meta.metaprograms_publish_dir }
+
+// the emitted items for each process. each task emits one item, with the meta it ran with
+def taskEmits = { out ->
+    [CALCULATE_METRICS_GENESETS: out.geneset_metrics, CALCULATE_METRICS_METAPROGRAMS: out.metaprogram_metrics]
+}
+
+// the task metas expected from a design: one task per metaprogram set for each process, each with
+// the input meta passed through unchanged
+def expectedTaskMetas = { design ->
+    def metas = design.collectMany { group_id, group ->
+        group.k.collect { k ->
+            [group_id: group_id, n_metaprograms: k, metaprograms_publish_dir: "${group_id}/k-${k}".toString(), unique_ids: uniqueIds]
+        }
+    }.sort { meta -> taskId(meta) }
+    [CALCULATE_METRICS_GENESETS: metas, CALCULATE_METRICS_METAPROGRAMS: metas]
+}
+
+// checks that each emitted file is named as in meta.yml inside metaprograms_publish_dir, in the
+// order the files are emitted after the meta
+def checkOutputs = { out ->
+    [
+        metaprogram_metrics: ['mp_metrics.tsv', 'background_mp_stats.tsv.gz'],
+        geneset_metrics: ['ora_results.tsv', 'geneset_metrics.tsv', 'background_specificity.tsv.gz'],
+    ].each { emit, suffixes ->
+        out."${emit}".each { item ->
+            def meta = item[0]
+            assert item.size() == suffixes.size() + 1
+            suffixes.eachWithIndex { suffix, i ->
+                assert item[i + 1].toString().endsWith("/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_${suffix}")
+            }
+        }
+    }
+}
+
+// the file names a task should stage: the RDS file for its own metaprogram set, plus the gene sets
+// file for the gene sets task. every metaprograms_publish_dir in these tests is `<group>/k-<k>`, so
+// the output depth passed to SubworkflowTestUtils.stagedInputs is 2
+def expectedStagedInputs = { task, gene_sets_name = 'msigdb-gene-set-genes.tsv.gz' ->
+    def rds_name = "${task.meta.group_id}_k-${task.meta.n_metaprograms}_metaprograms.rds".toString()
+    task.process == 'CALCULATE_METRICS_GENESETS' ? [gene_sets_name, rds_name].sort() : [rds_name]
+}
+
+// the number of permutation replicates in a background file, read from its replicate column so the
+// checks follow the nreps the run used rather than a copy of the config. also checks that the
+// replicates are numbered 1 to nreps
+def backgroundNreps = { rows ->
+    def replicates = rows*.replicate*.toInteger().unique().sort()
+    assert replicates : "background file has no replicates"
+    assert replicates == (1..replicates.size()).toList()
+    replicates.size()
+}
+
+// Nextflow code for the subworkflow input, using the metaprograms RDS in `tests/data/`. rds_file
+// replaces that file, so that a test can check a broken input. the meta includes unique_ids, as
+// the metas GENERATE_METAPROGRAMS emits do
+def metricsInput = { data_dir, rds_file = null ->
+    def k = SubworkflowTestUtils.dataOptimalK(data_dir)
+    rds_file = rds_file ?: SubworkflowTestUtils.dataFile(data_dir, k, 'metaprograms.rds')
+    "input[0] = channel.of([[group_id: '${SubworkflowTestUtils.DATA_GROUP_ID}', n_metaprograms: ${k}, metaprograms_publish_dir: '${SubworkflowTestUtils.DATA_GROUP_ID}/k-${k}', unique_ids: ${uniqueIds.inspect()}], file('${rds_file}')])" + optionsInput
+}
+
+nextflow_workflow {
+
+    name "Test subworkflow CALCULATE_METRICS"
+    script "../main.nf"
+    workflow "CALCULATE_METRICS"
+    tag "subworkflows"
+    tag "subworkflows_local"
+    tag "calculate_metrics"
+
+    test("one metaprogram set generates the expected outputs") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4]],
+        ]
+
+        when {
+            // nf-core lint looks for `outdir = "$outputDir"` in the when block and treats the first
+            // closing brace as the end of the block, so the params block comes before any code with braces
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            // one metaprogram metrics task and one gene set metrics task
+            assert workflow.trace.succeeded().size() == 2
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
+            assert workflow.out.metaprogram_metrics.size() == 1
+            assert workflow.out.geneset_metrics.size() == 1
+            checkOutputs(workflow.out)
+            assert snapshot(
+                SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.metaprogram_metrics, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.geneset_metrics, taskId),
+            ).match()
+        }
+    }
+
+    test("several groups with several values of k") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4, 5]],
+            groupB: [k: [4, 6, 7]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            // one task per metaprogram set for each process
+            assert workflow.trace.succeeded().size() == 10
+            def metas = SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId)
+            assert metas == expectedTaskMetas(design)
+            // each task carries its own metaprogram set
+            metas.each { _process, process_metas ->
+                assert process_metas.collect { meta -> [meta.group_id, meta.n_metaprograms] } ==
+                    [['groupA', 4], ['groupA', 5], ['groupB', 4], ['groupB', 6], ['groupB', 7]]
+            }
+            assert workflow.out.metaprogram_metrics.size() == 5
+            assert workflow.out.geneset_metrics.size() == 5
+            checkOutputs(workflow.out)
+            assert snapshot(
+                metas,
+                SubworkflowTestUtils.outputSummary(workflow.out.metaprogram_metrics, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.geneset_metrics, taskId),
+            ).match()
+        }
+    }
+
+    test("each process stages only the files it needs") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4, 5]],
+            groupB: [k: [6]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
+            def staged_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), 2)
+            // every task that ran emitted an item, so all of their staged inputs are checked
+            assert staged_tasks.size() == workflow.trace.succeeded().size()
+            // each task stages the RDS file for its own metaprogram set and nothing else, except
+            // the gene sets task, which also stages the gene sets file
+            staged_tasks.each { task ->
+                assert task.staged == expectedStagedInputs(task) : "unexpected files staged for ${task.process} ${taskId(task.meta)}"
+            }
+            // the gene sets file is a value channel, so it reaches every gene sets task, not just the first
+            def geneset_tasks = staged_tasks.findAll { task -> task.process == 'CALCULATE_METRICS_GENESETS' }
+            assert geneset_tasks.size() == 3
+            assert geneset_tasks.every { task -> 'msigdb-gene-set-genes.tsv.gz' in task.staged }
+            assert snapshot(
+                staged_tasks
+                    .collect { task -> "${task.process} ${taskId(task.meta)}: ${task.staged.join(', ')}".toString() }
+                    .sort()
+            ).match()
+        }
+    }
+
+    test("gene sets file comes from params.msigdb_gene_sets") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4, 5]],
+        ]
+
+        // the contents are never read in stub mode, only the file name is checked
+        def custom_gene_sets = SubworkflowTestUtils.writeLines(
+            ['gs_name\tensembl_gene'],
+            File.createTempDir(),
+            'custom_term2gene.tsv',
+        )
+
+        when {
+            params {
+                outdir = "$outputDir"
+                msigdb_gene_sets = custom_gene_sets.toString()
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            def geneset_tasks = SubworkflowTestUtils.stagedInputs(taskEmits(workflow.out), 2)
+                .findAll { task -> task.process == 'CALCULATE_METRICS_GENESETS' }
+            assert geneset_tasks.size() == 2
+            // every gene sets task stages the custom file in place of the default gene sets
+            geneset_tasks.each { task ->
+                assert task.staged == expectedStagedInputs(task, 'custom_term2gene.tsv') : "unexpected files staged for ${task.process} ${taskId(task.meta)}"
+            }
+        }
+    }
+
+    test("output meta is passed through unchanged") {
+
+        tag "stub"
+        options "-stub"
+
+        def design = [
+            groupA: [k: [4]],
+            groupB: [k: [6]],
+        ]
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                calculateMetricsInput(design)
+            }
+        }
+
+        then {
+            assert workflow.success
+            taskEmits(workflow.out).each { _process, items ->
+                items.each { item ->
+                    def meta = item[0]
+                    assert meta.keySet() == ['group_id', 'n_metaprograms', 'metaprograms_publish_dir', 'unique_ids'] as Set
+                    assert meta.n_metaprograms instanceof Integer
+                    assert meta.unique_ids == uniqueIds
+                }
+            }
+            // also checks the meta values and the output paths for each metaprogram set
+            assert SubworkflowTestUtils.taskMetas(taskEmits(workflow.out), taskId) == expectedTaskMetas(design)
+            checkOutputs(workflow.out)
+            assert snapshot(
+                SubworkflowTestUtils.outputSummary(workflow.out.metaprogram_metrics, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.geneset_metrics, taskId),
+            ).match()
+        }
+    }
+
+    test("empty input runs no tasks") {
+
+        tag "stub"
+        options "-stub"
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                "input[0] = channel.empty()" + optionsInput
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 0
+            assert workflow.trace.tasks().size() == 0
+            // an emit that never emitted may be reported as empty or missing, so both are accepted
+            assert !workflow.out.metaprogram_metrics
+            assert !workflow.out.geneset_metrics
+        }
+    }
+
+    test("metrics match the pipeline outputs") {
+
+        tag "metrics"
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir))
+            }
+        }
+
+        then {
+            def data_dir = SubworkflowTestUtils.dataDir(baseDir)
+            def k = SubworkflowTestUtils.dataOptimalK(data_dir)
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 2
+            checkOutputs(workflow.out)
+            def (_mp_meta, mp_metrics_file, mp_background_file) = workflow.out.metaprogram_metrics[0]
+            def (_gs_meta, ora_results_file, geneset_metrics_file, gs_background_file) = workflow.out.geneset_metrics[0]
+
+            // metaprogram metrics: one row per metaprogram, matching the pipeline run
+            SubworkflowTestUtils.assertTsvEqual(mp_metrics_file, SubworkflowTestUtils.dataFile(data_dir, k, 'mp_metrics.tsv'))
+            def mp_metrics = SubworkflowTestUtils.readTsv(mp_metrics_file)
+            assert mp_metrics.size() == k
+            mp_metrics.each { row ->
+                assert row.proportion_of_samples.toDouble() <= 1
+                def entropy_norm = row.shannon_entropy_norm.toDouble()
+                assert entropy_norm >= 0 && entropy_norm <= 1 : "shannon_entropy_norm for ${row.metaprogram} is ${entropy_norm}"
+                ['greater_pvalue_eff_number_norm', 'greater_adj_pvalue_eff_number_norm'].each { column ->
+                    def pvalue = row[column].toDouble()
+                    assert pvalue > 0 && pvalue <= 1 : "${column} for ${row.metaprogram} is ${pvalue}"
+                }
+            }
+
+            // metaprogram background: one row per metaprogram per replicate
+            def mp_background = SubworkflowTestUtils.readTsv(mp_background_file)
+            def nreps = backgroundNreps(mp_background)
+            assert mp_background.size() == nreps * k
+            assert mp_background.collect { row -> [row.replicate, row.metaprogram] }.unique().size() == nreps * k
+
+            // gene set metrics and ORA results match the pipeline run
+            SubworkflowTestUtils.assertTsvEqual(geneset_metrics_file, SubworkflowTestUtils.dataFile(data_dir, k, 'geneset_metrics.tsv'))
+            SubworkflowTestUtils.assertTsvEqual(ora_results_file, SubworkflowTestUtils.dataFile(data_dir, k, 'ora_results.tsv'))
+
+            // gene set background: one row per metaprogram per replicate, with the same replicates
+            // as the metaprogram background
+            def gs_background = SubworkflowTestUtils.readTsv(gs_background_file)
+            assert backgroundNreps(gs_background) == nreps
+            assert gs_background.size() == nreps * k
+            assert gs_background.collect { row -> [row.replicate, row.metaprogram] }.unique().size() == nreps * k
+
+            // only the names of the outputs are recorded. the contents are compared above with a
+            // tolerance, as floating point values can differ in the last digits between environments,
+            // and gzipped files hold a timestamp in their header
+            assert snapshot(
+                SubworkflowTestUtils.outputSummary(workflow.out.metaprogram_metrics, taskId),
+                SubworkflowTestUtils.outputSummary(workflow.out.geneset_metrics, taskId),
+            ).match()
+        }
+    }
+
+    test("ORA finds the gene sets built for known metaprograms") {
+
+        tag "metrics"
+
+        when {
+            params {
+                outdir = "$outputDir"
+                msigdb_gene_sets = SubworkflowTestUtils.dataFile(
+                    SubworkflowTestUtils.dataDir(baseDir),
+                    SubworkflowTestUtils.dataOptimalK(SubworkflowTestUtils.dataDir(baseDir)),
+                    'term2gene.tsv',
+                )
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir))
+            }
+        }
+
+        then {
+            def k = SubworkflowTestUtils.dataOptimalK(SubworkflowTestUtils.dataDir(baseDir))
+            assert workflow.success
+            checkOutputs(workflow.out)
+            def (_meta, ora_results_file, geneset_metrics_file, background_file) = workflow.out.geneset_metrics[0]
+
+            // each gene set is significant for exactly the metaprograms it was built from. lists are
+            // not Comparable, so the pairs are sorted by their joined string rather than with sort()
+            def ora_results = SubworkflowTestUtils.readTsv(ora_results_file)
+            assert ora_results.collect { row -> [row.metaprogram, row.ID] }.sort { pair -> pair.join(' ') } == [
+                ['MP01', 'SET_MP01'],
+                ['MP01', 'SET_MP01_MP02'],
+                ['MP02', 'SET_MP01_MP02'],
+                ['MP02', 'SET_MP02'],
+            ]
+
+            // the background is calculated from the significant gene sets, so every replicate has
+            // an overall specificity
+            def background = SubworkflowTestUtils.readTsv(background_file)
+            assert background.size() == backgroundNreps(background) * k
+            background.each { row ->
+                def specificity = row.overall_geneset_specificity.toDouble()
+                assert specificity >= 0 && specificity <= 1 : "overall_geneset_specificity for replicate ${row.replicate} is ${specificity}"
+            }
+        }
+    }
+
+    test("no gene sets when no metaprogram overlaps the gene sets") {
+
+        tag "metrics"
+
+        // a term2gene file holding only the background gene set from `k-<k>_term2gene.tsv`. the
+        // background genes are in none of the metaprograms' top genes, so ORA has no result for any
+        // metaprogram
+        def data_dir = SubworkflowTestUtils.dataDir(baseDir)
+        def background_rows = SubworkflowTestUtils.readTsv(
+            SubworkflowTestUtils.dataFile(data_dir, SubworkflowTestUtils.dataOptimalK(data_dir), 'term2gene.tsv')
+        ).findAll { row -> row.gs_name == 'SET_BACKGROUND' }
+        assert background_rows : "term2gene file has no SET_BACKGROUND gene set"
+        def term2gene_file = SubworkflowTestUtils.writeLines(
+            ['gs_name\tensembl_gene'] + background_rows.collect { row -> "${row.gs_name}\t${row.ensembl_gene}".toString() },
+            File.createTempDir(),
+            'background_only_term2gene.tsv',
+        )
+
+        when {
+            params {
+                outdir = "$outputDir"
+                msigdb_gene_sets = term2gene_file.toString()
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir))
+            }
+        }
+
+        then {
+            def k = SubworkflowTestUtils.dataOptimalK(data_dir)
+            assert workflow.success
+            checkOutputs(workflow.out)
+            def (_meta, ora_results_file, geneset_metrics_file, background_file) = workflow.out.geneset_metrics[0]
+
+            // ORA has no result for any metaprogram, so the ORA results only have a header, with the
+            // same columns as the pipeline run, where ORA ran but found no significant gene sets
+            assert SubworkflowTestUtils.tsvLines(ora_results_file).findAll { line -> line } ==
+                SubworkflowTestUtils.tsvLines(SubworkflowTestUtils.dataFile(data_dir, k, 'ora_results.tsv')).take(1)
+
+            // every metaprogram is still reported, with no gene sets and no specificity
+            def geneset_metrics = SubworkflowTestUtils.readTsv(geneset_metrics_file)
+            assert geneset_metrics*.metaprogram.sort() ==
+                SubworkflowTestUtils.readTsv(SubworkflowTestUtils.dataFile(data_dir, k, 'geneset_metrics.tsv'))*.metaprogram.sort()
+            geneset_metrics.each { row ->
+                assert row.num_sig_genesets == '0' : "num_sig_genesets for ${row.metaprogram} is ${row.num_sig_genesets}"
+                assert row.mean_geneset_specificity == 'NA' : "mean_geneset_specificity for ${row.metaprogram} is ${row.mean_geneset_specificity}"
+            }
+
+            // the background still has one row per metaprogram per replicate
+            def background = SubworkflowTestUtils.readTsv(background_file)
+            assert background.size() == backgroundNreps(background) * k
+        }
+    }
+
+    test("fails when the number of replicates is 0") {
+
+        tag "metrics"
+
+        when {
+            params {
+                outdir = "$outputDir"
+                nreps = 0
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir))
+            }
+        }
+
+        then {
+            assert workflow.failed
+            // both processes check the number of replicates before reading their inputs
+            assert !SubworkflowTestUtils.processSucceeded(workflow, 'CALCULATE_METRICS_METAPROGRAMS')
+            assert !SubworkflowTestUtils.processSucceeded(workflow, 'CALCULATE_METRICS_GENESETS')
+            assert SubworkflowTestUtils.runOutput(workflow).contains('Number of replicates must be at least 1')
+        }
+    }
+
+    test("fails when the term2gene file is missing the required columns") {
+
+        tag "metrics"
+
+        def term2gene_file = SubworkflowTestUtils.writeLines(
+            ['term\tgene', 'SET_A\tENSG00000000003'],
+            File.createTempDir(),
+            'wrong_columns_term2gene.tsv',
+        )
+
+        when {
+            params {
+                outdir = "$outputDir"
+                msigdb_gene_sets = term2gene_file.toString()
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir))
+            }
+        }
+
+        then {
+            assert workflow.failed
+            // only the gene sets task reads the term2gene file, so the metaprogram metrics task may
+            // or may not finish before the run stops and is not checked
+            assert !SubworkflowTestUtils.processSucceeded(workflow, 'CALCULATE_METRICS_GENESETS')
+            assert SubworkflowTestUtils.runOutput(workflow).contains('Term2gene file must have `gs_name` and `ensembl_gene` columns')
+        }
+    }
+
+    test("fails when the term2gene file has no gene sets") {
+
+        tag "metrics"
+
+        def term2gene_file = SubworkflowTestUtils.writeLines(
+            ['gs_name\tensembl_gene'],
+            File.createTempDir(),
+            'empty_term2gene.tsv',
+        )
+
+        when {
+            params {
+                outdir = "$outputDir"
+                msigdb_gene_sets = term2gene_file.toString()
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir))
+            }
+        }
+
+        then {
+            assert workflow.failed
+            assert !SubworkflowTestUtils.processSucceeded(workflow, 'CALCULATE_METRICS_GENESETS')
+            assert SubworkflowTestUtils.runOutput(workflow).contains('Term2gene file has no gene set assignments')
+        }
+    }
+
+    test("fails when the metaprograms file is not a valid RDS") {
+
+        tag "metrics"
+
+        def rds_file = new File(File.createTempDir(), 'empty_metaprograms.rds')
+        rds_file.createNewFile()
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+            workflow {
+                metricsInput(SubworkflowTestUtils.dataDir(baseDir), rds_file)
+            }
+        }
+
+        then {
+            // the error comes from R reading the file, not from a check in the templates, so only
+            // the failure is checked
+            assert workflow.failed
+            assert !SubworkflowTestUtils.processSucceeded(workflow, 'CALCULATE_METRICS_METAPROGRAMS')
+            assert !SubworkflowTestUtils.processSucceeded(workflow, 'CALCULATE_METRICS_GENESETS')
+        }
+    }
+}
