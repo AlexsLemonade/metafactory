@@ -58,7 +58,7 @@ Ask before running any pipeline I have not named.
   ```
 
 - `nf-test.config` only applies the `test` profile, so tests that run real processes (e.g. the `-profile test` pipeline test) need a software environment.
-  Do not run these tests without asking the human first. 
+  Do not run these tests without asking the human first.
   If approved, use docker for local testing by adding `--profile +docker`, e.g. `nf-test test tests/default.nf.test --profile +docker`.
 - If config parsing fails because the remote nf-core institutional config cannot be fetched, prefix the commands with `NXF_OFFLINE=true`.
 - For quick Python checks of template logic, use a throwaway uv environment rather than installing packages, e.g. `uv run --no-project --with pandas --with pyarrow python script.py`.
@@ -83,7 +83,6 @@ Ask before running any pipeline I have not named.
 - Always include `stub` blocks for creating placeholder outputs during testing or debugging.
 - Do not use implicit `it` variables in closures; always define explicit input variables.
   - if an input variable is not used, prefix it with `_` to indicate it is unused (e.g., `ch_input.map { _unused, value -> ... }`).
-
 
 ## Agent skills
 
