@@ -8,7 +8,7 @@ Wherever a skill refers to `GLOSSARY.md` or `docs/adr/`, use the paths below ins
 ## Before exploring, read these
 
 - **`docs/GLOSSARY.md`**: the domain glossary.
-- **`docs/planning/decisions/`**: the ADRs (architecture decision records), numbered `0001-<slug>.md`, `0002-<slug>.md`, and so on.
+- **`docs/planning/decisions/`**: the ADRs (architecture decision records), named `NNN-<slug>.md` (see **ADR location and naming** below).
   Read ADRs that touch the area you're about to work in.
 
 If any of these files don't exist, **proceed silently**.
@@ -25,8 +25,8 @@ This is a single-context repo:
 │   ├── GLOSSARY.md
 │   ├── planning/
 │   │   └── decisions/
-│   │       ├── 0001-<slug>.md
-│   │       └── 0002-<slug>.md
+│   │       ├── 001-<slug>.md
+│   │       └── 002-<slug>.md
 │   ├── agents/
 │   └── issues/
 ├── modules/
