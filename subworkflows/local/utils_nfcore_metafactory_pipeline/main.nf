@@ -167,6 +167,9 @@ def validateGroupId(samplesheet_list, group_id) {
         .collect { _unique_id, sample_group_id, _h5ad_file -> sample_group_id.toString() }
         .unique()
     def requested_group_ids = group_id.toString().split(',')*.trim()
+    if (!requested_group_ids) {
+        error("--group_id must be All or a non-empty comma separated list of group IDs")
+    }
     def missing_group_ids = requested_group_ids.findAll { id -> !(id in samplesheet_group_ids) }
 
     if (missing_group_ids) {
