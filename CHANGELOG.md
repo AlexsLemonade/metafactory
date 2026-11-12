@@ -3,6 +3,13 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### `Added`
+
+- `--group_id` parameter to run a subset of groups from the samplesheet, given as a comma separated list of `group_id` values (default: `All`).
+- Parameter validation that every value provided to `--group_id` is either `All` or present in the `group_id` column of the samplesheet.
+
 ## v0.1.0 - [2026-11-02]
 
 Initial release of AlexsLemonade/metafactory, created with the [nf-core](https://nf-co.re/) template.
