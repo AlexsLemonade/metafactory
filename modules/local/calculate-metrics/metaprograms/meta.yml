@@ -3,12 +3,12 @@ description: |
   Calculate metrics describing each metaprogram in a single metaprogram set. Covers how distinct
   each metaprogram is from the others (max correlation), how coherent the spectra assigned to it
   are (the difference in medians between within-metaprogram and between-metaprogram spectra
-  correlation), and how evenly the samples contributing to it are represented (Shannon entropy and
-  effective sample size). A permutation test, which shuffles the metaprogram assignment of each
-  spectra while holding the number of spectra per metaprogram fixed, is used to build a background
-  distribution for the sample diversity stats and to calculate a p-value for the normalized
-  effective sample size. All metrics are derived from the metaprograms RDS object alone, so no
-  sample metadata is required.
+  correlation), and how evenly the libraries contributing to it are represented (Shannon entropy and
+  effective library count). A permutation test, which shuffles the metaprogram assignment of each
+  spectrum while holding the number of spectra per metaprogram fixed, is used to build a metric
+  background distribution for the library diversity stats and to calculate a p-value for the
+  normalized effective library count. All metrics are derived from the metaprograms RDS object
+  alone, so no library metadata is required.
 keywords:
   - single-cell
   - NMF
@@ -40,7 +40,7 @@ input:
         description: |
           Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
           combination. Required keys:
-          - `group_id`: Group identifier shared by all samples used to generate the metaprograms.
+          - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
           - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the metrics are
             calculated for.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
@@ -50,7 +50,7 @@ input:
             are written alongside the metaprograms they were calculated from.
           Any other keys present in the map, including the `unique_ids` set by the generate
           metaprograms module, are passed through unchanged and are not read by this process. The
-          total number of samples used as the denominator for `proportion_of_samples` is taken from
+          total number of libraries used as the denominator for `proportion_of_samples` is taken from
           the `unique_ids` slot of the RDS file rather than from the map.
     - metaprograms_file:
         type: file
@@ -65,7 +65,7 @@ input:
           Groovy Map of the options used to calculate the metrics, supplied as a single value
           rather than one input per option. Required keys:
           - `seed` (integer): Random seed used when shuffling metaprogram assignments to build the
-            background distribution, for reproducibility.
+            metric background distribution, for reproducibility.
           - `nreps` (integer): Number of replicates to use for permutation testing. Must be at
             least 1. The smallest possible p-value is 1 / (nreps + 1), so lower values run faster
             but give coarser p-values.
@@ -83,8 +83,8 @@ output:
             `num_spectra_per_mp`, `num_samples`, `proportion_of_samples`, `shannon_entropy`,
             `shannon_entropy_norm`, `eff_number`, `eff_number_norm`,
             `greater_pvalue_eff_number_norm`, `greater_adj_pvalue_eff_number_norm`). The p-value
-            columns are one sided, testing whether the observed normalized effective sample size is
-            greater than the background, and are adjusted across metaprograms with the
+            columns are one sided, testing whether the observed normalized effective library count is
+            greater than the metric background, and are adjusted across metaprograms with the
             Benjamini-Hochberg method.
           pattern: "k-*_mp_metrics.tsv"
   - background:
@@ -96,9 +96,9 @@ output:
           description: |
             Gzipped TSV, written alongside the metrics table at
             `<metaprograms_publish_dir>/k-<n_metaprograms>_background_mp_stats.tsv.gz`, holding the
-            background distribution the `eff_number_norm` p-values are calculated against. One row
+            metric background distribution the `eff_number_norm` p-values are calculated against. One row
             per metaprogram per permutation replicate (columns: `replicate`, `metaprogram`, then
-            every sample diversity stat in the metrics table). Gzipped because it holds
+            every library diversity stat in the metrics table). Gzipped because it holds
             `nreps` times `n_metaprograms` rows.
           pattern: "k-*_background_mp_stats.tsv.gz"
   - versions:

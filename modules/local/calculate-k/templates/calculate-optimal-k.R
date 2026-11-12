@@ -1,22 +1,22 @@
 #!/usr/bin/env Rscript
 
 # This script combines the metrics calculated for every set of metaprograms generated across a
-# range of k for a single group of samples and uses them to identify the optimal value of k.
+# range of k for a single group of libraries and uses them to identify the optimal value of k.
 # Here k refers to the number of clusters specified during hierarchical clustering of spectra to
 # define metaprograms.
 
 # Five metrics are used to rank each value of k:
 
-# 1. Normalized effective sample size: Proportion of metaprograms with a normalized effective
-# sample size significantly greater than the null distribution
+# 1. Normalized effective library count: Proportion of metaprograms with a normalized effective
+# library count significantly greater than the metric background
 # 2. Correlation of gene weights: Proportion of metaprograms with a max correlation to all other
 # metaprograms below the correlation cutoff
 # 3. Coherence: Whether the value of k is at, below, or above the elbow of the median coherence
 # curve, identified with the kneedle algorithm
 # 4. Gene set specificity: Whether the overall gene set specificity for that value of k is
-# significantly greater than the null distribution
+# significantly greater than the metric background
 # 5. Variation in cell scores: Proportion of metaprograms with a coefficient of variation (CV) of
-# cell scores significantly greater than the null distribution
+# cell scores significantly greater than the score background
 
 # Each metric is ranked across all values of k, the ranks are normalized to a 0-1 scale, and the
 # value of k with the highest mean rank is reported as the optimal value of k.
@@ -30,10 +30,10 @@
 # normalized rank of each of those metrics (the `rank_` columns), and the mean rank across all
 # metrics. Values of k that were excluded from the comparison are reported here with `is_excluded`
 # set to TRUE and no metrics
-# 3. Three gzipped TSVs holding the permuted null distributions for effective sample size, gene set
+# 3. Three gzipped TSVs holding the permuted null distributions for effective library count, gene set
 # specificity, and cell score CV, with the values of k that were excluded removed
 # 4. A text file holding the optimal value of k, which is used downstream to pick out the
-# metaprograms and metrics that are published as the final result for the cohort
+# metaprograms and metrics that are published as the final result for the group
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
@@ -280,12 +280,12 @@ background_scores_df <- dplyr::filter(background_scores_df, !n_metaprograms %in%
 
 # every metric in the metaprogram metrics table is calculated by the metrics modules, so all that
 # is added here is whether each metaprogram passes the cutoff for that metric
-# TODO: the effective sample size treats every unique ID in the input samplesheet as a sample. If
+# TODO: the effective library count treats every unique ID in the input samplesheet as a sample. If
 # more than one library is generated from the same sample, we may want to collapse libraries to
-# samples using the library to sample relationship before calculating the effective sample size.
+# samples using the library to sample relationship before calculating the effective library count.
 mp_metrics_df <- mp_metrics_df |>
   dplyr::mutate(
-    # the effective sample size pvalue is calculated by the metaprogram metrics module
+    # the effective library count pvalue is calculated by the metaprogram metrics module
     neff_is_significant = greater_adj_pvalue_eff_number_norm <= SIG_CUTOFF,
     # metaprograms above the correlation cutoff are redundant with another metaprogram
     correlation_is_passing = max_correlation <= CORRELATION_CUTOFF,
@@ -297,7 +297,7 @@ mp_metrics_df <- mp_metrics_df |>
 
 # calculate CV for each metaprogram across all libraries using Chan's algorithm
 # originally explored in https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/08-cell-scoring-metrics.Rmd
-# the background scores module reports per library summary stats for each replicate, so the stats
+# the score background module reports per library summary stats for each replicate, so the stats
 # are pooled here to get one value for each metaprogram in each replicate
 cv_background_df <- background_scores_df |>
   dplyr::summarize(
@@ -323,7 +323,7 @@ var_df <- scores_df |>
 # calculate pvalues for each cv
 # the observed values come from `var_df`, so only the pvalues are kept here
 # the default adjustment family is the metaprograms within a value of k, which is the family the
-# metaprogram metrics module uses for the effective sample size pvalues
+# metaprogram metrics module uses for the effective library count pvalues
 cv_pvalue_df <- calculate_permutation_significance(
   "score_cv",
   var_df,
@@ -346,7 +346,7 @@ mp_metrics_df <- mp_metrics_df |>
 
 # Summarize metrics for each value of k ----------------------------------------
 
-# the total number of samples is the number of unique IDs represented in the cell scores
+# the total number of libraries is the number of unique IDs represented in the cell scores
 # TODO: as above, every unique ID is treated as a sample here. If more than one library can come
 # from the same sample, this should count samples rather than libraries.
 total_samples_df <- scores_df |>
@@ -359,7 +359,7 @@ total_samples_df <- scores_df |>
 k_metrics_df <- mp_metrics_df |>
   dplyr::summarize(
     num_metaprograms = dplyr::n(),
-    # metaprograms with a significant effective sample size
+    # metaprograms with a significant effective library count
     neff_sig_number = sum(neff_is_significant),
     neff_sig_proportion = neff_sig_number / num_metaprograms,
     # metaprograms that are not redundant with another metaprogram
@@ -413,13 +413,13 @@ k_metrics_df <- k_metrics_df |>
 
 # Gene set specificity significance --------------------------------------------
 
-# the background is reported per metaprogram, but the overall specificity is already the mean
+# the metric background is reported per metaprogram, but the overall specificity is already the mean
 # across all metaprograms for each replicate, so there is one value per replicate per k
 specificity_background_df <- specificity_background_df |>
   dplyr::select(n_metaprograms, replicate, overall_geneset_specificity) |>
   unique()
 
-# compare the observed overall specificity to the background
+# compare the observed overall specificity to the metric background
 # here we are calculating the overall mean pvalue so that we get one pvalue for each k
 # this mirrors what we did in: https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/06-gene-set-uniqueness.Rmd
 # the metrics calculation module calculates this per metaprogram so we need to do it separately here

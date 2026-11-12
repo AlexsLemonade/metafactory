@@ -8,7 +8,7 @@
 # significance threshold, with one row per gene set per metaprogram. This holds the full result
 # table returned by `clusterProfiler::enricher()`, so it has a wide `geneID` column.
 # 2. A TSV with one row per metaprogram holding the ORA derived metrics described below
-# 3. A gzipped TSV with the background values for gene set specificity, with one row per
+# 3. A gzipped TSV with the metric background values for gene set specificity, with one row per
 # metaprogram per permutation replicate (columns: replicate, metaprogram,
 # mean_geneset_specificity, overall_geneset_specificity).
 
@@ -270,7 +270,7 @@ num_genesets_df <- get_total_genesets(mp_names, ora_results_df)
 # calculate gene set specificity
 obs_specificity_df <- compute_metaprogram_specificity(ora_results_df, n_metaprograms, mp_names)
 
-# Calculate background for gene set specificity
+# Calculate metric background for gene set specificity
 background_specificity_df <- permute_specificity(
   ora_results_df,
   n_metaprograms,

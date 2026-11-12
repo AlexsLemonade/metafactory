@@ -4,9 +4,9 @@
 # Outputs two TSV files:
 
 # 1. A TSV with one row per metaprogram holding the metrics described below
-# 2. A gzipped TSV with the background values for the metaprogram sample stats, with one row per
-# metaprogram per permutation replicate (columns: replicate, then every sample stat below). This is
-# the null distribution the `eff_number_norm` p-values are calculated against.
+# 2. A gzipped TSV with the metric background values for the metaprogram library diversity stats,
+# with one row per metaprogram per permutation replicate (columns: replicate, then every library
+# diversity stat below). This is the null distribution the `eff_number_norm` p-values are calculated against.
 
 # The metaprogram metrics TSV contains the following metrics:
 
@@ -14,14 +14,14 @@
 # median_difference: Difference in medians between the correlation of spectra
 #  within metaprograms and between metaprograms
 # num_spectra_per_mp: Number of spectra found in that metaprogram
-# num_samples: Number of samples represented in the metaprogram
-# proportion_of_samples: Proportion of the total samples represented in the metaprogram
-# shannon_entropy: Shannon entropy measuring relative abundance of samples in the metaprogram
+# num_samples: Number of libraries represented in the metaprogram
+# proportion_of_samples: Proportion of the total libraries represented in the metaprogram
+# shannon_entropy: Shannon entropy measuring relative abundance of libraries in the metaprogram
 # shannon_entropy_norm: Normalized Shannon entropy
-# eff_number: Effective sample size
-# eff_number_norm: Effective sample size normalized by the total samples in a metaprogram
-# greater_pvalue_eff_number_norm: Pvalue of the observed effective sample size > background
-# greater_adj_pvalue_eff_number_norm: Adjusted pvalue of the observed effective sample size > background
+# eff_number: Effective library count
+# eff_number_norm: Effective library count normalized by the total libraries in a metaprogram
+# greater_pvalue_eff_number_norm: Pvalue of the observed effective library count > metric background
+# greater_adj_pvalue_eff_number_norm: Adjusted pvalue of the observed effective library count > metric background
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
@@ -184,10 +184,10 @@ mp_medians_df <- mp_cor_df |>
   ) |>
   dplyr::select(metaprogram = mp1, median_difference)
 
-# Sample proportion ------------------------------------------------------------
+# Library proportion -----------------------------------------------------------
 
-# get the total number of samples to use as the denominator for proportion
-# use all samples even if they are not all present in the spectra after filtering
+# get the total number of libraries to use as the denominator for proportion
+# use all libraries even if they are not all present in the spectra after filtering
 total_samples <- length(mp_object[["unique_ids"]])
 
 # add sample column
@@ -199,10 +199,10 @@ mp_clusters_df <- mp_lookup |>
   )
 
 # get observed stats
-# includes proportion of samples, shannon entropy and effective sample size
+# includes proportion of libraries, shannon entropy and effective library count
 obs_stats_df <- calculate_sample_stats(mp_clusters_df, total_samples)
 
-# get the background
+# get the metric background
 background_mp_stats_df <- replicate(nreps, {
   # for each rep, shuffle the spectra
   # keep the distribution of num spectra/ mp the same

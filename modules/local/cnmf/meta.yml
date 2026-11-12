@@ -1,8 +1,8 @@
 name: cnmf
 description: |
   Run consensus Non-negative Matrix Factorization (cNMF) on a processed AnnData object
-  to identify consensus gene expression programs. Cells can optionally be subset to a
-  specific cell type using a column in the AnnData object's cell metadata (adata.obs).
+  to identify consensus NMF programs. Cells can optionally be subset to a specific cell
+  type using a column in the AnnData object's cell metadata (adata.obs).
 keywords:
   - single-cell
   - NMF
@@ -29,10 +29,10 @@ input:
   - - meta:
         type: map
         description: |
-          Groovy Map containing sample information, e.g. `[ unique_id:'sample1', group_id:'project1' ]`.
+          Groovy Map containing library information, e.g. `[ unique_id:'library1', group_id:'project1' ]`.
           Required keys:
-          - `unique_id`: Unique identifier for the sample. Used as the output subdirectory name.
-          - `group_id`: Group identifier for the sample (e.g. project or cohort ID).
+          - `unique_id`: Unique identifier for the library. Used as the output subdirectory name.
+          - `group_id`: Group identifier for the library (e.g. project ID).
     - h5ad_file:
         type: file
         description: Processed AnnData object in H5AD format. adata.X must contain raw integer counts, or raw counts must be stored in adata.raw.
@@ -42,11 +42,11 @@ input:
         description: |
           Groovy Map of the options used to run cNMF, supplied as a single value rather than one
           input per option. Required keys:
-          - `cnmf_k_lower` (integer): Lower boundary for the number of components (k) to test in
-            cNMF.
-          - `cnmf_k_upper` (integer): Upper boundary for the number of components (k) to test in
-            cNMF.
-          - `cnmf_k_step_size` (integer): Step size for the range of k components tested in cNMF.
+          - `cnmf_k_lower` (integer): Lower boundary for cNMF k (rank), the number of NMF programs
+            cNMF finds in each library.
+          - `cnmf_k_upper` (integer): Upper boundary for cNMF k (rank), the number of NMF programs
+            cNMF finds in each library.
+          - `cnmf_k_step_size` (integer): Step size for the range of cNMF k (rank) values tested.
           - `celltype_annotation_column` (string): Column name in adata.obs containing cell type
             annotations used to subset cells before running cNMF. Set to empty string to use all
             cells.
@@ -59,12 +59,12 @@ output:
   - results:
       - meta:
           type: map
-          description: Groovy Map of sample information, passed through unchanged from the input channel.
+          description: Groovy Map of library information, passed through unchanged from the input channel.
       - "*/":
           type: directory
           description: |
-            Directory of cNMF output files for the sample, named by unique_id. Contains
-            only the consensus gene spectra score files for each tested value of k
+            Directory of cNMF output files for the library, named by unique_id. Contains
+            only the consensus gene spectra score files for each tested value of cNMF k
             (`*.gene_spectra_score.k_*.dt_*.txt`) and a `cnmf-meta.json` file recording the
             parameters used to run cNMF (`cnmf_k_lower`, `cnmf_k_upper`, `cnmf_k_step_size`,
             `celltype_annotation_column`, `analysis_celltypes`, and `seed`).

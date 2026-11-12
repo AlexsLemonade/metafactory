@@ -33,7 +33,7 @@ repository_type: pipeline
 template:
   author: Allegra G. Hawkins
   description: Nextflow pipeline for identifying metaprograms across single-cell/nuclei
-    RNA-sequencing samples
+    RNA-sequencing libraries
   force: false
   is_nfcore: false
   name: metafactory

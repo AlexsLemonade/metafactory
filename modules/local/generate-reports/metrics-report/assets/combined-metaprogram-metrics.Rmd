@@ -19,7 +19,7 @@ params:
   seed: 2026
 ---
 
-This report compares metaprograms generated from a single cohort across a range of k values.
+This report compares metaprograms generated from a single group across a range of k values.
 Here k refers to the number of clusters specified during hierarchical clustering of spectra to define metaprograms.
 
 ## Set Up
@@ -110,7 +110,7 @@ stopifnot(
 mp_metrics_df <- readr::read_tsv(params$metaprogram_metrics_file, show_col_types = FALSE)
 
 # summarized metrics and the normalized rank of each metric for each value of k
-# any values of k that were excluded due to low sample diversity are included here with no metrics
+# any values of k that were excluded due to low library diversity are included here with no metrics
 k_metrics_df <- readr::read_tsv(params$k_metrics_file, show_col_types = FALSE)
 
 # null distributions used to assess significance of the observed metrics
@@ -174,26 +174,26 @@ if (length(excluded_k) > 0) {
 ```
 
 
-## Sample diversity
+## Library diversity
 
-Metaprograms should be representative of a diverse set of samples.
-This section will summarize the proportion of samples found in each metaprogram.
+Metaprograms should be representative of a diverse set of libraries.
+This section will summarize the proportion of libraries found in each metaprogram.
 
 ```{r}
-# display total samples
+# display total libraries
 # this is the number of unique ids that contribute cell scores
 total_samples <- max(k_metrics_df$total_samples, na.rm = TRUE)
 
 knitr::asis_output(
-  glue::glue("The metaprograms explored here are comprised of **{total_samples} samples**.")
+  glue::glue("The metaprograms explored here are comprised of **{total_samples} libraries**.")
 )
 ```
 
 
-### Proportion of samples
+### Proportion of libraries
 
-Here each dot is a metaprogram and the value indicated is the proportion of total **samples** represented by spectra in that metaprogram.
-The dotted line indicates 10% which may help identify any metaprograms with a low representation of samples.
+Here each dot is a metaprogram and the value indicated is the proportion of total **libraries** represented by spectra in that metaprogram.
+The dotted line indicates 10% which may help identify any metaprograms with a low representation of libraries.
 
 ```{r}
 ggplot(mp_metrics_df, aes(x = n_metaprograms, y = proportion_of_samples)) +
@@ -201,23 +201,23 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = proportion_of_samples)) +
   ggbeeswarm::geom_beeswarm() +
   labs(
     x = "Number of metaprograms (k)",
-    y = "Proportion of total samples \n contributing to each metaprogram"
+    y = "Proportion of total libraries \n contributing to each metaprogram"
   )  +
   geom_hline(yintercept = 0.1, linetype = "dashed")
 ```
 
 
-### Normalized effective sample size
+### Normalized effective library count
 
-Here we will look at the normalized effective sample size or Hill number of order 1.
-This is calculated by taking the exponential of Shannon's entropy and represents the effective number of common or abundant samples.
-Here we are looking for a number close to the total possible samples in that metaprogram.
-The values are normalized by the total number of samples in the metaprogram such that values close to 1 indicate all samples are equally abundant.
-Note that every unique ID in the input samplesheet is treated as a separate sample.
+Here we will look at the normalized effective library count or Hill number of order 1.
+This is calculated by taking the exponential of Shannon's entropy and represents the effective number of common or abundant libraries.
+Here we are looking for a number close to the total possible libraries in that metaprogram.
+The values are normalized by the total number of libraries in the metaprogram such that values close to 1 indicate all libraries are equally abundant.
+Note that every unique ID in the input samplesheet is treated as a separate library, even if more than one library comes from the same sample.
 
-To determine if the observed effective sample size is not due to random chance, we performed permutation testing.
+To determine if the observed effective library count is not due to random chance, we performed permutation testing.
 The spectra assigned to each metaprogram were shuffled while preserving the total number of spectra assigned to each metaprogram.
-After shuffling, the normalized effective sample size was calculated to create a null distribution.
+After shuffling, the normalized effective library count was calculated to create a null distribution (the metric background).
 
 The observed value was compared to the null distribution to get an empirical p-value, producing a single p-value for each metaprogram within a value of k.
 The below plot shows both the null distribution in gray and the observed value for each metaprogram.
@@ -235,7 +235,7 @@ neff_obs_df <- mp_metrics_df |>
 plot_permutation_results(neff_background_df, neff_obs_df, metaprogram, eff_number_norm) +
   facet_wrap(vars(n_metaprograms), scale = "free_x", ncol = 3) +
   labs(
-    y = "Normalized effective sample size",
+    y = "Normalized effective library count",
     x = "Metaprogram",
     color = "significant"
   ) +
@@ -247,14 +247,14 @@ plot_permutation_results(neff_background_df, neff_obs_df, metaprogram, eff_numbe
   )
 ```
 
-We then can identify the percentage of metaprograms for each value of k that have a significant normalized effective sample size.
+We then can identify the percentage of metaprograms for each value of k that have a significant normalized effective library count.
 This is used to identify the optimal value of k in the final section.
 
 ```{r}
 k_metrics_df |>
   dplyr::filter(!is_excluded) |>
   dplyr::select(n_metaprograms, neff_sig_number, neff_sig_proportion) |>
-  DT::datatable(colnames = c("k", "Number of metaprograms with significant effective sample size", "% of metaprograms with significant effective sample size")) |>
+  DT::datatable(colnames = c("k", "Number of metaprograms with significant effective library count", "% of metaprograms with significant effective library count")) |>
   DT::formatPercentage("neff_sig_proportion", 2)
 ```
 
@@ -297,7 +297,7 @@ k_metrics_df |>
 ## Coherence
 
 Metaprograms should show coherence, meaning the spectra that comprise the metaprogram are more similar to other spectra in the same metaprogram than to spectra in different metaprograms.
-To measure this, we calculated the correlation of each spectra to all other spectra.
+To measure this, we calculated the correlation of each spectrum to all other spectra.
 We then calculate the difference in medians between the distribution of correlation of spectra within a given metaprogram and between metaprograms, indicated as "coherence" throughout this report.
 
 Metaprograms with coherence <= `r coherence_cutoff` are likely to represent noise and will not be used in further analysis.
@@ -378,7 +378,7 @@ Metaprograms with no identified gene sets are not considered in this calculation
 To determine if this value is greater than what would be observed by random chance, we generated a null distribution by shuffling the gene sets assigned to each metaprogram, keeping the number of gene sets consistent with the observed distribution and recalculating the mean specificity.
 When shuffling the gene sets, each gene set was weighted based on the number of metaprograms in which the gene set was considered significant.
 
-The below plot shows the observed mean gene set specificity and the associated background distribution for each value of k.
+The below plot shows the observed mean gene set specificity and the associated null distribution (metric background) for each value of k.
 Any values of k with a significant mean gene set specificity are indicated in red.
 
 ```{r}
@@ -407,10 +407,10 @@ Good metaprograms should show variation in the scores assigned to cells in the o
 To measure variation, we will use the coefficient of variation (CV), which reports a score's variance relative to the mean score across all cells.
 
 Here we compare the observed CV to a null distribution to determine if a metaprogram shows significantly more variation compared to random chance.
-The background distribution was constructed by shuffling the gene identifiers for each metaprogram in the gene by metaprogram matrix.
+The null distribution (score background) was constructed by shuffling the gene identifiers for each metaprogram in the gene by metaprogram matrix.
 This ensured that both the weights for each metaprogram and the relationship of genes across metaprograms were retained.
 After shuffling, the top genes were extracted, and the scores were re-calculated.
-This produces a unique background distribution for each metaprogram.
+This produces a unique score background distribution for each metaprogram.
 
 ```{r}
 #| fig.height: !r dynamic_fig_height
@@ -458,7 +458,7 @@ The above metrics are combined to define the optimal value of k.
 Each metric has a single number reported for each value of k on a 0-1 scale where 1 indicates a good metaprogram.
 The values included are:
 
-* `Effective sample size`: Proportion of metaprograms with a normalized effective sample size significantly greater than the null distribution (p less than or equal to `r sig_value`).
+* `Effective library count`: Proportion of metaprograms with a normalized effective library count significantly greater than the null distribution (p less than or equal to `r sig_value`).
 * `Correlation`: Proportion of metaprograms with a max correlation to all other metaprograms less than or equal to `r correlation_cutoff`.
 * `Coherence`: Value indicating if the specific k is at, above, or below the elbow point for coherence.
 The value of k at the elbow is prioritized and assigned a value of 1.
@@ -475,7 +475,7 @@ The optimal value of k is the k with the highest average rank.
 # the rank columns of the k metrics table, in the order they are shown in the heatmap
 # the names are used as the row labels, so they are defined here with the rest of the plotting code
 rank_columns <- c(
-  "Effective sample size" = "rank_effective_sample_size",
+  "Effective library count" = "rank_effective_sample_size",
   "Correlation" = "rank_correlation",
   "Coherence" = "rank_coherence",
   "Gene set specificity" = "rank_gene_set_specificity",
@@ -558,7 +558,7 @@ low_coherence_mps <- mp_metrics_df |>
 ```{r}
 # compile text based on if there are any metaprograms with low coherence
 main_text <- glue::glue(
-  "**The optimal value of k for this cohort is: {optimal_k}**"
+  "**The optimal value of k for this group is: {optimal_k}**"
 )
 
 coherence_text <- glue::glue(

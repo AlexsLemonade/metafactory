@@ -2,13 +2,13 @@ name: calculate_k
 description: |
   Compare the metaprograms generated for a single group across every value of k that was tested and
   identify the optimal value of k. Five metrics are combined: the proportion of metaprograms with a
-  significant normalized effective sample size, the proportion that are not redundant with another
+  significant normalized effective library count, the proportion that are not redundant with another
   metaprogram, where the value of k falls relative to the elbow of the median coherence curve,
-  whether the overall gene set specificity is significantly greater than its permuted background,
-  and the proportion of metaprograms whose cell scores are significantly more variable than their
-  permuted background. Each metric is ranked across all values of k, the ranks are normalized to a
+  whether the overall gene set specificity is significantly greater than its permuted metric
+  background, and the proportion of metaprograms whose cell scores are significantly more variable
+  than their permuted score background. Each metric is ranked across all values of k, the ranks are normalized to a
   0-1 scale, and the value of k with the highest mean rank is reported as the optimal value of k.
-  Values of k with a metaprogram built from a single spectra are dropped from the comparison and
+  Values of k with a metaprogram built from a single spectrum are dropped from the comparison and
   reported in the summary table. Only the optimal value of k and the tables behind it are written
   here; the metaprograms generated with that value of k are published separately by the publish
   metaprograms module, which the reported value of k is used to select. The tables written here are
@@ -36,7 +36,7 @@ input:
         type: map
         description: |
           Groovy Map containing group information, one map per group_id. Required keys:
-          - `group_id`: Group identifier shared by all samples the metaprograms were generated
+          - `group_id`: Group identifier shared by all libraries the metaprograms were generated
             from. Also used as the name of the output directory, so that the final results for
             every group are published side by side.
           Unlike the other metaprogram modules, this process runs once per group rather than once
@@ -52,8 +52,8 @@ input:
     - mp_background_files:
         type: file
         description: |
-          Gzipped TSVs of the permuted background for the metaprogram sample stats, one per value
-          of k, as written by the calculate metrics metaprograms module. Only the
+          Gzipped TSVs of the permuted metric background for the metaprogram library diversity
+          stats, one per value of k, as written by the calculate metrics metaprograms module. Only the
           `eff_number_norm` column is kept, and it is re-exported for the report with the excluded
           values of k removed.
         pattern: "k-*_background_mp_stats.tsv.gz"
@@ -66,8 +66,8 @@ input:
     - specificity_background_files:
         type: file
         description: |
-          Gzipped TSVs of the permuted background for gene set specificity, one per value of k, as
-          written by the calculate metrics gene sets module. The `overall_geneset_specificity`
+          Gzipped TSVs of the permuted metric background for gene set specificity, one per value of
+          k, as written by the calculate metrics gene sets module. The `overall_geneset_specificity`
           column holds one value per replicate per value of k and is the null distribution the
           observed specificity is compared against.
         pattern: "k-*_background_specificity.tsv.gz"
@@ -76,13 +76,13 @@ input:
         description: |
           Gzipped TSVs of per cell metaprogram scores for every library in the group, one per value
           of k, as written by the combine scores module. Used to calculate the observed coefficient
-          of variation of the scores for each metaprogram, and to count the samples represented in
+          of variation of the scores for each metaprogram, and to count the libraries represented in
           the group.
         pattern: "k-*_combined_metaprogram_scores.tsv.gz"
     - background_scores_files:
         type: file
         description: |
-          Gzipped TSVs of per library background score stats for the shuffled metaprograms, one per
+          Gzipped TSVs of per library score background stats for the shuffled metaprograms, one per
           value of k, as written by the combine scores module. The per library counts, means and
           sums of squared deviations are pooled here to build the null distribution the observed
           coefficient of variation is compared against.
@@ -94,8 +94,8 @@ input:
           than one input per option. Required keys:
           - `nreps` (integer): Number of replicates used for permutation testing by the metrics
             modules. Used as the denominator when calculating the empirical p-values for gene set
-            specificity and the cell score CV, so it must match the value the staged background
-            files were generated with.
+            specificity and the cell score CV, so it must match the value the staged metric
+            background and score background files were generated with.
 
 output:
   - optimal_k:
@@ -137,7 +137,7 @@ output:
           type: file
           description: |
             Gzipped TSV, at `<group_id>/reports/all-k_background_eff_sample_size.tsv.gz`, holding the
-            permuted null distribution for the normalized effective sample size (columns:
+            permuted null distribution (metric background) for the normalized effective library count (columns:
             `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`), with the excluded
             values of k removed.
           pattern: "all-k_background_eff_sample_size.tsv.gz"
@@ -145,7 +145,7 @@ output:
           type: file
           description: |
             Gzipped TSV, at `<group_id>/reports/all-k_background_geneset_specificity.tsv.gz`, holding the
-            permuted null distribution for the overall gene set specificity (columns:
+            permuted null distribution (metric background) for the overall gene set specificity (columns:
             `n_metaprograms`, `replicate`, `overall_geneset_specificity`), with one row per
             replicate per value of k.
           pattern: "all-k_background_geneset_specificity.tsv.gz"
@@ -153,7 +153,7 @@ output:
           type: file
           description: |
             Gzipped TSV, at `<group_id>/reports/all-k_background_cell_score_cv.tsv.gz`, holding the
-            permuted null distribution for the coefficient of variation of the cell scores
+            null distribution (score background) for the coefficient of variation of the cell scores
             (columns: `n_metaprograms`, `metaprogram`, `replicate`, `score_cv`), pooled across all
             libraries in the group.
           pattern: "all-k_background_cell_score_cv.tsv.gz"

@@ -30,7 +30,7 @@ input:
         Channel containing the tables used to build the report for each group, as emitted by the
         `report_metrics` output of the calculate k module: the per metaprogram metrics for every
         value of k, the summarized metrics and ranks for every value of k, and the permuted null
-        distributions for the normalized effective sample size, the overall gene set specificity,
+        distributions for the normalized effective library count, the overall gene set specificity,
         and the coefficient of variation of the cell scores.
         Structure: [ val(meta), path(metaprogram_metrics_file), path(k_metrics_file),
         path(neff_background_file), path(specificity_background_file), path(cv_background_file) ]

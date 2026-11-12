@@ -1,6 +1,6 @@
 name: score_background
 description: |
-  Calculate a background (null) score distribution for a library by scoring it against the gene
+  Calculate a score background (null) distribution for a library by scoring it against the gene
   label shuffled metaprograms generated for that library's group. This is the permutation
   counterpart of the score metaprograms module: cells are subset and the expression matrix is
   quantile normalized in exactly the same way, and each shuffled metaprogram is scored as the

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Calculate a background (null) score distribution for one library from shuffled metaprograms.
+"""Calculate a score background (null) distribution for one library from shuffled metaprograms.
 
 Each (replicate, metaprogram) pair in the shuffled metaprograms file is one gene label shuffled
 metaprogram, and is scored exactly as a real metaprogram is by the score metaprograms module: the

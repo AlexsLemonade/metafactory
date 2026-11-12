@@ -1,7 +1,7 @@
 name: generate_reports
 description: |
   Render the report that plots and tabulates the five metrics used to rank each value of k: the normalized
-  effective sample size of each metaprogram, the max correlation of metaprogram gene weights, the
+  effective library count of each metaprogram, the max correlation of metaprogram gene weights, the
   coherence of the spectra in each metaprogram and the elbow of the median coherence curve, the
   overall gene set specificity, and the coefficient of variation of the cell scores. The three
   permuted null distributions are shown alongside the observed values they were compared against,
@@ -64,7 +64,7 @@ input:
         type: map
         description: |
           Groovy Map containing group information, one map per group_id. Required keys:
-          - `group_id`: Group identifier shared by all samples the metaprograms were generated
+          - `group_id`: Group identifier shared by all libraries the metaprograms were generated
             from. Also used as the name of the output directory, so that the report for every
             group is published alongside the other final results for that group.
           Like the calculate k module this process runs once per group rather than once per value
@@ -85,7 +85,7 @@ input:
     - neff_background_file:
         type: file
         description: |
-          Gzipped TSV of the permuted null distribution for the normalized effective sample size,
+          Gzipped TSV of the permuted null distribution for the normalized effective library count,
           as written by the calculate k module.
         pattern: "all-k_background_eff_sample_size.tsv.gz"
     - specificity_background_file:

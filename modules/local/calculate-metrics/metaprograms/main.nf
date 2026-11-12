@@ -22,7 +22,7 @@ process CALCULATE_METRICS_METAPROGRAMS {
     // metaprogram specific metrics
     metrics_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_mp_metrics.tsv"
 
-    // the background holds one row per metaprogram per replicate, so it is gzipped
+    // the metric background holds one row per metaprogram per replicate, so it is gzipped
     background_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_background_mp_stats.tsv.gz"
 
     template('calculate-metaprogram-metrics.R')
