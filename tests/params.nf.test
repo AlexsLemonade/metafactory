@@ -130,4 +130,36 @@ nextflow_pipeline {
             assert output.contains('Duplicate unique_id values found in samplesheet: STUB01')
         }
     }
+
+    test("Fails with a group_id that is not present in the samplesheet") {
+
+        when {
+            params {
+                // see tests/stub.nf.test for why the placeholder h5ad files are created and the
+                // stub samplesheet is rewritten with absolute paths
+                def stub_lines = new File("${projectDir}/stub/samplesheet.csv").readLines()
+                stub_lines.drop(1).each { line ->
+                    def h5ad_file = new File("${projectDir}/${line.tokenize(',')[-1]}")
+                    h5ad_file.parentFile.mkdirs()
+                    h5ad_file.createNewFile()
+                }
+
+                def stub_samplesheet = new File("${new File(outputDir).parent}/stub-samplesheet.csv")
+                stub_samplesheet.parentFile.mkdirs()
+                stub_samplesheet.text = stub_lines.join('\n')
+                    .replace('stub/data/', "${projectDir}/stub/data/")
+
+                input    = stub_samplesheet.toString()
+                outdir   = "$outputDir"
+                // one valid and one missing group_id, so only the missing one should be reported
+                group_id = 'GROUP01,MISSING_GROUP'
+            }
+        }
+
+        then {
+            assert workflow.failed
+            def output = (workflow.stdout + workflow.stderr).join('\n')
+            assert output.contains('The following --group_id value(s) are not present in the samplesheet: MISSING_GROUP')
+        }
+    }
 }
