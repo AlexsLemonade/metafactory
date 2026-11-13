@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://raw.githubusercontent.com/AlexsLemonade/metafactory/main/nextflow_schema.json",
     "title": "AlexsLemonade/metafactory pipeline parameters",
-    "description": "Nextflow pipeline for identifying metaprograms across single-cell/nuclei RNA-sequencing samples",
+    "description": "Nextflow pipeline for identifying metaprograms across single-cell/nuclei RNA-sequencing libraries",
     "type": "object",
     "dependentRequired": {
         "analysis_celltypes": ["celltype_annotation_column"]
@@ -22,8 +22,8 @@
                     "schema": "assets/schema_input.json",
                     "mimetype": "text/csv",
                     "pattern": "^\\S+\\.csv$",
-                    "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
+                    "description": "Path to comma-separated file containing information about the libraries to analyze.",
+                    "help_text": "You will need to create a design file with information about the libraries to analyze before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "group_id": {
@@ -126,7 +126,7 @@
                     "default": 1000,
                     "minimum": 1,
                     "description": "Number of replicates to use for permutation testing across analysis modules.",
-                    "help_text": "Used by the generate metaprograms module to build the shuffled metaprograms and by the calculate metrics modules to build the background distributions that the permutation p-values are calculated against.",
+                    "help_text": "Used by the generate metaprograms module to build the shuffled metaprograms and by the calculate metrics modules to build the metric background distributions that the permutation p-values are calculated against.",
                     "fa_icon": "fas fa-hashtag"
                 }
             }
@@ -135,31 +135,31 @@
             "title": "cNMF options",
             "type": "object",
             "fa_icon": "fas fa-dna",
-            "description": "Parameters for running cNMF to identify consensus gene expression programs.",
+            "description": "Parameters for running cNMF to identify consensus NMF programs.",
             "properties": {
                 "cnmf_k_lower": {
                     "type": "integer",
                     "default": 5,
-                    "description": "Lower boundary for the number of components (k) to test in cNMF.",
+                    "description": "Lower boundary for cNMF k (rank), the number of NMF programs cNMF finds in each library.",
                     "fa_icon": "fas fa-hashtag"
                 },
                 "cnmf_k_upper": {
                     "type": "integer",
                     "default": 15,
-                    "description": "Upper boundary for the number of components (k) to test in cNMF.",
+                    "description": "Upper boundary for cNMF k (rank), the number of NMF programs cNMF finds in each library.",
                     "fa_icon": "fas fa-hashtag"
                 },
                 "cnmf_k_step_size": {
                     "type": "integer",
                     "default": 5,
-                    "description": "Step size for the range of k components tested in cNMF.",
+                    "description": "Step size for the range of cNMF k (rank) values tested.",
                     "fa_icon": "fas fa-hashtag"
                 },
                 "repeat_cnmf": {
                     "type": ["boolean", "string"],
                     "pattern": "^([Tt]rue|[Ff]alse)$",
                     "default": false,
-                    "description": "Re-run cNMF for every sample, even if a checkpoint created with the same cNMF options already exists.",
+                    "description": "Re-run cNMF for every library, even if a checkpoint created with the same cNMF options already exists.",
                     "fa_icon": "fas fa-redo"
                 }
             }
@@ -192,7 +192,7 @@
                 "metaprograms_orphan_cutoff": {
                     "type": "number",
                     "default": 0.3,
-                    "description": "Minimum cross sample maximum correlation required to keep a spectra when --metaprograms_filter_spectra is used. Only used by the generate metaprograms module.",
+                    "description": "Minimum cross-library maximum correlation required to keep an NMF program when --metaprograms_filter_spectra is used. Only used by the generate metaprograms module.",
                     "fa_icon": "fas fa-hashtag"
                 }
             }

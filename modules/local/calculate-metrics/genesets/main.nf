@@ -26,7 +26,7 @@ process CALCULATE_METRICS_GENESETS {
     // ORA derived metrics, one row per metaprogram
     metrics_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_geneset_metrics.tsv"
 
-    // the background gene set stats with one row per metaprogram per replicate
+    // the metric background gene set stats with one row per metaprogram per replicate
     background_file = "${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}_background_specificity.tsv.gz"
 
     template('calculate-geneset-metrics.R')

@@ -1,6 +1,6 @@
 name: generate_reports
 description: |
-  Render the report that evaluates a single set of metaprograms generated for one group of samples
+  Render the report that evaluates a single set of metaprograms generated for one group of libraries
   with one value of k.
 keywords:
   - single-cell
@@ -69,7 +69,7 @@ input:
         type: map
         description: |
           Groovy Map containing group information, one map per group_id. Required keys:
-          - `group_id`: Group identifier shared by all samples used to generate the metaprograms.
+          - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
             Also used as the name of the output directory, so that the report for every group is
             published alongside the other final results for that group.
           - `optimal_k`: Number of metaprograms (k) in the metaprogram set chosen as the final

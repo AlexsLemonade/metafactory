@@ -1,8 +1,8 @@
 name: generate_metaprograms
 description: |
-  Cluster cNMF gene expression spectra from all samples in a group into a specified
+  Cluster cNMF spectra (NMF programs) from all libraries in a group into a specified
   number of metaprograms (MPs) based on spectra correlation. Optionally filters out
-  "orphan" spectra that do not correlate well with spectra from other samples before
+  "orphan" spectra that do not correlate well with spectra from other libraries before
   clustering. Also generates permuted (gene-shuffled) versions of each metaprogram
   for later use in permutation-based significance testing.
 keywords:
@@ -25,9 +25,9 @@ input:
         description: |
           Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
           combination. Required keys:
-          - `group_id`: Group identifier shared by all samples used as input. Used as the output
+          - `group_id`: Group identifier shared by all libraries used as input. Used as the output
             subdirectory name.
-          - `unique_ids`: List of unique sample identifiers whose cNMF results are included in
+          - `unique_ids`: List of unique library identifiers whose cNMF results are included in
             this group.
           - `n_metaprograms`: Number of metaprograms (k) to generate for this group.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
@@ -37,7 +37,7 @@ input:
             metaprogram set is written to the same place.
     - cnmf_output_dirs:
         type: directory
-        description: List of per-sample cNMF output directories (one per unique_id in the group) containing gene spectra score files.
+        description: List of per-library cNMF output directories (one per unique_id in the group) containing gene spectra score files.
         pattern: "*/"
   - - options:
         type: map
@@ -49,16 +49,16 @@ input:
             than recomputing the gene lists themselves, and when generating shuffled metaprograms
             for permutation testing. Must be at least 1.
           - `filter_spectra` (boolean): Whether to filter out orphan spectra (spectra that do not
-            correlate well with any spectra from other samples) before generating metaprograms.
-          - `orphan_cutoff` (double): Minimum cross-sample maximum correlation required to keep a
-            spectra when filter_spectra is used.
-          - `cnmf_k_lower` (integer): Lower boundary for the number of components (k) tested in
-            cNMF. Used to restrict which cNMF k values are considered when generating
+            correlate well with any spectra from other libraries) before generating metaprograms.
+          - `orphan_cutoff` (double): Minimum cross-library maximum correlation required to keep a
+            spectrum when filter_spectra is used.
+          - `cnmf_k_lower` (integer): Lower boundary for cNMF k (rank), the number of NMF programs
+            cNMF finds in each library. Used to restrict which cNMF k values are considered when generating
             metaprograms.
-          - `cnmf_k_upper` (integer): Upper boundary for the number of components (k) tested in
-            cNMF. Used to restrict which cNMF k values are considered when generating
+          - `cnmf_k_upper` (integer): Upper boundary for cNMF k (rank), the number of NMF programs
+            cNMF finds in each library. Used to restrict which cNMF k values are considered when generating
             metaprograms.
-          - `cnmf_k_step_size` (integer): Step size for the range of k components tested in cNMF.
+          - `cnmf_k_step_size` (integer): Step size for the range of cNMF k (rank) values tested.
             Used to restrict which cNMF k values are considered when generating metaprograms.
           - `seed` (integer): Random seed used when clustering and shuffling metaprograms, for
             reproducibility.

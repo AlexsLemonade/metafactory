@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--group_id` parameter to run a subset of groups from the samplesheet, given as a comma separated list of `group_id` values (default: `All`).
 - Parameter validation that every value provided to `--group_id` is either `All` or present in the `group_id` column of the samplesheet.
 
+### `Changed`
+
+- Output columns and files that counted libraries were renamed from "sample" to "library" to match the glossary:
+  - `num_samples` → `num_libraries` and `proportion_of_samples` → `proportion_of_libraries` in the `*_mp_metrics.tsv` and `all-k_metaprogram_metrics.tsv` tables.
+  - `total_samples` → `total_libraries` and `rank_effective_sample_size` → `rank_effective_library_count` in `all-k_summary_metrics.tsv`.
+  - `all-k_background_eff_sample_size.tsv.gz` → `all-k_background_eff_library_count.tsv.gz` in the `reports/` directory.
+- Documentation, parameter descriptions, module metadata, code comments, error messages, and report text now use the terms defined in `docs/GLOSSARY.md` (for example library rather than sample, NMF program rather than gene expression program, cNMF k for the cNMF rank, and score background and metric background).
+- The pipeline description in `nextflow.config`, `nextflow_schema.json`, and `.nf-core.yml` now refers to libraries rather than samples.
+
 ## v0.1.0 - [2026-11-02]
 
 Initial release of AlexsLemonade/metafactory, created with the [nf-core](https://nf-co.re/) template.

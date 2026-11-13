@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# This script is used to generate metaprograms using cNMF results across all samples in a group
+# This script is used to generate metaprograms using cNMF results across all libraries in a group
 # Outputs three files:
 
 # 1. An RDS file with a list of the items described below
@@ -16,7 +16,7 @@
 # Items in the RDS file:
 
 # metaprogram_list: List of gene weights for each MP
-# clusters: original vector of cluster assignments for each spectra
+# clusters: original vector of cluster assignments for each spectrum
 # cluster_list: Spectra assigned to each cluster/MP
 # cor_matrix: Correlation matrix of spectra
 # spectra_cor_df: Data frame with all spectra correlation information
@@ -29,7 +29,7 @@
 # n_top_genes: Number of top genes kept for each MP in `top_genes` and `shuffled_metaprograms`
 # cnmf_k_range: Set of k values used with cNMF to consider when generating MPs
 # filter_spectra: Whether or not orphan spectra were removed
-# orphan_cutoff: If orphan spectra were removed, the minimum cross sample correlation
+# orphan_cutoff: If orphan spectra were removed, the minimum cross-library correlation
 # to keep the spectra. If no filtering, this is -1
 # unique_ids: Vector of unique IDs associated with the MPs
 # removed_unique_ids: Vector of unique IDs that are removed when filtering the spectra
@@ -57,8 +57,8 @@ nreps                   <- as.integer(${options.nreps})
 build_spectra_mtx <- function(spectra_files){
 
   # read in all spectra and combine into a single matrix
-  # rows are genes and each column is a spectra
-  # any genes that are not present in a spectra will have NA
+  # rows are genes and each column is a spectrum
+  # any genes that are not present in a spectrum will have NA
   spectra_mtx <- purrr::imap(
     spectra_files, function(file, id) {
 
@@ -104,7 +104,7 @@ build_spectra_cor_df <- function(cor_matrix){
     # remove correlations between the same spectra
     dplyr::filter(spectra1 != spectra2) |>
     dplyr::mutate(
-      # add columns for sample and k value to help distinguish between/within sample comparisons
+      # add columns for library and k value to help distinguish between/within library comparisons
       sample1 = stringr::word(spectra1, 1, sep = "_"),
       sample2 = stringr::word(spectra2, 1, sep = "_"),
       pair_type = dplyr::if_else(sample1 == sample2, "within_sample", "between_sample")
@@ -134,14 +134,14 @@ extract_top_genes <- function(mp_list, num_genes){
 # generate a character vector of spectra to keep after removing orphans
 remove_orphan_spectra <- function(spectra_mtx, cor_matrix, orphan_cutoff){
 
-  # create correlation dataframe with info about each spectra
+  # create correlation dataframe with info about each spectrum
   all_cor_df <- build_spectra_cor_df(cor_matrix)
 
-  # compute cross sample max for each spectra
+  # compute cross-library max for each spectrum
   cross_sample_max <- all_cor_df |>
-    # only keep correlations between samples
+    # only keep correlations between libraries
     dplyr::filter(pair_type == "between_sample") |>
-    # find the max correlation for each spectra
+    # find the max correlation for each spectrum
     dplyr::summarise(
       max_sample_cor = max(correlation, na.rm = TRUE),
       .by = spectra1
@@ -201,7 +201,7 @@ names(spectra_files) <- unique_ids
 stopifnot(
   "No spectra files found in the provided cnmf results directories with the specified values of k" =
     length(spectra_files) != 0,
-  "Unable to find unique IDs for each spectra" = length(names(spectra_files)) != 0
+  "Unable to find unique IDs for each spectrum" = length(names(spectra_files)) != 0
 )
 
 # Read and filter spectra ------------------------------------------------------
@@ -225,7 +225,7 @@ if (do_filter_spectra) {
 }
 
 # make sure there are enough spectra left to build the requested number of metaprograms
-# if there are not more spectra than metaprograms, every metaprogram has at most one spectra and
+# if there are not more spectra than metaprograms, every metaprogram has at most one spectrum and
 # metrics comparing spectra within and between metaprograms can't be calculated
 n_spectra <- ncol(spectra_mtx)
 if (n_spectra <= n_metaprograms) {
@@ -233,7 +233,7 @@ if (n_spectra <= n_metaprograms) {
     sprintf(
       paste(
         "Only %d spectra remain, which is not enough to build %d metaprograms with more than",
-        "one spectra each. %s Try including more samples in this group, using smaller values",
+        "one spectrum each. %s Try including more libraries in this group, using smaller values",
         "of --n_metaprograms, lowering --metaprograms_orphan_cutoff, or setting",
         "--metaprograms_filter_spectra false."
       ),
@@ -278,7 +278,7 @@ mp_list <- mp_cluster_list |>
 # such as the gene set metrics module, use the same gene lists
 top_genes <- extract_top_genes(mp_list, n_top_genes)
 
-# get a vector of any samples that might not be represented in the output spectra
+# get a vector of any libraries that might not be represented in the output spectra
 # spectra are named `{unique_id}_k{k_value}_CNMF{nmf_number}`, and `unique_id` itself may contain
 # underscores, so the unique id is recovered by stripping the known trailing suffix
 spectra_unique_ids <- names(clusters) |>

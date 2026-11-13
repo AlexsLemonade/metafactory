@@ -3,7 +3,7 @@ description: |
   Combine the per library score tables generated for a single metaprogram set into one table.
   All input files must hold the same columns, so one task is run per score type per metaprogram
   set (group_id/n_metaprograms combination): once for the per cell metaprogram scores from the
-  score metaprograms module and once for the per shuffled metaprogram background score stats from
+  score metaprograms module and once for the per shuffled metaprogram score background stats from
   the score background module. The tables are stacked as is, with no columns added or dropped,
   and the combined table is written alongside the metaprograms and per library scores it was
   built from.
@@ -48,7 +48,7 @@ input:
           List of gzipped TSVs of scores for individual libraries, all of the same score type and
           all scored against the same metaprogram set. Either the per cell metaprogram scores
           from the score metaprograms module (columns `metaprogram`, `barcodes`, `mp_score`,
-          `unique_id`) or the background score stats from the score background module (columns
+          `unique_id`) or the score background stats from the score background module (columns
           `metaprogram`, `replicate`, `num_cells`, `mean_mp_score`, `M2`, `unique_id`).
         pattern: "*.tsv.gz"
 
