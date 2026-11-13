@@ -15,3 +15,5 @@ null/
 tests/results/*
 .nf-test/
 .nf-test.log
+# local issue tracker used by agent skills
+docs/issues/

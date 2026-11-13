@@ -30,6 +30,7 @@ workflow PIPELINE_INITIALISATION {
     nextflow_cli_args //   array: List of positional nextflow CLI args
     outdir //  string: The output directory where the results will be saved
     input //  string: Path to input samplesheet
+    group_id //  string: Comma separated list of group_ids to run, or All
     help // boolean: Display help message and exit
     help_full // boolean: Show the full help message
     show_hidden // boolean: Show hidden parameters in the help message
@@ -83,6 +84,9 @@ workflow PIPELINE_INITIALISATION {
     // Validate samplesheet input, ensuring all ids exist and unique ids are unique
     def samplesheet_list = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
     validateInputSamplesheet(samplesheet_list)
+
+    // Validate that the requested group_id(s) are present in the samplesheet
+    validateGroupId(samplesheet_list, group_id)
 
     ch_samplesheet = channel.fromList(samplesheet_list)
 
@@ -147,6 +151,32 @@ def validateInputSamplesheet(samplesheet_list) {
 
     if (duplicates) {
         error("Duplicate unique_id values found in samplesheet: ${duplicates.join(', ')}")
+    }
+}
+
+//
+// Validate that --group_id is either All or a comma separated list of group_ids in the samplesheet
+//
+def validateGroupId(samplesheet_list, group_id) {
+
+    if (group_id.toString().trim().equalsIgnoreCase('All')) {
+        return
+    }
+
+    def samplesheet_group_ids = samplesheet_list
+        .collect { _unique_id, sample_group_id, _h5ad_file -> sample_group_id.toString() }
+        .toSet()
+    def requested_group_ids = group_id.split(',')*.trim()
+    if (!requested_group_ids) {
+        error("--group_id must be All or a non-empty comma separated list of group IDs")
+    }
+    def missing_group_ids = requested_group_ids.toSet() - samplesheet_group_ids
+
+    if (missing_group_ids) {
+        error(
+            "The following --group_id value(s) are not present in the samplesheet: ${missing_group_ids.sort().join(', ')}\n" +
+            "Use --group_id All or choose from: ${samplesheet_group_ids.sort().join(', ')}"
+        )
     }
 }
 //

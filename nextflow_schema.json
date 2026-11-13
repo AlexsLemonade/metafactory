@@ -26,6 +26,12 @@
                     "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
                     "fa_icon": "fas fa-file-csv"
                 },
+                "group_id": {
+                    "type": "string",
+                    "default": "All",
+                    "description": "Group ID(s) from the `group_id` column of the samplesheet to run. Use `All` to run all groups. Use a comma separated list to run multiple groups.",
+                    "fa_icon": "fas fa-layer-group"
+                },
                 "outdir": {
                     "type": "string",
                     "format": "directory-path",
