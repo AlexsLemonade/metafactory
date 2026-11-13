@@ -165,16 +165,16 @@ def validateGroupId(samplesheet_list, group_id) {
 
     def samplesheet_group_ids = samplesheet_list
         .collect { _unique_id, sample_group_id, _h5ad_file -> sample_group_id.toString() }
-        .unique()
-    def requested_group_ids = group_id.toString().split(',')*.trim()
+        .toSet()
+    def requested_group_ids = group_id.split(',')*.trim()
     if (!requested_group_ids) {
         error("--group_id must be All or a non-empty comma separated list of group IDs")
     }
-    def missing_group_ids = requested_group_ids.findAll { id -> !(id in samplesheet_group_ids) }
+    def missing_group_ids = requested_group_ids.toSet() - samplesheet_group_ids
 
     if (missing_group_ids) {
         error(
-            "The following --group_id value(s) are not present in the samplesheet: ${missing_group_ids.join(', ')}\n" +
+            "The following --group_id value(s) are not present in the samplesheet: ${missing_group_ids.sort().join(', ')}\n" +
             "Use --group_id All or choose from: ${samplesheet_group_ids.sort().join(', ')}"
         )
     }
