@@ -16,7 +16,7 @@ Initial release of AlexsLemonade/metafactory, created with the [nf-core](https:/
 
 ### `Added`
 
-Implementation of the `metafactory` workflow which computes metaprograms for a specified group of samples across a range of k values (number of metaprograms).
+Implementation of the `metafactory` workflow which computes metaprograms for a specified group of libraries across a range of k values (number of metaprograms).
 The optimal number of metaprograms is determined by calculating a set of metrics designed to identify biologically interpretable metaprograms.
 This initial version of the pipeline requires input data to be stored as an `AnnData` object (`.h5ad` file).
 
@@ -24,7 +24,7 @@ Modules (`modules/local/`):
 
 - `CNMF`: runs consensus NMF on each library to identify gene expression programs.
 - `GENERATE_METAPROGRAMS`: correlates and clusters the spectra from every library in a group into `k` metaprograms, for each value of `k` in `--n_metaprograms`.
-- `CALCULATE_METRICS_METAPROGRAMS`: calculates per-metaprogram metrics (effective sample size, correlation, coherence) and their background distributions.
+- `CALCULATE_METRICS_METAPROGRAMS`: calculates per-metaprogram metrics (effective library count, correlation, coherence) and their background distributions.
 - `CALCULATE_METRICS_GENESETS`: annotates metaprograms with MSigDB gene sets using ORA and calculates gene set specificity metrics.
 - `CALCULATE_K`: ranks every value of `k` tested and picks the optimal value of `k` for each group.
 - `PUBLISH_METAPROGRAMS`: copies the metaprograms for the optimal value of `k` into the final results directory for the group.

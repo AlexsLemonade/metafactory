@@ -347,15 +347,14 @@ The values are normalized by the total number of libraries in the metaprogram su
 mp_metrics_df |>
   dplyr::select(
     metaprogram,
-    # note that the names of the columns is samples, but this is really libraries right now
-    num_samples,
-    proportion_of_samples,
+    num_libraries,
+    proportion_of_libraries,
     shannon_entropy_norm,
     eff_number_norm
   ) |>
   DT::datatable(colnames = c("Metaprogram", "Num Libraries", "% Libraries", "Normalized Shannon's Entropy", "Normalized Effective Library Count")
   ) |>
-  DT::formatPercentage(c("proportion_of_samples")) |>
+  DT::formatPercentage(c("proportion_of_libraries")) |>
   DT::formatRound(c("shannon_entropy_norm", "eff_number_norm"))
 ```
 

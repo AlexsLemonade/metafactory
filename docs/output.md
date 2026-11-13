@@ -48,7 +48,7 @@ The output for all other values of `k` can be found in [`checkpoints/`](#checkpo
   - `reports/`: Tables used to build the metrics report, holding metrics for every value of `k` tested.
     - `all-k_summary_metrics.tsv`: [Summary metrics](#summary-metrics-for-each-value-of-k) for each value of `k`, used to choose the optimal value of `k`.
     - `all-k_metaprogram_metrics.tsv`: [Metrics for every metaprogram](#metrics-for-every-metaprogram-across-all-values-of-k) across all values of `k`.
-    - `all-k_background_eff_sample_size.tsv.gz`: Null distribution (metric background) of the normalized effective library count (columns: `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`).
+    - `all-k_background_eff_library_count.tsv.gz`: Null distribution (metric background) of the normalized effective library count (columns: `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`).
     - `all-k_background_geneset_specificity.tsv.gz`: Null distribution of the overall gene set specificity, with one row per permutation replicate per value of `k` (columns: `n_metaprograms`, `replicate`, `overall_geneset_specificity`).
     - `all-k_background_cell_score_cv.tsv.gz`: Null distribution of the coefficient of variation (CV) of cell scores (columns: `n_metaprograms`, `metaprogram`, `replicate`, `score_cv`).
 
@@ -121,8 +121,8 @@ Significance for all metrics is determined using an adjusted p-value cutoff of 0
 | `max_correlation`                    | Maximum correlation of the metaprogram's gene weights to all other metaprograms  
 | `median_difference`                  | Coherence, the difference in median correlation of spectra within and between metaprograms  
 | `num_spectra_per_mp`                 | Number of spectra in the metaprogram  
-| `num_samples`                        | Number of libraries represented in the metaprogram  
-| `proportion_of_samples`              | Proportion of all libraries represented in the metaprogram  
+| `num_libraries`                        | Number of libraries represented in the metaprogram  
+| `proportion_of_libraries`              | Proportion of all libraries represented in the metaprogram  
 | `shannon_entropy`                    | Shannon entropy measuring the relative abundance of libraries in the metaprogram  
 | `shannon_entropy_norm`               | Normalized Shannon entropy  
 | `eff_number`                         | Effective library count  
@@ -180,12 +180,12 @@ If `--celltype_annotation_column` and `--analysis_celltypes` are provided, only 
 | `num_metaprograms_with_genesets`, `proportion_metaprograms_with_genesets` | Number and proportion of metaprograms with at least one significant gene set  
 | `overall_geneset_specificity`                                             | Mean gene set specificity across all metaprograms with at least one significant gene set  
 | `num_significant_cv`, `proportion_significant_cv`                         | Number and proportion of metaprograms with a significant CV of cell scores  
-| `total_samples`                                                           | Number of libraries with cell scores  
+| `total_libraries`                                                           | Number of libraries with cell scores  
 | `is_coherence_elbow`                                                      | Whether this value of `k` is the elbow of the median coherence curve  
 | `coherence_elbow_passing`                                                 | Coherence score used for ranking: 1 at the elbow, 0.5 below the elbow or if there is no elbow, 0 above  
 | `geneset_specificity_pvalue`, `geneset_specificity_adj_pvalue`            | P-value and adjusted p-value for the overall gene set specificity being significantly different compared to the null distribution using a two-sided permutation test
 | `geneset_specificity_significant`                                         | Whether the overall gene set specificity is significant (1) or not (0)  
-| `rank_effective_sample_size`                                              | Normalized rank of `neff_sig_proportion`  
+| `rank_effective_library_count`                                              | Normalized rank of `neff_sig_proportion`  
 | `rank_correlation`                                                        | Normalized rank of `proportion_passing_correlation`  
 | `rank_coherence`                                                          | Normalized rank of `coherence_elbow_passing`  
 | `rank_gene_set_specificity`                                               | Normalized rank of `geneset_specificity_significant`  

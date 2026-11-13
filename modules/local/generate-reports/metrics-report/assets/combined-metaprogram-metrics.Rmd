@@ -182,10 +182,10 @@ This section will summarize the proportion of libraries found in each metaprogra
 ```{r}
 # display total libraries
 # this is the number of unique ids that contribute cell scores
-total_samples <- max(k_metrics_df$total_samples, na.rm = TRUE)
+total_libraries <- max(k_metrics_df$total_libraries, na.rm = TRUE)
 
 knitr::asis_output(
-  glue::glue("The metaprograms explored here are comprised of **{total_samples} libraries**.")
+  glue::glue("The metaprograms explored here are comprised of **{total_libraries} libraries**.")
 )
 ```
 
@@ -196,7 +196,7 @@ Here each dot is a metaprogram and the value indicated is the proportion of tota
 The dotted line indicates 10% which may help identify any metaprograms with a low representation of libraries.
 
 ```{r}
-ggplot(mp_metrics_df, aes(x = n_metaprograms, y = proportion_of_samples)) +
+ggplot(mp_metrics_df, aes(x = n_metaprograms, y = proportion_of_libraries)) +
   geom_boxplot() +
   ggbeeswarm::geom_beeswarm() +
   labs(
@@ -475,7 +475,7 @@ The optimal value of k is the k with the highest average rank.
 # the rank columns of the k metrics table, in the order they are shown in the heatmap
 # the names are used as the row labels, so they are defined here with the rest of the plotting code
 rank_columns <- c(
-  "Effective library count" = "rank_effective_sample_size",
+  "Effective library count" = "rank_effective_library_count",
   "Correlation" = "rank_correlation",
   "Coherence" = "rank_coherence",
   "Gene set specificity" = "rank_gene_set_specificity",

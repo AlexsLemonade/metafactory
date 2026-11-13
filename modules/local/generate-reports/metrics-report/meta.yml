@@ -87,7 +87,7 @@ input:
         description: |
           Gzipped TSV of the permuted null distribution for the normalized effective library count,
           as written by the calculate k module.
-        pattern: "all-k_background_eff_sample_size.tsv.gz"
+        pattern: "all-k_background_eff_library_count.tsv.gz"
     - specificity_background_file:
         type: file
         description: |

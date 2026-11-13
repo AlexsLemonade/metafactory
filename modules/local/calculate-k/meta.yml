@@ -46,7 +46,7 @@ input:
         description: |
           Metaprogram metrics TSVs, one per value of k, as written by the calculate metrics
           metaprograms module. The `metaprogram`, `max_correlation`, `median_difference`,
-          `num_spectra_per_mp`, `proportion_of_samples`, `eff_number_norm` and
+          `num_spectra_per_mp`, `proportion_of_libraries`, `eff_number_norm` and
           `greater_adj_pvalue_eff_number_norm` columns are read.
         pattern: "k-*_mp_metrics.tsv"
     - mp_background_files:
@@ -133,14 +133,14 @@ output:
             the optimal one. Values of k dropped from the comparison are reported with
             `is_excluded` set to TRUE and no metrics.
           pattern: "all-k_summary_metrics.tsv"
-      - "all-k_background_eff_sample_size.tsv.gz":
+      - "all-k_background_eff_library_count.tsv.gz":
           type: file
           description: |
-            Gzipped TSV, at `<group_id>/reports/all-k_background_eff_sample_size.tsv.gz`, holding the
+            Gzipped TSV, at `<group_id>/reports/all-k_background_eff_library_count.tsv.gz`, holding the
             permuted null distribution (metric background) for the normalized effective library count (columns:
             `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`), with the excluded
             values of k removed.
-          pattern: "all-k_background_eff_sample_size.tsv.gz"
+          pattern: "all-k_background_eff_library_count.tsv.gz"
       - "all-k_background_geneset_specificity.tsv.gz":
           type: file
           description: |

@@ -70,7 +70,7 @@ COHERENCE_CUTOFF <- 0.1
 # metrics used to rank each value of k, in the order they are reported
 # the names are the rank columns added to the k metrics table, one for each metric
 METRICS_COLUMNS <- c(
-  rank_effective_sample_size = "neff_sig_proportion",
+  rank_effective_library_count = "neff_sig_proportion",
   rank_correlation = "proportion_passing_correlation",
   rank_coherence = "coherence_elbow_passing",
   rank_gene_set_specificity = "geneset_specificity_significant",
@@ -349,9 +349,9 @@ mp_metrics_df <- mp_metrics_df |>
 # the total number of libraries is the number of unique IDs represented in the cell scores
 # TODO: as above, every unique ID is treated as a sample here. If more than one library can come
 # from the same sample, this should count samples rather than libraries.
-total_samples_df <- scores_df |>
+total_libraries_df <- scores_df |>
   dplyr::summarize(
-    total_samples = dplyr::n_distinct(unique_id),
+    total_libraries = dplyr::n_distinct(unique_id),
     .by = "n_metaprograms"
   )
 
@@ -380,7 +380,7 @@ k_metrics_df <- mp_metrics_df |>
     proportion_significant_cv = num_significant_cv / num_metaprograms,
     .by = "n_metaprograms"
   ) |>
-  dplyr::left_join(total_samples_df, by = "n_metaprograms") |>
+  dplyr::left_join(total_libraries_df, by = "n_metaprograms") |>
   dplyr::relocate(n_metaprograms) |>
   dplyr::arrange(n_metaprograms)
 

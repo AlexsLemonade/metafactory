@@ -14,8 +14,8 @@
 # median_difference: Difference in medians between the correlation of spectra
 #  within metaprograms and between metaprograms
 # num_spectra_per_mp: Number of spectra found in that metaprogram
-# num_samples: Number of libraries represented in the metaprogram
-# proportion_of_samples: Proportion of the total libraries represented in the metaprogram
+# num_libraries: Number of libraries represented in the metaprogram
+# proportion_of_libraries: Proportion of the total libraries represented in the metaprogram
 # shannon_entropy: Shannon entropy measuring relative abundance of libraries in the metaprogram
 # shannon_entropy_norm: Normalized Shannon entropy
 # eff_number: Effective library count
@@ -35,36 +35,36 @@ seed              <- as.integer(${options.seed})
 # Functions --------------------------------------------------------------------
 
 # helper function for calculating entropy
-entropy <- function(sample_n) {
-  sample_freq <- sample_n / sum(sample_n)
-  -sum(sample_freq * log(sample_freq))
+entropy <- function(library_n) {
+  library_freq <- library_n / sum(library_n)
+  -sum(library_freq * log(library_freq))
 }
 
 # calculate stats for all metaprograms
 # returns a dataframe with one row for each metaprogram and one column for each stat
-calculate_sample_stats <- function(mp_clusters_df, total_samples) {
+calculate_library_stats <- function(mp_clusters_df, total_libraries) {
 
   # df with one row per mp
-  # calculates total spectra, entropy, norm entropy, eff species size
+  # calculates total spectra, entropy, norm entropy, effective library count
   mp_entropy_df <- mp_clusters_df |>
     dplyr::group_by(metaprogram, sample_id) |>
-    # first get total spectra per sample
+    # first get total spectra per library
     dplyr::summarize(
-      num_spectra_per_sample = dplyr::n(),
+      num_spectra_per_library = dplyr::n(),
       .groups = "drop_last"
     ) |>
-    # now calculate stats for each metaprogram, drop sample grouping
+    # now calculate stats for each metaprogram, drop library grouping
     dplyr::summarize(
-      # totals for each group (spectra, sample)
-      num_spectra_per_mp = sum(num_spectra_per_sample),
-      num_samples = length(sample_id),
-      # proportion of the total samples
-      proportion_of_samples = num_samples / total_samples,
+      # totals for each metaprogram (spectra, libraries)
+      num_spectra_per_mp = sum(num_spectra_per_library),
+      num_libraries = length(sample_id),
+      # proportion of the total libraries
+      proportion_of_libraries = num_libraries / total_libraries,
       # entropy and neff
-      shannon_entropy = entropy(num_spectra_per_sample), # entropy
-      shannon_entropy_norm = dplyr::if_else(num_samples > 1, shannon_entropy / log(num_samples), 0), # normalize by total possible samples in that mp
-      eff_number = exp(shannon_entropy), # effective species size or Hill number order of 1
-      eff_number_norm = eff_number / num_samples # eff number should be close to the total possible samples in that mp
+      shannon_entropy = entropy(num_spectra_per_library), # entropy
+      shannon_entropy_norm = dplyr::if_else(num_libraries > 1, shannon_entropy / log(num_libraries), 0), # normalize by total possible libraries in that mp
+      eff_number = exp(shannon_entropy), # effective library count (Hill number of order 1)
+      eff_number_norm = eff_number / num_libraries # eff number should be close to the total possible libraries in that mp
     )
 
   return(mp_entropy_df)
@@ -188,7 +188,7 @@ mp_medians_df <- mp_cor_df |>
 
 # get the total number of libraries to use as the denominator for proportion
 # use all libraries even if they are not all present in the spectra after filtering
-total_samples <- length(mp_object[["unique_ids"]])
+total_libraries <- length(mp_object[["unique_ids"]])
 
 # add sample column
 mp_clusters_df <- mp_lookup |>
@@ -200,14 +200,14 @@ mp_clusters_df <- mp_lookup |>
 
 # get observed stats
 # includes proportion of libraries, shannon entropy and effective library count
-obs_stats_df <- calculate_sample_stats(mp_clusters_df, total_samples)
+obs_stats_df <- calculate_library_stats(mp_clusters_df, total_libraries)
 
 # get the metric background
 background_mp_stats_df <- replicate(nreps, {
   # for each rep, shuffle the spectra
   # keep the distribution of num spectra/ mp the same
   dplyr::mutate(mp_clusters_df, metaprogram = sample(metaprogram)) |>
-    calculate_sample_stats(total_samples)
+    calculate_library_stats(total_libraries)
 }, simplify = FALSE) |>
   dplyr::bind_rows(.id = "replicate")
 

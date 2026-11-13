@@ -41,7 +41,7 @@ cp "${group_dir}/optimal-k.txt" "${data_dir}/"
 for report_file in \
     all-k_metaprogram_metrics.tsv \
     all-k_summary_metrics.tsv \
-    all-k_background_eff_sample_size.tsv.gz \
+    all-k_background_eff_library_count.tsv.gz \
     all-k_background_geneset_specificity.tsv.gz \
     all-k_background_cell_score_cv.tsv.gz
 do

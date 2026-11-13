@@ -48,8 +48,8 @@ workflow METAFACTORY {
     //
     // Create channel samplesheet of [meta, file(h5ad_file)]
     //
-    // only samples whose group_id is in the comma separated list of --group_id are kept,
-    // unless --group_id is All, in which case every sample is kept
+    // only libraries whose group_id is in the comma separated list of --group_id are kept,
+    // unless --group_id is All, in which case every library is kept
     def run_all_groups = params.group_id.trim().equalsIgnoreCase('all')
     def group_id_list = params.group_id.split(',')*.trim()
 

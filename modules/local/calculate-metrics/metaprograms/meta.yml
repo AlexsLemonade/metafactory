@@ -50,7 +50,7 @@ input:
             are written alongside the metaprograms they were calculated from.
           Any other keys present in the map, including the `unique_ids` set by the generate
           metaprograms module, are passed through unchanged and are not read by this process. The
-          total number of libraries used as the denominator for `proportion_of_samples` is taken from
+          total number of libraries used as the denominator for `proportion_of_libraries` is taken from
           the `unique_ids` slot of the RDS file rather than from the map.
     - metaprograms_file:
         type: file
@@ -80,7 +80,7 @@ output:
           description: |
             TSV, at `<metaprograms_publish_dir>/k-<n_metaprograms>_mp_metrics.tsv`, with one row
             per metaprogram (columns: `metaprogram`, `max_correlation`, `median_difference`,
-            `num_spectra_per_mp`, `num_samples`, `proportion_of_samples`, `shannon_entropy`,
+            `num_spectra_per_mp`, `num_libraries`, `proportion_of_libraries`, `shannon_entropy`,
             `shannon_entropy_norm`, `eff_number`, `eff_number_norm`,
             `greater_pvalue_eff_number_norm`, `greater_adj_pvalue_eff_number_norm`). The p-value
             columns are one sided, testing whether the observed normalized effective library count is
