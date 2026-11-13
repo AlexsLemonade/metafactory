@@ -83,9 +83,10 @@ _Avoid_: Background (on its own)
 A null distribution for a metaprogram metric, built by randomly reassigning NMF programs or gene sets to metaprograms.
 _Avoid_: Background (on its own)
 
-**Correlation**:
-As a metric, a metaprogram's highest correlation of gene weights with any other metaprogram in the same metaprogram set; a high value means the metaprogram is redundant.
+**Maximum metaprogram correlation**:
+A metaprogram's highest correlation of gene weights with any other metaprogram in the same metaprogram set; a high value means the metaprogram is redundant.
 Distinct from the correlation between NMF programs used for orphan filtering and clustering.
+_Avoid_: Correlation (on its own)
 
 **Coherence**:
 How much more similar a metaprogram's NMF programs are to each other than to the NMF programs in other metaprograms of the same metaprogram set.
