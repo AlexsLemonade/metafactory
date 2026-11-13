@@ -173,6 +173,7 @@ The following profiles are bundled with the pipeline:
 **ALSF profiles**
 
 - `batch`, `dev`, `scpca_testing`, and `scpca_staging` — ALSF-specific profiles for running on AWS Batch, defined in [`conf/alsf-profiles.config`](../conf/alsf-profiles.config).
+  See [Internal usage](internal-usage.md) for how the Data Lab runs the pipeline with these profiles.
 
 The pipeline also dynamically loads configurations from [https://github.com/nf-core/configs](https://github.com/nf-core/configs) when it runs, making multiple config profiles for various institutional clusters available at run time.
 For more information and to check if your system is supported, please see the [nf-core/configs documentation](https://github.com/nf-core/configs#documentation).
