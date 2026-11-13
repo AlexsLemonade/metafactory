@@ -5,8 +5,8 @@ These directions are specific to the Data Lab team and assume access to the ScPC
 For general instructions on running the pipeline, see [usage.md](usage.md).
 
 > [!NOTE]
-> These instructions are for using ScPCA data as input for testing or generating preliminary results. 
-> Instructions for formally running ScPCA data are forthcoming. 
+> These instructions are for using ScPCA data as input for testing or generating preliminary results.
+> Instructions for formally running ScPCA data are forthcoming.
 
 ## Running with ScPCA data
 
