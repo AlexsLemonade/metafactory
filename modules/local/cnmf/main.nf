@@ -1,6 +1,7 @@
 process CNMF {
     tag "${meta.unique_id}"
     label 'process_high'
+    label 'long_running'
 
     conda "${moduleDir}/environment.yml"
     container {
