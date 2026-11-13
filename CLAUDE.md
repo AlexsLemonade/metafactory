@@ -15,27 +15,10 @@ You are working in a Childhood Cancer Data Lab repository.
 ## Approved exception: Nextflow toolchain
 
 This exception is pre-approved.
-When I ask you to install Nextflow, or you use an install-nextflow skill, follow the steps below without asking for confirmation, then report what you did.
-
-### Installing Nextflow
-
-If `nextflow -version` already works, skip the install.
-Otherwise install Nextflow using the Nextflow agent skill that is installed.
-
-### Running Nextflow
-
-Network access is allowed for Nextflow's own downloads (GitHub, registry.nextflow.io, container registries) and for `nextflow run` on a pipeline I have named explicitly.
-Ask before running any pipeline I have not named.
-
-### Limits of this exception
-
-- Install only to `~/.local/bin`.
-  No sudo, no system package changes.
-- Never run the installer inside the repo.
-- Do not pipe curl into bash.
-- Do not use this exception for any other tool, package manager, or service.
-- If the install fails in a way these steps don't cover, stop and ask.
-  Do not try other install methods or download sources.
+When I ask you to install Nextflow, or you use an install-nextflow skill, follow the steps in the `nextflow-toolchain` skill without asking for confirmation, then report what you did.
+The steps and limits for this exception are in that skill (`.claude/skills/nextflow-toolchain/SKILL.md`).
+Load it before installing Nextflow or running `nextflow run`.
+Even without the skill loaded: install only to `~/.local/bin`, with no sudo and no piping curl into bash.
 
 ## Expectations
 
