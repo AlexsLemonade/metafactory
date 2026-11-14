@@ -1,6 +1,6 @@
 process GENERATE_METAPROGRAMS {
     tag "${meta.group_id}-k${meta.n_metaprograms}"
-    label 'process_medium'
+    label 'process_high'
     label 'process_high_memory'
     label 'long_running'
 
