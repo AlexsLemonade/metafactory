@@ -56,6 +56,7 @@ _Avoid_: k (on its own), components
 How many metaprograms the NMF programs of a group are clustered into; the pipeline builds metaprograms at several values.
 `n_metaprograms`, the parameter and column name that holds this value, is an accepted synonym.
 The values tested for a group are its range of k values, and the one selected is the optimal k, so text that refers to numbers of metaprograms should make clear they are the k values the optimal k is chosen from.
+It may be followed by `k` in parentheses, as in "number of metaprograms (`k`)"; this is one of the few places `k` can appear on its own.
 _Avoid_: k (on its own, without saying it is the number of metaprograms)
 
 **Metaprogram set**:
@@ -67,6 +68,7 @@ A metaprogram set in which clustering produced at least one cluster of NMF progr
 
 **Optimal k**:
 The number of metaprograms the pipeline selects for a group from the range of k values (numbers of metaprograms) it tested, among the metaprogram sets that are not excluded.
+**Optimal value of k** is an accepted synonym.
 
 ### Scores
 

@@ -35,13 +35,13 @@ workflow METAFACTORY {
         *.trim()
         *.toInteger()
 
-    // the optimal k is chosen from the elbow of the coherence curve, which is not defined
+    // the optimal value of k is chosen from the elbow of the coherence curve, which is not defined
     // with fewer than four k values (numbers of metaprograms)
     // the schema enforces this as well, so this is here to catch runs that skip parameter
     // validation, and to fail before any task is submitted rather than in the last process
     if (n_metaprograms_list.size() < 4) {
         error(
-            "At least 4 values of --n_metaprograms are required to choose the optimal k, but ${n_metaprograms_list.size()} were provided: ${params.n_metaprograms}"
+            "At least 4 values of --n_metaprograms are required to choose the optimal value of k, but ${n_metaprograms_list.size()} were provided: ${params.n_metaprograms}"
         )
     }
 
@@ -197,7 +197,7 @@ workflow METAFACTORY {
     )
 
     //
-    // MODULE: Compare every metaprogram set generated for a group and pick the optimal k
+    // MODULE: Compare every metaprogram set generated for a group and pick the optimal value of k
     //
 
     // this process runs once per group rather than once per metaprogram set, so the output for
@@ -240,7 +240,7 @@ workflow METAFACTORY {
         [nreps: params.nreps],
     )
 
-    // the optimal k is written to a file so that it survives as a process output, and is
+    // the optimal value of k is written to a file so that it survives as a process output, and is
     // read back here as the number of metaprograms to use for the report and for determining which files to publish to results
     // we need group id and optimal k for joining as the first element of the tuple
     // a file without a number in it means no optimal k could be chosen for the group, so fail
@@ -256,7 +256,7 @@ workflow METAFACTORY {
 
     // pull out files from each of the calculation steps for later joining, reporting and publishing
     // all are keyed on a [group_id, n_metaprograms] tuple, so that joining them against the
-    // optimal k keeps only the metaprogram set chosen for each group and drops the rest
+    // optimal value of k keeps only the metaprogram set chosen for each group and drops the rest
     def metaprograms_rds_ch = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_rds_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
         [[meta.group_id, meta.n_metaprograms], metaprograms_rds_file]
     }
@@ -290,7 +290,7 @@ workflow METAFACTORY {
     //
     // MODULE: Render a set of reports
     // Metrics report for comparing every metaprogram set that was tested for a group
-    // Individual report evaluating the metaprogram set chosen as the optimal k
+    // Individual report evaluating the metaprogram set chosen as the optimal value of k
     //
 
     GENERATE_REPORTS(

@@ -48,7 +48,7 @@ input:
           Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
           combination. Required keys:
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms in the metaprogram set the metrics are
+          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the metrics are
             calculated for.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form

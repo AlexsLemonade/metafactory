@@ -103,7 +103,7 @@ input:
     - optimal_k_file:
         type: file
         description: |
-          Text file holding the optimal k for the group as a single number, as written by
+          Text file holding the optimal value of k for the group as a single number, as written by
           the calculate k module. Reported in the report and used to pick out the metaprograms
           whose coherence is summarized at the end of it.
         pattern: "optimal-k.txt"

@@ -174,7 +174,7 @@
                     "type": "string",
                     "default": "8,9,10,11",
                     "pattern": "^\\s*\\d+\\s*(,\\s*\\d+\\s*){3,}$",
-                    "description": "Comma-separated list of k values (numbers of metaprograms) to generate, from which the optimal k is chosen. At least four values must be provided. Used across multiple modules.",
+                    "description": "Comma-separated list of numbers of metaprograms (k) to generate, from which the optimal k is chosen. At least four values must be provided. Used across multiple modules.",
                     "fa_icon": "fas fa-hashtag"
                 },
                 "n_top_genes": {

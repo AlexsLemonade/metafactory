@@ -31,7 +31,7 @@ input:
           Groovy Map containing metaprogram set and score type information, one map per score
           type per metaprogram set. Required keys:
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms in the metaprogram set the scores were
+          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the scores were
             calculated against.
           - `score_type`: Type of score being combined, either `metaprogram_scores` or
             `background_score_stats`.

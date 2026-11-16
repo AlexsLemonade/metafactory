@@ -21,7 +21,7 @@ def reportMetricsSuffixes = [
     'all-k_background_cell_score_cv.tsv.gz',
 ]
 
-// the files for the metaprogram set chosen as the optimal k, in input order
+// the files for the metaprogram set chosen as the optimal value of k, in input order
 def optimalSetSuffixes = [
     'metaprograms.rds',
     'metaprogram_metrics.tsv',

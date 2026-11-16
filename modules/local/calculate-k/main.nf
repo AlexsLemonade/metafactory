@@ -33,12 +33,12 @@ process CALCULATE_K {
     // as the final results for the group rather than as a checkpoint
     output_dir = "${meta.group_id}"
 
-    // the optimal k, written as a number so it can be read back as `n_metaprograms` and
+    // the optimal value of k, written as a number so it can be read back as `n_metaprograms` and
     // used to pick out the metaprograms that are published as the final result for this group
     optimal_k_file = "${output_dir}/optimal-k.txt"
 
     // the tables below are only read by the report, so they are kept in their own directory,
-    // separate from the optimal k and the final metaprograms
+    // separate from the optimal value of k and the final metaprograms
     reports_dir = "${output_dir}/reports"
 
     // tables used to build the report, holding the metrics for every metaprogram set
@@ -63,7 +63,7 @@ process CALCULATE_K {
     specificity_background_file = "${reports_dir}/all-k_background_geneset_specificity.tsv.gz"
     cv_background_file = "${reports_dir}/all-k_background_cell_score_cv.tsv.gz"
 
-    // the optimal k can only be found from real metrics, so the first metaprogram set
+    // the optimal value of k can only be found from real metrics, so the first metaprogram set
     // staged stands in for it here. file names are sorted because the order of the staged files
     // depends on task completion order, and the stub output needs to be the same on every run
     // tests can set ext.stub_optimal_k to control what is written to the optimal k file, such as

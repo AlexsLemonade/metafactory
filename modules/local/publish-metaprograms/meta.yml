@@ -2,7 +2,7 @@ name: publish_metaprograms
 description: |
   Copy the files for the metaprogram set chosen as the final result for a group into a single
   directory named for that group.
-  Files are chosen based on the optimal k (n_metaprograms) chosen for that group.
+  Files are chosen based on the optimal value of k (n_metaprograms) chosen for that group.
   Files are copied as is, with no contents or file names changed.
 keywords:
   - single-cell
@@ -19,7 +19,7 @@ input:
           Groovy Map containing group information, one map per group. Required keys:
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
             The files are copied into a directory of this name.
-          - `optimal_k`: Number of metaprograms in the metaprogram set chosen as the final
+          - `optimal_k`: Number of metaprograms (k) in the metaprogram set chosen as the final
             result for the group, read back from the optimal k file written by the calculate k
             module.
           Note that `n_metaprograms` and `metaprograms_publish_dir` are deliberately absent, since

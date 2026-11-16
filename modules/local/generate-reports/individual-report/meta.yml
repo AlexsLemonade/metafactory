@@ -71,7 +71,7 @@ input:
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
             Also used as the name of the output directory, so that the report for every group is
             published alongside the other final results for that group.
-          - `optimal_k`: Number of metaprograms in the metaprogram set chosen as the final
+          - `optimal_k`: Number of metaprograms (k) in the metaprogram set chosen as the final
             result for the group, read back from the optimal k file written by the calculate k
             module. The report evaluates this metaprogram set.
     - metaprograms_file:

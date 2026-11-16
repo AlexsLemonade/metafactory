@@ -19,7 +19,7 @@
 
 NMF programs are first found within each library independently using consensus non-negative matrix factorization (cNMF).
 The NMF programs from every library in a group are then compared to one another and clustered into metaprograms, so that only the NMF programs that recur across multiple libraries are retained.
-Because the number of metaprograms present in a group is not known ahead of time, the pipeline builds metaprograms across a range of k values (numbers of metaprograms), evaluates each resulting metaprogram set with a panel of metrics, and reports the optimal k, the k value selected, along with the metaprograms, their gene set annotations, and cell scores for every cell.
+Because the number of metaprograms (`k`) present in a group is not known ahead of time, the pipeline builds metaprograms across a range of k values (numbers of metaprograms), evaluates each resulting metaprogram set with a panel of metrics, and reports the optimal value of `k`, the k value selected, along with the metaprograms, their gene set annotations, and cell scores for every cell.
 
 ### Pipeline summary
 
@@ -38,13 +38,13 @@ Because the number of metaprograms present in a group is not known ahead of time
 5. **Calculate metaprogram metrics.**
    Metrics describing the interpretability of each metaprogram are calculated.
    These include: normalized effective library count, maximum metaprogram correlation, coherence of individual NMF programs within a metaprogram, gene set specificity, and coefficient of variation (CV) of cell scores.
-6. **Choose the optimal k.**
+6. **Choose the optimal value of `k`.**
    All metaprogram sets built for a group are compared using the five metrics described in step 5.
    Excluded metaprogram sets, in which clustering produced at least one cluster of NMF programs from fewer than two libraries, are not considered.
    Coherence is scored by whether each k value is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
    Each metric is ranked across metaprogram sets, the ranks are normalized to a 0-1 scale, and the k value with the highest mean rank is selected as the optimal k.
 7. **Generate reports.**
-   A metrics report comparing every metaprogram set built for a group and an evaluation report for the metaprograms at the optimal k are generated.
+   A metrics report comparing every metaprogram set built for a group and an evaluation report for the metaprograms at the optimal value of `k` are generated.
 
 ## Usage
 
@@ -84,13 +84,13 @@ nextflow run AlexsLemonade/metafactory \
 Final results are written to `<OUTDIR>/results/<group_id>/`, with one directory per group.
 For each group, the pipeline produces:
 
-- **Optimal k** — a text file (`optimal-k.txt`) holding the number of metaprograms chosen for the group.
-- **Metaprograms for the optimal k** — the metaprograms object holding the gene weights for each metaprogram, the spectra assigned to it, and the parameters used to build it.
-- **Metaprogram and gene set metrics** — tables of the metrics calculated for each metaprogram at the optimal k, including effective library count, maximum metaprogram correlation, coherence, and gene set specificity.
+- **Optimal value of `k`** — a text file (`optimal-k.txt`) holding the number of metaprograms chosen for the group.
+- **Metaprograms for the optimal value of `k`** — the metaprograms object holding the gene weights for each metaprogram, the spectra assigned to it, and the parameters used to build it.
+- **Metaprogram and gene set metrics** — tables of the metrics calculated for each metaprogram at the optimal value of `k`, including effective library count, maximum metaprogram correlation, coherence, and gene set specificity.
 - **ORA results** — the gene sets significantly associated with each metaprogram, as identified by overrepresentation analysis of its top genes.
 - **Cell scores** — a table of cell scores for every cell in every library of the group against each metaprogram.
-- **Metrics report** — a report summarizing the metrics calculated for every metaprogram set, the metrics used to rank them, and the optimal k that was selected.
-- **Individual metaprogram evaluation report** — a report evaluating the metaprograms at the optimal k, including their redundancy, library diversity, gene set annotations, and cell scores.
+- **Metrics report** — a report summarizing the metrics calculated for every metaprogram set, the metrics used to rank them, and the optimal value of `k` that was selected.
+- **Individual metaprogram evaluation report** — a report evaluating the metaprograms at the optimal value of `k`, including their redundancy, library diversity, gene set annotations, and cell scores.
 - **Metrics for all metaprogram sets** — the tables used to build the metrics report, holding the metrics, metric backgrounds, and the score background for the CV of cell scores for every metaprogram set, in a `reports/` subdirectory.
 
 Intermediate output from each step, including the results for the metaprogram sets that were not selected, is written to `<OUTDIR>/checkpoints/`.

@@ -1,16 +1,16 @@
 name: calculate_k
 description: |
   Compare the metaprogram sets generated for a single group across every number of metaprograms
-  that was tested and identify the optimal k. Five metrics are combined: the proportion of
+  that was tested and identify the optimal value of k. Five metrics are combined: the proportion of
   metaprograms with a significant normalized effective library count, the proportion whose maximum
   metaprogram correlation is low enough that they are not redundant with another metaprogram, where
   the number of metaprograms falls relative to the elbow of the median coherence curve, whether the
   overall gene set specificity is significantly greater than its permuted metric background, and the
   proportion of metaprograms whose CV of cell scores is significantly greater than their permuted
   score background. Each metric is ranked across all metaprogram sets, the ranks are normalized to a
-  0-1 scale, and the number of metaprograms with the highest mean rank is reported as the optimal k.
+  0-1 scale, and the number of metaprograms with the highest mean rank is reported as the optimal value of k.
   Values of k with a metaprogram built from a single spectrum are dropped from the comparison and
-  reported in the summary table. Only the optimal k and the tables behind it are written here; the
+  reported in the summary table. Only the optimal value of k and the tables behind it are written here; the
   metaprogram set at the optimal k is published separately by the publish metaprograms module, which
   the reported optimal k is used to select. The tables written here are the input to the report that
   plots these metrics; no plots are made by this process.
@@ -106,7 +106,7 @@ output:
       - "optimal-k.txt":
           type: file
           description: |
-            Text file, at `<group_id>/optimal-k.txt`, holding the optimal k as a single
+            Text file, at `<group_id>/optimal-k.txt`, holding the optimal value of k as a single
             number so that it can be read back as `n_metaprograms` and used to select the
             metaprograms that are published as the final result for the group.
           pattern: "optimal-k.txt"
@@ -115,7 +115,7 @@ output:
           type: map
           description: Groovy Map of group information, passed through unchanged from the input channel.
       # these tables are only read by the report, so they are kept in `<group_id>/reports/`,
-      # separate from the optimal k and the final metaprograms
+      # separate from the optimal value of k and the final metaprograms
       - "all-k_metaprogram_metrics.tsv":
           type: file
           description: |

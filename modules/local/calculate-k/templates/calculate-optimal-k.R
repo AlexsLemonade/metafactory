@@ -2,7 +2,7 @@
 
 # This script combines the metrics calculated for every set of metaprograms generated across a
 # range of k values (numbers of metaprograms) for a single group of libraries and uses them to identify the
-# optimal k. The number of metaprograms is the number of clusters specified during hierarchical
+# optimal value of k. The number of metaprograms is the number of clusters specified during hierarchical
 # clustering of spectra to define metaprograms, not cNMF k.
 
 # Five metrics are used to rank each metaprogram set:
@@ -19,9 +19,9 @@
 # cell scores significantly greater than the score background
 
 # Each metric is ranked across all metaprogram sets, the ranks are normalized to a 0-1 scale, and
-# the number of metaprograms with the highest mean rank is reported as the optimal k.
+# the number of metaprograms with the highest mean rank is reported as the optimal value of k.
 
-# Outputs the optimal k and the TSV files that the companion report
+# Outputs the optimal value of k and the TSV files that the companion report
 # (`combined-metaprogram-metrics.Rmd`) reads in to make its plots:
 
 # 1. A TSV with one row per metaprogram per metaprogram set, holding every observed metric for that
@@ -31,7 +31,7 @@
 # metrics. Excluded metaprogram sets are reported here with `is_excluded` set to TRUE and no metrics
 # 3. Three gzipped TSVs holding the two metric backgrounds (effective library count and gene set
 # specificity) and the score background (cell score CV), with the excluded metaprogram sets removed
-# 4. A text file holding the optimal k, which is used downstream to pick out the
+# 4. A text file holding the optimal value of k, which is used downstream to pick out the
 # metaprograms and metrics that are published as the final result for the group
 
 # Input variables --------------------------------------------------------------
@@ -398,7 +398,7 @@ elbow_value <- kneedle(
 # values above it
 # with no elbow every metaprogram set scores the same 0.5, the midpoint of the scale, so that
 # coherence neither prefers nor penalizes any metaprogram set. Ranking ties them all at the top
-# rank, which leaves the optimal k to the other four metrics
+# rank, which leaves the optimal value of k to the other four metrics
 k_metrics_df <- k_metrics_df |>
   dplyr::mutate(
     is_coherence_elbow = !is.na(elbow_value) & n_metaprograms == elbow_value,
@@ -473,7 +473,7 @@ rank_df <- k_metrics_df |>
 
 k_metrics_df <- dplyr::left_join(k_metrics_df, rank_df, by = "n_metaprograms")
 
-# the optimal k is the number of metaprograms with the highest mean rank
+# the optimal value of k is the number of metaprograms with the highest mean rank
 optimal_k <- k_metrics_df |>
   dplyr::filter(mean_rank == max(mean_rank)) |>
   # account for any ties and take the one with the highest rank in proportion significant cv

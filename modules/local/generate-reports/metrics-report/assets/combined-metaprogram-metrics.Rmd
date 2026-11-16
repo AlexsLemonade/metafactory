@@ -120,7 +120,7 @@ neff_background_df <- readr::read_tsv(params$neff_background_file, show_col_type
 specificity_background_df <- readr::read_tsv(params$specificity_background_file, show_col_types = FALSE)
 cv_background_df <- readr::read_tsv(params$cv_background_file, show_col_types = FALSE)
 
-# the optimal k, reported as a number
+# the optimal value of k, reported as a number
 optimal_k <- readr::read_lines(params$optimal_k_file) |>
   as.numeric()
 
@@ -202,7 +202,7 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = proportion_of_libraries)) +
   geom_boxplot() +
   ggbeeswarm::geom_beeswarm() +
   labs(
-    x = "Number of metaprograms",
+    x = "Number of metaprograms (k)",
     y = "Proportion of total libraries \n contributing to each metaprogram"
   )  +
   geom_hline(yintercept = 0.1, linetype = "dashed")
@@ -250,7 +250,7 @@ plot_permutation_results(neff_background_df, neff_obs_df, metaprogram, eff_numbe
 ```
 
 We then can identify the percentage of metaprograms in each metaprogram set that have a significant normalized effective library count.
-This is used to identify the optimal k in the final section.
+This is used to identify the optimal value of k in the final section.
 
 ```{r}
 k_metrics_df |>
@@ -268,7 +268,7 @@ Therefore we expect them to have low correlation to other metaprograms in the sa
 Here the pairwise correlation of gene weights across all metaprograms in each metaprogram set was calculated.
 The plot then shows the maximum metaprogram correlation, the highest correlation of each metaprogram with any other metaprogram in the same metaprogram set.
 Metaprograms with a maximum metaprogram correlation > `r correlation_cutoff` are considered redundant.
-The number of metaprograms above this cutoff is used to determine the optimal k.
+The number of metaprograms above this cutoff is used to determine the optimal value of k.
 
 
 ```{r}
@@ -277,7 +277,7 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = max_correlation)) +
   ggbeeswarm::geom_beeswarm(aes(color = correlation_is_passing)) +
   scale_color_manual(values = c(`FALSE` = "red", `TRUE` = "black")) +
   labs(
-    x = "Number of metaprograms",
+    x = "Number of metaprograms (k)",
     y = "Maximum metaprogram correlation",
     color = glue::glue("Maximum metaprogram correlation less than or equal to {correlation_cutoff}")
   )
@@ -311,7 +311,7 @@ ggplot(mp_metrics_df, aes(x = n_metaprograms, y = median_difference)) +
   ggbeeswarm::geom_beeswarm(aes(color = coherence_is_passing)) +
   scale_color_manual(values = c("red", "black")) +
   labs(
-    x = "Number of metaprograms",
+    x = "Number of metaprograms (k)",
     y = "Metaprogram coherence",
     color = glue::glue("Coherence > {coherence_cutoff}")
   )
@@ -329,7 +329,7 @@ coherence_elbow_df <- k_metrics_df |>
 ggplot(coherence_elbow_df, aes(x = n_metaprograms, median_coherence)) +
   geom_point() +
   labs(
-    x = "Number of metaprograms",
+    x = "Number of metaprograms (k)",
     y = "Median coherence"
   )
 ```
@@ -395,7 +395,7 @@ gss_obs_df <- k_metrics_df |>
 plot_permutation_results(specificity_background_df, gss_obs_df, n_metaprograms, overall_geneset_specificity) +
   labs(
     y = "Mean gene set specificity",
-    x = "Number of metaprograms",
+    x = "Number of metaprograms (k)",
     color = "significant"
   )
 ```
@@ -455,9 +455,9 @@ k_metrics_df |>
   DT::formatPercentage("proportion_significant_cv", 2)
 ```
 
-## Combining metrics to identify the optimal k
+## Combining metrics to identify the optimal value of k
 
-The above metrics are combined to define the optimal k.
+The above metrics are combined to define the optimal value of k.
 Each metric has a single number reported for each metaprogram set on a 0-1 scale where 1 indicates a better metaprogram set.
 The values included are:
 
@@ -472,7 +472,7 @@ Metaprogram sets that are significant will be 1 and those that are not significa
 
 For each metric, each metaprogram set is ranked, assigning the same rank to any metaprogram sets with the exact same value for a specific metric.
 The rank is normalized by the total number of metaprogram sets compared so that the scale is still 0-1, where 1 indicates a better metaprogram set.
-The optimal k is the number of metaprograms with the highest average rank.
+The optimal value of k is the number of metaprograms with the highest average rank.
 
 ```{r}
 # the rank columns of the k metrics table, in the order they are shown in the heatmap
@@ -564,7 +564,7 @@ low_coherence_mps <- mp_metrics_df |>
 ```{r}
 # compile text based on if there are any metaprograms with low coherence
 main_text <- glue::glue(
-  "**The optimal k for this group is: {optimal_k}**"
+  "**The optimal value of k for this group is: {optimal_k}**"
 )
 
 coherence_text <- glue::glue(

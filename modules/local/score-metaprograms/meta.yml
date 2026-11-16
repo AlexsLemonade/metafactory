@@ -56,7 +56,7 @@ input:
           set/library combination. Required keys:
           - `unique_id`: Unique identifier for the library being scored.
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms in the metaprogram set being scored
+          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set being scored
             against.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form

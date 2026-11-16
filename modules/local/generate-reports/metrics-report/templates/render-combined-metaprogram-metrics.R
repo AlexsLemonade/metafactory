@@ -14,7 +14,7 @@
 # directory
 report_rmd <- "${report_rmd}"
 
-# tables and the optimal k written by the calculate k module
+# tables and the optimal value of k written by the calculate k module
 metaprogram_metrics_file    <- "${metaprogram_metrics_file}"
 k_metrics_file              <- "${k_metrics_file}"
 neff_background_file        <- "${neff_background_file}"

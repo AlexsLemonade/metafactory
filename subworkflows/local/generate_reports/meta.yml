@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
 name: "generate_reports"
 description: |
-  Generate the reports for each group based on the optimal k and the metrics used to
+  Generate the reports for each group based on the optimal value of k and the metrics used to
   choose it.
 keywords:
   - single-cell
@@ -19,8 +19,8 @@ input:
   - optimal_k_ch:
       type: file
       description: |
-        Channel containing the optimal k for each group, as emitted by the `optimal_k`
-        output of the calculate k module. The file holds the optimal k as a single number.
+        Channel containing the optimal value of k for each group, as emitted by the `optimal_k`
+        output of the calculate k module. The file holds the optimal value of k as a single number.
         `meta` must contain a `group_id` key, and is used to join this channel with `report_metrics_ch`.
         Structure: [ val(meta), path(optimal_k_file) ]
       pattern: "optimal-k.txt"
@@ -38,7 +38,7 @@ input:
   - ch_optimal_metaprogram_set:
       type: file
       description: |
-        Channel containing the files for the metaprogram set chosen as the optimal k for
+        Channel containing the files for the metaprogram set chosen as the optimal value of k for
         each group, used to build the individual report: the metaprograms RDS file, the per
         metaprogram metrics, the ORA results, the gene set metrics, and the combined cell scores.
         The gene set metrics file is not read by the individual report and is dropped before it
@@ -65,7 +65,7 @@ output:
       type: file
       description: |
         Channel containing the self contained HTML report evaluating the metaprogram set chosen as
-        the optimal k for each group, written to
+        the optimal value of k for each group, written to
         `<group_id>/individual-metaprogram-evaluation.html`.
         Structure: [ val(meta), path(report) ]
       pattern: "individual-metaprogram-evaluation.html"
