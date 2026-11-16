@@ -48,8 +48,8 @@ workflow METAFACTORY {
     //
     // Create channel samplesheet of [meta, file(h5ad_file)]
     //
-    // only samples whose group_id is in the comma separated list of --group_id are kept,
-    // unless --group_id is All, in which case every sample is kept
+    // only libraries whose group_id is in the comma separated list of --group_id are kept,
+    // unless --group_id is All, in which case every library is kept
     def run_all_groups = params.group_id.trim().equalsIgnoreCase('all')
     def group_id_list = params.group_id.split(',')*.trim()
 
@@ -64,7 +64,7 @@ workflow METAFACTORY {
 
 
     //
-    // MODULE: Run cNMF on each sample
+    // MODULE: Run cNMF on each library
     //
 
     // these options are passed to cNMF and recorded in the cnmf-meta.json file of each checkpoint
@@ -77,8 +77,8 @@ workflow METAFACTORY {
         seed: params.seed,
     ]
 
-    // cNMF is skipped for any sample that already has a checkpoint created with the same options,
-    // unless --repeat_cnmf is set, in which case cNMF is run for every sample
+    // cNMF is skipped for any library that already has a checkpoint created with the same options,
+    // unless --repeat_cnmf is set, in which case cNMF is run for every library
     // values are compared as strings so that numbers read from JSON match numbers set in params
     // the strict syntax parser passes command line values as strings, so repeat_cnmf may be "true"
     // or "false" rather than a boolean and is converted here
@@ -95,7 +95,7 @@ workflow METAFACTORY {
         cnmf_options,
     )
 
-    // skipped samples use the existing checkpoint directory, matching the output of the CNMF process
+    // skipped libraries use the existing checkpoint directory, matching the output of the CNMF process
     def ch_cnmf_skipped = ch_cnmf_input.skip_cnmf.map { meta, _h5ad_file ->
         [meta, file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf")]
     }
@@ -103,7 +103,7 @@ workflow METAFACTORY {
     def ch_cnmf_results = CNMF.out.results.mix(ch_cnmf_skipped)
 
     //
-    // MODULE: Generate metaprograms for each group of samples across all values of n_metaprograms
+    // MODULE: Generate metaprograms for each group of libraries across all values of n_metaprograms
     //
 
     // group cNMF results from all unique_ids that share the same group_id
@@ -181,7 +181,7 @@ workflow METAFACTORY {
     )
 
     //
-    // SUBWORKFLOW: Score every library in a group against each set of metaprograms and build a background score distribution
+    // SUBWORKFLOW: Score every library in a group against each set of metaprograms and build a score background distribution
     //
     CALCULATE_SCORES(
         ch_samplesheet,
@@ -209,14 +209,14 @@ workflow METAFACTORY {
         .groupTuple()
 
     // the ORA results are not used to compare values of k, so only the gene set metrics and their
-    // background are grouped here
+    // metric background are grouped here
     def ch_geneset_metrics_by_group = CALCULATE_METRICS.out.geneset_metrics
         .map { meta, _ora_results_file, metrics_file, background_file ->
             [meta.group_id, metrics_file, background_file]
         }
         .groupTuple()
 
-    // generate channels with all scores and background scores grouped by group_id
+    // generate channels with all scores and score background stats grouped by group_id
     def ch_scores_by_group = CALCULATE_SCORES.out.metaprogram_scores
         .map { meta, scores_file -> [meta.group_id, scores_file] }
         .groupTuple()

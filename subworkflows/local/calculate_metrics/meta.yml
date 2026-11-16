@@ -3,7 +3,7 @@ name: "calculate_metrics"
 description: |
   Calculate metrics for each set of metaprograms, and annotate each set of metaprograms with
   gene sets using over-representation analysis (ORA) to calculate gene set metrics.
-  Each set of metrics is accompanied by a permuted background distribution.
+  Each set of metrics is accompanied by a permuted metric background distribution.
 keywords:
   - single-cell
   - NMF
@@ -40,7 +40,7 @@ output:
   - metaprogram_metrics:
       type: file
       description: |
-        Channel containing the per metaprogram metrics and the permuted background metrics for
+        Channel containing the per metaprogram metrics and the permuted metric background for
         each metaprogram set.
         Structure: [ val(meta), path(metrics_file), path(background_file) ]
       pattern: "k-*_{mp_metrics.tsv,background_mp_stats.tsv.gz}"
@@ -48,7 +48,7 @@ output:
       type: file
       description: |
         Channel containing the full ORA results, the ORA derived gene set metrics, and the
-        permuted background gene set specificity for each metaprogram set.
+        permuted metric background gene set specificity for each metaprogram set.
         Structure: [ val(meta), path(ora_results_file), path(metrics_file), path(background_file) ]
       pattern: "k-*_{ora_results.tsv,geneset_metrics.tsv,background_specificity.tsv.gz}"
 authors:

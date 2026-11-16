@@ -164,7 +164,7 @@ def validateGroupId(samplesheet_list, group_id) {
     }
 
     def samplesheet_group_ids = samplesheet_list
-        .collect { _unique_id, sample_group_id, _h5ad_file -> sample_group_id.toString() }
+        .collect { _unique_id, library_group_id, _h5ad_file -> library_group_id.toString() }
         .toSet()
     def requested_group_ids = group_id.split(',')*.trim()
     if (!requested_group_ids) {

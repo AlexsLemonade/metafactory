@@ -1,5 +1,5 @@
 // Subworkflow to score every library in a group against each set of metaprograms generated for that group,
-// calculate a background score distribution from shuffled metaprograms, and combine the scores for each metaprogram set
+// calculate a score background distribution from shuffled metaprograms, and combine the scores for each metaprogram set
 
 include { SCORE_METAPROGRAMS                           } from '../../../modules/local/score-metaprograms/main'
 include { SCORE_BACKGROUND                             } from '../../../modules/local/score-background/main'
@@ -42,7 +42,7 @@ workflow CALCULATE_SCORES {
             [meta, metaprograms_export_file, shuffled_metaprograms_file, h5ad_file]
         }
 
-    // the shuffled metaprograms are only used to build the background distribution
+    // the shuffled metaprograms are only used to build the score background distribution
     def ch_score_input = ch_metaprograms_by_library.map { meta, metaprograms_export_file, _shuffled_metaprograms_file, h5ad_file ->
         [meta, metaprograms_export_file, h5ad_file]
     }
@@ -68,7 +68,7 @@ workflow CALCULATE_SCORES {
     COMBINE_METAPROGRAM_SCORES(metaprograms_score_ch)
 
     //
-    // MODULE: Calculate a background score distribution from shuffled metaprograms for each library
+    // MODULE: Calculate a score background distribution from shuffled metaprograms for each library
     //
 
     // the background does not use n_top_genes, so it is dropped from the options here so that
@@ -82,7 +82,7 @@ workflow CALCULATE_SCORES {
         background_options,
     )
 
-    // combine all background scores
+    // combine all score background stats
     def background_score_ch = SCORE_BACKGROUND.out.results
         .map { meta, background_stats_file ->
             def updated_meta = [

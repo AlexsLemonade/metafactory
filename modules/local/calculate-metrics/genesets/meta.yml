@@ -8,7 +8,7 @@ description: |
   significant in, and is averaged across the gene sets assigned to a metaprogram. A permutation
   test, which reshuffles the gene sets assigned to each metaprogram while holding the number of
   gene sets per metaprogram fixed and weighting gene sets by how often they appear, is used to
-  build a background distribution for the mean specificity which gets exported to use for calculating
+  build a metric background distribution for the mean specificity which gets exported to use for calculating
   overall significance in calculate-k. The top genes and the gene universe
   are read from the metaprograms RDS object rather than recalculated here, so every module uses the
   same gene lists.
@@ -46,7 +46,7 @@ input:
         description: |
           Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
           combination. Required keys:
-          - `group_id`: Group identifier shared by all samples used to generate the metaprograms.
+          - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
           - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the metrics are
             calculated for.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
@@ -83,7 +83,7 @@ input:
           Groovy Map of the options used to calculate the metrics, supplied as a single value
           rather than one input per option. Required keys:
           - `seed` (integer): Random seed used when shuffling the gene sets assigned to each
-            metaprogram to build the background distribution, for reproducibility.
+            metaprogram to build the metric background distribution, for reproducibility.
           - `nreps` (integer): Number of replicates to use for permutation testing. Must be at
             least 1. The smallest possible p-value is 1 / (nreps + 1), so lower values run faster
             but give coarser p-values.
@@ -111,7 +111,7 @@ output:
             `mean_geneset_specificity`). Every metaprogram in the set is reported, including those
             with no significant gene sets, which have a `num_sig_genesets` of 0 and a
             `mean_geneset_specificity` of `NaN`. No p-value is reported per metaprogram; the
-            background below is exported so that the calculate k module can test the mean
+            metric background below is exported so that the calculate k module can test the mean
             specificity across all metaprograms for each value of k instead.
           pattern: "k-*_geneset_metrics.tsv"
       - "k-*_background_specificity.tsv.gz":
@@ -119,7 +119,7 @@ output:
           description: |
             Gzipped TSV, written alongside the metrics table at
             `<metaprograms_publish_dir>/k-<n_metaprograms>_background_specificity.tsv.gz`, holding
-            the background distribution the observed gene set specificity is compared against by
+            the metric background distribution the observed gene set specificity is compared against by
             the calculate k module. One row per metaprogram per permutation replicate (columns: `replicate`,
             `metaprogram`, `mean_geneset_specificity`, `overall_geneset_specificity`). Covers the
             same metaprograms as the metrics table, so that the observed values and the background
