@@ -21,7 +21,8 @@
 # cor_matrix: Correlation matrix of spectra
 # spectra_cor_df: Data frame with all spectra correlation information
 # shuffled_metaprograms: List of shuffled MPs (top genes only) for each permutation replicate
-# gene_universe: List of all genes used to calculate metaprograms
+# gene_universe: List of all genes used to calculate metaprograms. If spectra are filtered,
+# genes found only in orphan spectra are excluded
 # top_genes: List of the top `n_top_genes` gene ids, ordered by decreasing weight, for each MP.
 # Calculated here so that every consumer of this object sees the same gene lists; the score
 # metaprograms module reads the TSV export instead and selects the top genes itself

@@ -101,7 +101,7 @@ Significance for all metrics is determined using an adjusted p-value cutoff of 0
 | `cor_matrix`            | Correlation matrix of all spectra  
 | `spectra_cor_df`        | Data frame with correlation information for all spectra  
 | `shuffled_metaprograms` | Shuffled metaprograms (top genes only) for each permutation replicate, used to build the score background  
-| `gene_universe`         | All genes used to calculate metaprograms  
+| `gene_universe`         | All genes used to calculate metaprograms; genes found only in orphan spectra are excluded when spectra are filtered  
 | `top_genes`             | The top `--n_top_genes` gene IDs for each metaprogram, ordered by decreasing weight  
 | `n_metaprograms`        | Number of metaprograms (`k`)  
 | `n_top_genes`           | Number of top genes kept for each metaprogram  

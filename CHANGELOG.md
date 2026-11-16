@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Library diversity metrics (`num_libraries`, `proportion_of_libraries`, Shannon entropy and effective library count) now count libraries, so values change for groups with more than one library from the same sample.
   Orphan filtering now also compares libraries correctly when a `unique_id` contains underscores.
 
+### `Fixed`
+
+- When orphan spectra are removed (`--metaprograms_filter_spectra`), genes found only in orphan spectra are now also removed before metaprograms are built.
+  Previously these genes were kept with `NaN` weights in every metaprogram, so they were included in the gene universe used for gene set enrichment, in the genes used for scoring, and in the shuffled metaprograms used to build the score background.
+
 ## v0.1.0 - [2026-11-02]
 
 Initial release of AlexsLemonade/metafactory, created with the [nf-core](https://nf-co.re/) template.
