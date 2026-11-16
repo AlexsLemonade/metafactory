@@ -360,7 +360,7 @@ nextflow_workflow {
             def mp_metrics = SubworkflowTestUtils.readTsv(mp_metrics_file)
             assert mp_metrics.size() == k
             mp_metrics.each { row ->
-                assert row.proportion_of_samples.toDouble() <= 1
+                assert row.proportion_of_libraries.toDouble() <= 1
                 def entropy_norm = row.shannon_entropy_norm.toDouble()
                 assert entropy_norm >= 0 && entropy_norm <= 1 : "shannon_entropy_norm for ${row.metaprogram} is ${entropy_norm}"
                 ['greater_pvalue_eff_number_norm', 'greater_adj_pvalue_eff_number_norm'].each { column ->

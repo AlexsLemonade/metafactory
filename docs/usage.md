@@ -1,6 +1,6 @@
 # AlexsLemonade/metafactory: Usage
 
-`metafactory` identifies _metaprograms_ — recurrent gene expression programs shared across samples — from single-cell and single-nuclei RNA-seq data.
+`metafactory` identifies _metaprograms_ — clusters of NMF programs that recur across libraries — from single-cell and single-nuclei RNA-seq data.
 See the [README](../README.md) for an overview of the pipeline steps and [output.md](output.md) for a description of the results.
 
 > [!NOTE]
@@ -12,17 +12,17 @@ The pipeline takes filtered and normalized single-cell/single-nuclei objects, on
 Cells are expected to have already been filtered, and raw counts are expected to be available alongside the normalized data.
 Currently the pipeline has been developed to handle processed `AnnData` objects from [ScPCA](https://scpca.alexslemonade.org), but future work will expand support to other single-cell file types.
 
-Samples are described in a comma-separated samplesheet with three columns and a header row, whose location is provided with `--input`:
+Libraries are described in a comma-separated samplesheet with three columns and a header row, whose location is provided with `--input`:
 
 ```bash
 --input '[path to samplesheet file]'
 ```
 
-| Column      | Description                                                                                                                                     |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `unique_id` | Unique identifier for the library. Used to name all per-library output.                                                                         |
-| `group_id`  | Identifier for the group of samples that metaprograms are built across. All libraries sharing a `group_id` are analyzed together as one cohort. |
-| `h5ad_file` | Path to the filtered and normalized `.h5ad` file for that library. Local and remote (e.g. `s3://`) paths are both supported.                    |
+| Column      | Description                                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `unique_id` | Unique identifier for the library. Used to name all per-library output.                                                                          |
+| `group_id`  | Identifier for the group of libraries that metaprograms are built across. All libraries sharing a `group_id` are analyzed together as one group. |
+| `h5ad_file` | Path to the filtered and normalized `.h5ad` file for that library. Local and remote (e.g. `s3://`) paths are both supported.                     |
 
 ```csv title="samplesheet.csv"
 unique_id,group_id,h5ad_file
@@ -31,7 +31,7 @@ SCPCL000002,SCPCP000001,/path/to/SCPCL000002_processed_rna.h5ad
 SCPCL000003,SCPCP000001,/path/to/SCPCL000003_processed_rna.h5ad
 ```
 
-Metaprograms are built once per `group_id`, so a single run can process multiple independent cohorts.
+Metaprograms are built once per `group_id`, so a single run can process multiple independent groups.
 An [example samplesheet](../assets/samplesheet.csv) is provided with the pipeline, and the columns are validated against [`assets/schema_input.json`](../assets/schema_input.json).
 
 ## Running the pipeline
@@ -98,34 +98,34 @@ The parameters most relevant to an analysis are described below.
 
 ### General options
 
-| Parameter | Default | Description                                                                                                             |
-| --------- | ------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `--seed`  | `2025`  | Random seed used across all analysis modules for reproducibility.                                                       |
-| `--nreps` | `1000`  | Number of permutation replicates used to build the background distributions that observed metrics are compared against. |
+| Parameter | Default | Description                                                                                                                                        |
+| --------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--seed`  | `2025`  | Random seed used across all analysis modules for reproducibility.                                                                                  |
+| `--nreps` | `1000`  | Number of permutation replicates used to build the score background and metric background distributions that observed values are compared against. |
 
 ### cNMF options
 
-These control the range of components (`k`) used when running cNMF within each sample.
+These control the range of cNMF k (rank) values, the number of NMF programs cNMF finds in each library.
 
-By default, cNMF is skipped for any sample that already has results in `checkpoints/cnmf` created with the same cNMF options, and those existing results are used instead.
+By default, cNMF is skipped for any library that already has results in `checkpoints/cnmf` created with the same cNMF options, and those existing results are used instead.
 
-| Parameter            | Default | Description                                                                                     |
-| -------------------- | ------- | ----------------------------------------------------------------------------------------------- |
-| `--cnmf_k_lower`     | `5`     | Lower bound of the range of components tested in cNMF.                                          |
-| `--cnmf_k_upper`     | `15`    | Upper bound of the range of components tested in cNMF.                                          |
-| `--cnmf_k_step_size` | `5`     | Step size across that range.                                                                    |
-| `--repeat_cnmf`      | `false` | Re-run cNMF for every sample, even if existing results were created with the same cNMF options. |
+| Parameter            | Default | Description                                                                                      |
+| -------------------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `--cnmf_k_lower`     | `5`     | Lower bound of the range of cNMF k (rank) values tested.                                         |
+| `--cnmf_k_upper`     | `15`    | Upper bound of the range of cNMF k (rank) values tested.                                         |
+| `--cnmf_k_step_size` | `5`     | Step size across that range.                                                                     |
+| `--repeat_cnmf`      | `false` | Re-run cNMF for every library, even if existing results were created with the same cNMF options. |
 
 ### Metaprogram options
 
-These control how the spectra from all samples in a group are clustered into metaprograms.
+These control how the spectra from all libraries in a group are clustered into metaprograms.
 
 | Parameter                       | Default       | Description                                                                                                                                  |
 | ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--n_metaprograms`              | `'8,9,10,11'` | Comma-separated values of `k` (numbers of metaprograms) to build and compare. At least four values are required to identify the optimal `k`. |
 | `--n_top_genes`                 | `200`         | Number of top genes per metaprogram used for scoring and ORA.                                                                                |
-| `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra, those with low correlation to spectra from other samples, prior to clustering.                             |
-| `--metaprograms_orphan_cutoff`  | `0.3`         | Minimum cross-sample maximum correlation required to keep a spectra when filtering is enabled.                                               |
+| `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra, those with low correlation to spectra from other libraries, prior to clustering.                           |
+| `--metaprograms_orphan_cutoff`  | `0.3`         | Minimum cross-library maximum correlation required to keep a spectrum when filtering is enabled.                                             |
 
 ## Core Nextflow arguments
 

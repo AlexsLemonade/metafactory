@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # This script renders the report that evaluates a single set of metaprograms generated for one
-# group of samples with one value of k.
+# group of libraries with one value of k.
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution

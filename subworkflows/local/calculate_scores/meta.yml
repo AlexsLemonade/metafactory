@@ -2,7 +2,7 @@
 name: "calculate_scores"
 description: |
   Score every library in a group against each set of metaprograms generated for that group,
-  calculate a background score distribution from shuffled metaprograms for each library, and
+  calculate a score background distribution from shuffled metaprograms for each library, and
   combine the scores from all libraries for each metaprogram set.
 keywords:
   - single-cell
@@ -49,7 +49,7 @@ output:
   - background_scores:
       type: file
       description: |
-        Channel containing the background score statistics for every library combined into a
+        Channel containing the score background statistics for every library combined into a
         single table for each metaprogram set.
         Structure: [ val(meta), path(combined_background_stats_file) ]
       pattern: "k-*_combined_background_score_stats.tsv.gz"
@@ -64,7 +64,7 @@ output:
   - library_background_scores:
       type: file
       description: |
-        Channel containing the background score statistics for a single library against a single
+        Channel containing the score background statistics for a single library against a single
         metaprogram set, before they are combined.
         `meta` contains `unique_id`, `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
         Structure: [ val(meta), path(background_stats_file) ]

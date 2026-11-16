@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Run cNMF on a processed AnnData object to identify consensus gene expression programs."""
+"""Run cNMF on a processed AnnData object to identify consensus NMF programs."""
 
 from importlib.metadata import version
 import json

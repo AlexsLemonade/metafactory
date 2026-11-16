@@ -47,7 +47,7 @@ process CALCULATE_K {
 
     // null distributions the observed metrics are compared against, gzipped because they hold one
     // row per permutation replicate
-    neff_background_file = "${reports_dir}/all-k_background_eff_sample_size.tsv.gz"
+    neff_background_file = "${reports_dir}/all-k_background_eff_library_count.tsv.gz"
     specificity_background_file = "${reports_dir}/all-k_background_geneset_specificity.tsv.gz"
     cv_background_file = "${reports_dir}/all-k_background_cell_score_cv.tsv.gz"
 
@@ -59,7 +59,7 @@ process CALCULATE_K {
     optimal_k_file = "${output_dir}/optimal-k.txt"
     metaprogram_metrics_file = "${reports_dir}/all-k_metaprogram_metrics.tsv"
     k_metrics_file = "${reports_dir}/all-k_summary_metrics.tsv"
-    neff_background_file = "${reports_dir}/all-k_background_eff_sample_size.tsv.gz"
+    neff_background_file = "${reports_dir}/all-k_background_eff_library_count.tsv.gz"
     specificity_background_file = "${reports_dir}/all-k_background_geneset_specificity.tsv.gz"
     cv_background_file = "${reports_dir}/all-k_background_cell_score_cv.tsv.gz"
 

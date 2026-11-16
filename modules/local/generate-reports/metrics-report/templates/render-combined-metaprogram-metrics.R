@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # This script renders the report that compares the metaprograms generated for a single group of
-# samples across every value of k that was tested.
+# libraries across every value of k that was tested.
 # Here k refers to the number of clusters specified during hierarchical clustering of spectra to
 # define metaprograms.
 
