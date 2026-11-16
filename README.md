@@ -40,7 +40,7 @@ Because the number of metaprograms (`k`) present in a group is not known ahead o
    These include: normalized effective library count, maximum metaprogram correlation, coherence of individual NMF programs within a metaprogram, gene set specificity, and coefficient of variation (CV) of cell scores.
 6. **Choose the optimal value of `k`.**
    All metaprogram sets built for a group are compared using the five metrics described in step 5.
-   Excluded metaprogram sets, in which clustering produced at least one cluster of NMF programs from fewer than two libraries, are not considered.
+   Metaprogram sets containing at least one cluster made up of a single NMF program are excluded from the comparison.
    Coherence is scored by whether each k value is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
    Each metric is ranked across metaprogram sets, the ranks are normalized to a 0-1 scale, and the k value with the highest mean rank is selected as the optimal k.
 7. **Generate reports.**
