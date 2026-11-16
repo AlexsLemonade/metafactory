@@ -48,7 +48,7 @@ calculate_library_stats <- function(mp_clusters_df, total_libraries) {
   # df with one row per mp
   # calculates total spectra, entropy, norm entropy, effective library count
   mp_entropy_df <- mp_clusters_df |>
-    dplyr::group_by(metaprogram, sample_id) |>
+    dplyr::group_by(metaprogram, unique_id) |>
     # first get total spectra per library
     dplyr::summarize(
       num_spectra_per_library = dplyr::n(),
@@ -58,7 +58,7 @@ calculate_library_stats <- function(mp_clusters_df, total_libraries) {
     dplyr::summarize(
       # totals for each metaprogram (spectra, libraries)
       num_spectra_per_mp = sum(num_spectra_per_library),
-      num_libraries = length(sample_id),
+      num_libraries = length(unique_id),
       # proportion of the total libraries
       proportion_of_libraries = num_libraries / total_libraries,
       # entropy and neff
@@ -191,12 +191,12 @@ mp_medians_df <- mp_cor_df |>
 # use all libraries even if they are not all present in the spectra after filtering
 total_libraries <- length(mp_object[["unique_ids"]])
 
-# add sample column
+# add the library each spectrum came from
 mp_clusters_df <- mp_lookup |>
-  # spectra are named with unique id which is <library_id>-<sample_id>_cnmf info
+  # spectra are named `{unique_id}_k{k_value}_CNMF{nmf_number}`, and `unique_id` itself may contain
+  # underscores, so the library is found by removing the known suffix
   dplyr::mutate(
-    sample_id = stringr::word(spectra, 1, sep = "_") |>
-      stringr::word(-1, sep = "-")
+    unique_id = stringr::str_remove(spectra, "_k[0-9]+_CNMF[0-9]+$")
   )
 
 # get observed stats

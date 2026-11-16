@@ -104,10 +104,12 @@ build_spectra_cor_df <- function(cor_matrix){
     # remove correlations between the same spectra
     dplyr::filter(spectra1 != spectra2) |>
     dplyr::mutate(
-      # add columns for library and k value to help distinguish between/within library comparisons
-      sample1 = stringr::word(spectra1, 1, sep = "_"),
-      sample2 = stringr::word(spectra2, 1, sep = "_"),
-      pair_type = dplyr::if_else(sample1 == sample2, "within_sample", "between_sample")
+      # add the library each spectrum came from to distinguish between/within library comparisons
+      # spectra are named `{unique_id}_k{k_value}_CNMF{nmf_number}`, and `unique_id` itself may
+      # contain underscores, so the library is found by removing the known suffix
+      library1 = stringr::str_remove(spectra1, "_k[0-9]+_CNMF[0-9]+$"),
+      library2 = stringr::str_remove(spectra2, "_k[0-9]+_CNMF[0-9]+$"),
+      pair_type = dplyr::if_else(library1 == library2, "within_library", "between_library")
     )
 
   return(all_cor_df)
@@ -138,18 +140,18 @@ remove_orphan_spectra <- function(spectra_mtx, cor_matrix, orphan_cutoff){
   all_cor_df <- build_spectra_cor_df(cor_matrix)
 
   # compute cross-library max for each spectrum
-  cross_sample_max <- all_cor_df |>
+  cross_library_max <- all_cor_df |>
     # only keep correlations between libraries
-    dplyr::filter(pair_type == "between_sample") |>
+    dplyr::filter(pair_type == "between_library") |>
     # find the max correlation for each spectrum
     dplyr::summarise(
-      max_sample_cor = max(correlation, na.rm = TRUE),
+      max_library_cor = max(correlation, na.rm = TRUE),
       .by = spectra1
     )
 
   # get a vector of orphan spectra to remove
-  orphan_spectra <- cross_sample_max |>
-    dplyr::filter(max_sample_cor < orphan_cutoff) |>
+  orphan_spectra <- cross_library_max |>
+    dplyr::filter(max_library_cor < orphan_cutoff) |>
     dplyr::pull(spectra1) |>
     as.character() # make sure they aren't factors
 

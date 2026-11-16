@@ -262,10 +262,11 @@ background_scores_df <- background_scores_files |>
 
 # Filter metaprogram sets ------------------------------------------------------
 
-# check for any metaprogram sets that have at least one metaprogram with only one spectrum in it
-# these are not informative, so they are dropped from the comparison
+# a metaprogram must contain NMF programs from at least two libraries, so any metaprogram set in
+# which clustering produced at least one cluster of NMF programs from fewer than two libraries is
+# excluded from the comparison. this includes clusters made up of a single NMF program
 excluded_k <- mp_metrics_df |>
-  dplyr::filter(num_spectra_per_mp == 1) |>
+  dplyr::filter(num_libraries < 2) |>
   dplyr::pull(n_metaprograms) |>
   unique()
 

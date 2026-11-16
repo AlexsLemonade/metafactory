@@ -112,7 +112,8 @@ stopifnot(
 mp_metrics_df <- readr::read_tsv(params$metaprogram_metrics_file, show_col_types = FALSE)
 
 # summarized metrics and the normalized rank of each metric for each metaprogram set
-# any values of k that were excluded due to low library diversity are included here with no metrics
+# excluded metaprogram sets, which have at least one cluster of NMF programs from fewer than two
+# libraries, are included here with no metrics
 k_metrics_df <- readr::read_tsv(params$k_metrics_file, show_col_types = FALSE)
 
 # metric backgrounds and score background used to assess significance of the observed metrics
@@ -167,7 +168,7 @@ if (length(excluded_k) > 0) {
   knitr::asis_output(
     glue::glue(
       "
-      The following values of k have at least one metaprogram with only one spectra and were removed from this analysis:
+      The following values of k have at least one cluster of NMF programs from fewer than two libraries and were removed from this analysis:
       {paste0(excluded_k, collapse = ', ')}
       "
     )

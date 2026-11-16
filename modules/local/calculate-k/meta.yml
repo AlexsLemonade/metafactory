@@ -9,8 +9,8 @@ description: |
   proportion of metaprograms whose CV of cell scores is significantly greater than their permuted
   score background. Each metric is ranked across all metaprogram sets, the ranks are normalized to a
   0-1 scale, and the number of metaprograms with the highest mean rank is reported as the optimal value of k.
-  Values of k with a metaprogram built from a single spectrum are dropped from the comparison and
-  reported in the summary table. Only the optimal value of k and the tables behind it are written here; the
+  Metaprogram sets in which clustering produced at least one cluster of NMF programs from fewer than
+  two libraries are excluded from the comparison and reported in the summary table. Only the optimal value of k and the tables behind it are written here; the
   metaprogram set at the optimal k is published separately by the publish metaprograms module, which
   the reported optimal k is used to select. The tables written here are the input to the report that
   plots these metrics; no plots are made by this process.
@@ -48,7 +48,7 @@ input:
         description: |
           Metaprogram metrics TSVs, one per metaprogram set, as written by the calculate metrics
           metaprograms module. The `metaprogram`, `max_correlation`, `median_difference`,
-          `num_spectra_per_mp`, `proportion_of_libraries`, `eff_number_norm` and
+          `num_libraries`, `eff_number_norm` and
           `greater_adj_pvalue_eff_number_norm` columns are read.
         pattern: "k-*_mp_metrics.tsv"
     - mp_background_files:

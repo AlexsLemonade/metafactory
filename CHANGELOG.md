@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `all-k_background_eff_sample_size.tsv.gz` → `all-k_background_eff_library_count.tsv.gz` in the `reports/` directory.
 - Documentation, parameter descriptions, module metadata, code comments, error messages, and report text now use the terms defined in `docs/GLOSSARY.md` (for example library rather than sample, NMF program rather than gene expression program, cNMF k for the cNMF rank, and score background and metric background).
 - The pipeline description in `nextflow.config`, `nextflow_schema.json`, and `.nf-core.yml` now refers to libraries rather than samples.
+- Metaprogram sets with at least one cluster of NMF programs from fewer than two libraries are now excluded when choosing the optimal k.
+  Previously only metaprogram sets with a cluster of a single NMF program were excluded.
+- NMF programs are now attributed to the library (`unique_id`) they came from by removing the `_k{k}_CNMF{n}` suffix from their names, rather than by parsing a sample ID out of the name.
+  Library diversity metrics (`num_libraries`, `proportion_of_libraries`, Shannon entropy and effective library count) now count libraries, so values change for groups with more than one library from the same sample.
+  Orphan filtering now also compares libraries correctly when a `unique_id` contains underscores.
 
 ## v0.1.0 - [2026-11-02]
 
