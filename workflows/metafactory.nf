@@ -169,12 +169,16 @@ workflow METAFACTORY {
     def repeat_metaprograms = params.repeat_metaprograms.toString().toBoolean()
     def ch_metaprograms_branch = ch_metaprogram_input.branch { meta, _cnmf_output_dirs, cnmf_ran ->
         def checkpoint_prefix = "${outdir}/checkpoints/metaprograms/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}"
-        def checkpoint_files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz', 'metaprograms-meta.json']
+        // TODO: temporarily only checks that the checkpoint files exist, so that checkpoints created
+        // before metaprograms-meta.json was added can be reused. restore the JSON check below by
+        // adding 'metaprograms-meta.json' to checkpoint_files and using the commented skip_metaprograms
+        def checkpoint_files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz']
             .collect { suffix -> file("${checkpoint_prefix}_${suffix}") }
         def check_checkpoint = !repeat_metaprograms && !cnmf_ran && checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() }
-        def mp_meta = check_checkpoint ? new groovy.json.JsonSlurper().parseText(checkpoint_files[-1].text) : [:]
-        def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids] + metaprogram_options
-        skip_metaprograms: check_checkpoint && expected_meta.every { key, value -> mp_meta.containsKey(key) && mp_meta[key].toString() == value.toString() }
+        // def mp_meta = check_checkpoint ? new groovy.json.JsonSlurper().parseText(checkpoint_files[-1].text) : [:]
+        // def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids] + metaprogram_options
+        // skip_metaprograms: check_checkpoint && expected_meta.every { key, value -> mp_meta.containsKey(key) && mp_meta[key].toString() == value.toString() }
+        skip_metaprograms: check_checkpoint
         run_metaprograms: true
     }
 
