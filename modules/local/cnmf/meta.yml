@@ -6,12 +6,12 @@ description: |
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
 tools:
   - cnmf:
       description: |
-        cNMF is a method for identifying consensus gene expression programs from
+        cNMF is a method for identifying consensus NMF programs from
         single-cell RNA-sequencing data using non-negative matrix factorization.
       homepage: https://github.com/dylkob/cnmf
       documentation: https://github.com/dylkob/cnmf

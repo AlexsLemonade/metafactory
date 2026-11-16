@@ -28,7 +28,7 @@ def optionsInput = """
 
 // Nextflow code for the subworkflow input. path inputs must exist to be staged, so an empty
 // placeholder RDS file is created for every metaprogram set in a temporary directory. each file
-// name holds its group and k, so the files staged into each task show which set it received
+// name holds its group and number of metaprograms, so the files staged into each task show which set it received
 def calculateMetricsInput = { design ->
     def input_dir = File.createTempDir()
     def metaprogram_sets = design.collectMany { group_id, group ->
@@ -85,7 +85,7 @@ def expectedStagedInputs = { task, gene_sets_name = 'msigdb-gene-set-genes.tsv.g
     task.process == 'CALCULATE_METRICS_GENESETS' ? [gene_sets_name, rds_name].sort() : [rds_name]
 }
 
-// the number of permutation replicates in a background file, read from its replicate column so the
+// the number of permutation replicates in a metric background file, read from its replicate column so the
 // checks follow the nreps the run used rather than a copy of the config. also checks that the
 // replicates are numbered 1 to nreps
 def backgroundNreps = { rows ->
@@ -149,7 +149,7 @@ nextflow_workflow {
         }
     }
 
-    test("several groups with several values of k") {
+    test("several groups with several numbers of metaprograms") {
 
         tag "stub"
         options "-stub"
@@ -369,7 +369,7 @@ nextflow_workflow {
                 }
             }
 
-            // metaprogram background: one row per metaprogram per replicate
+            // metaprogram metric background: one row per metaprogram per replicate
             def mp_background = SubworkflowTestUtils.readTsv(mp_background_file)
             def nreps = backgroundNreps(mp_background)
             assert mp_background.size() == nreps * k
@@ -379,8 +379,8 @@ nextflow_workflow {
             SubworkflowTestUtils.assertTsvEqual(geneset_metrics_file, SubworkflowTestUtils.dataFile(data_dir, k, 'geneset_metrics.tsv'))
             SubworkflowTestUtils.assertTsvEqual(ora_results_file, SubworkflowTestUtils.dataFile(data_dir, k, 'ora_results.tsv'))
 
-            // gene set background: one row per metaprogram per replicate, with the same replicates
-            // as the metaprogram background
+            // gene set specificity metric background: one row per metaprogram per replicate, with the
+            // same replicates as the metaprogram metric background
             def gs_background = SubworkflowTestUtils.readTsv(gs_background_file)
             assert backgroundNreps(gs_background) == nreps
             assert gs_background.size() == nreps * k
@@ -430,7 +430,7 @@ nextflow_workflow {
                 ['MP02', 'SET_MP02'],
             ]
 
-            // the background is calculated from the significant gene sets, so every replicate has
+            // the metric background is calculated from the significant gene sets, so every replicate has
             // an overall specificity
             def background = SubworkflowTestUtils.readTsv(background_file)
             assert background.size() == backgroundNreps(background) * k
@@ -445,9 +445,9 @@ nextflow_workflow {
 
         tag "metrics"
 
-        // a term2gene file holding only the background gene set from `k-<k>_term2gene.tsv`. the
-        // background genes are in none of the metaprograms' top genes, so ORA has no result for any
-        // metaprogram
+        // a term2gene file holding only the SET_BACKGROUND gene set from `k-<k>_term2gene.tsv`. its
+        // genes are ORA universe filler (not a score or metric background) and are in none of the
+        // metaprograms' top genes, so ORA has no result for any metaprogram
         def data_dir = SubworkflowTestUtils.dataDir(baseDir)
         def background_rows = SubworkflowTestUtils.readTsv(
             SubworkflowTestUtils.dataFile(data_dir, SubworkflowTestUtils.dataOptimalK(data_dir), 'term2gene.tsv')
@@ -489,7 +489,7 @@ nextflow_workflow {
                 assert row.mean_geneset_specificity == 'NA' : "mean_geneset_specificity for ${row.metaprogram} is ${row.mean_geneset_specificity}"
             }
 
-            // the background still has one row per metaprogram per replicate
+            // the metric background still has one row per metaprogram per replicate
             def background = SubworkflowTestUtils.readTsv(background_file)
             assert background.size() == backgroundNreps(background) * k
         }

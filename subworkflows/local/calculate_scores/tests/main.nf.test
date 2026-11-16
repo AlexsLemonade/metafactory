@@ -7,7 +7,7 @@
 
 // Nextflow code for the two subworkflow inputs. path inputs must exist to be staged, so an empty
 // placeholder is created for every file in a temporary directory
-// every file name holds its unique id or its group and k, so the files
+// every file name holds its unique id or its group and number of metaprograms, so the files
 // staged into each task show which inputs that task received.
 // the metaprogram meta includes unique_ids, as GENERATE_METAPROGRAMS adds it
 def calculateScoresInput = { design ->
@@ -63,7 +63,7 @@ def taskMetas = { out ->
 }
 
 // the task metas expected from a design: every library in a group is scored against every
-// metaprogram set for that group, then the scores are combined once per metaprogram set
+// metaprogram set for that group, then the cell scores and score background stats are combined once per metaprogram set
 def expectedTaskMetas = { design ->
     def score_metas = design.collectMany { group_id, group ->
         [group.libraries, group.k].combinations().collect { unique_id, k ->
@@ -171,7 +171,7 @@ nextflow_workflow {
 
         then {
             assert workflow.success
-            // 2 score tasks, 2 background tasks, and one combine task for each score type
+            // 2 score tasks, 2 score background tasks, and one combine task for each score type
             assert workflow.trace.succeeded().size() == 6
             assert taskMetas(workflow.out) == expectedTaskMetas(design)
             assert workflow.out.metaprogram_scores.size() == 1
@@ -227,7 +227,7 @@ nextflow_workflow {
 
     test("two groups are scored separately") {
 
-        // the groups use different values of k, so a library scored against
+        // the groups use different numbers of metaprograms, so a library scored against
         // the other group's metaprograms shows up in the task meta
         def design = [
             groupA: [libraries: ['lib1', 'lib2'], k: [4, 5]],

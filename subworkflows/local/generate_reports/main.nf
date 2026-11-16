@@ -1,4 +1,4 @@
-// Subworkflow to generate reports based on the optimal value of k and the associated report metrics
+// Subworkflow to generate reports based on the optimal k and the associated report metrics
 
 include { RENDER_METRICS_REPORT    } from '../../../modules/local/generate-reports/metrics-report/main'
 include { RENDER_INDIVIDUAL_REPORT } from '../../../modules/local/generate-reports/individual-report/main'
@@ -32,9 +32,9 @@ workflow GENERATE_REPORTS {
         options,
     )
 
-    // the individual report evaluates the metaprogram set chosen as the optimal value of k, so it
-    // is built from the per metaprogram set files for that k rather than from the metrics
-    // summarized across every value of k
+    // the individual report evaluates the metaprogram set chosen as the optimal k, so it
+    // is built from the files for that metaprogram set rather than from the metrics
+    // summarized across every metaprogram set
     // the individual report does not use n_top_genes, so only the seed is passed on
     def individual_report_options = options.map { opts -> opts.subMap(['seed']) }
 

@@ -1,3 +1,5 @@
 reports:
-  samplesheet.csv:
-    display: "Auto-created samplesheet with collated metadata and FASTQ paths"
+  combined-metaprogram-metrics.html:
+    display: "Metrics report comparing every metaprogram set built for a group"
+  individual-metaprogram-evaluation.html:
+    display: "Evaluation report for the metaprograms at the optimal k"

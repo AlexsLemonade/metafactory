@@ -1,5 +1,5 @@
 // Subworkflow to score every library in a group against each set of metaprograms generated for that group,
-// calculate a score background distribution from shuffled metaprograms, and combine the scores for each metaprogram set
+// calculate a score background distribution from shuffled metaprograms, and combine the cell scores for each metaprogram set
 
 include { SCORE_METAPROGRAMS                           } from '../../../modules/local/score-metaprograms/main'
 include { SCORE_BACKGROUND                             } from '../../../modules/local/score-background/main'
@@ -52,7 +52,7 @@ workflow CALCULATE_SCORES {
         options,
     )
 
-    // combine the metaprogram scores for each library into a single channel for downstream processing
+    // combine the cell scores for each library into a single channel for downstream processing
     def metaprograms_score_ch = SCORE_METAPROGRAMS.out.results
         .map { meta, scores_file ->
             def updated_meta = [
@@ -71,8 +71,8 @@ workflow CALCULATE_SCORES {
     // MODULE: Calculate a score background distribution from shuffled metaprograms for each library
     //
 
-    // the background does not use n_top_genes, so it is dropped from the options here so that
-    // changing it does not invalidate the cached background tasks
+    // the score background does not use n_top_genes, so it is dropped from the options here so that
+    // changing it does not invalidate the cached score background tasks
     def background_options = options.map { opts ->
         opts.subMap(['celltype_annotation_column', 'analysis_celltypes', 'seed'])
     }

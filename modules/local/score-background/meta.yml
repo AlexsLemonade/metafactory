@@ -7,17 +7,17 @@ description: |
   weighted dot product of its gene weights and the normalized expression of those genes. Rather
   than per cell scores, the number of cells, the mean score and the sum of squared deviations
   from that mean (M2) are reported for each shuffled metaprogram, which is what Chan's parallel
-  variance algorithm needs to pool the null across libraries downstream. One task is run per
+  variance algorithm needs to pool the score background across libraries downstream. One task is run per
   metaprogram set (group_id/n_metaprograms combination) per library.
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
   - metaprograms
   - scoring
   - permutation
-  - null distribution
+  - score background
 tools:
   - anndata:
       description: |
@@ -61,13 +61,14 @@ input:
           set/library combination. Required keys:
           - `unique_id`: Unique identifier for the library being scored.
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set being scored
+          - `n_metaprograms`: Number of metaprograms in the metaprogram set being scored
             against.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form
             `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
             in the workflow and shared with the generate metaprograms module so that the
-            background stats are written alongside the metaprograms and scores they correspond to.
+            score background stats are written alongside the metaprograms and cell scores they
+            correspond to.
     - metaprograms_file:
         type: file
         description: |
@@ -75,8 +76,8 @@ input:
           `weight`) from the generate metaprograms module. Present only to define the gene
           universe used for quantile normalization: the shuffled metaprograms hold just the top
           genes of each metaprogram per replicate, so their gene IDs are a subset of the universe
-          and normalizing over that subset would put the background scores on a different scale
-          than the scores from the score metaprograms module. No weights from this file are used.
+          and normalizing over that subset would put the shuffled metaprogram cell scores on a
+          different scale than the cell scores from the score metaprograms module. No weights from this file are used.
         pattern: "*_metaprograms.tsv.gz"
     - shuffled_metaprograms_file:
         type: file
@@ -121,7 +122,7 @@ output:
             per shuffled metaprogram (columns: `metaprogram`, `replicate`, `num_cells`,
             `mean_mp_score`, `M2`, `unique_id`). `M2` is the sum of squared deviations of the per
             cell scores from `mean_mp_score`; together with `num_cells` and `mean_mp_score` it
-            allows the mean and variance of the null to be pooled across libraries using Chan's
+            allows the mean and variance of the score background to be pooled across libraries using Chan's
             parallel variance algorithm.
           pattern: "*_background_score_stats.tsv.gz"
   - versions:

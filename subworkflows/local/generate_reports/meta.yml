@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
 name: "generate_reports"
 description: |
-  Generate the reports for each group based on the optimal value of k and the metrics used to
+  Generate the reports for each group based on the optimal k and the metrics used to
   choose it.
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
   - metaprograms
   - metrics
@@ -19,8 +19,8 @@ input:
   - optimal_k_ch:
       type: file
       description: |
-        Channel containing the optimal value of k for each group, as emitted by the `optimal_k`
-        output of the calculate k module. The file holds the optimal value of k as a single number.
+        Channel containing the optimal k for each group, as emitted by the `optimal_k`
+        output of the calculate k module. The file holds the optimal k as a single number.
         `meta` must contain a `group_id` key, and is used to join this channel with `report_metrics_ch`.
         Structure: [ val(meta), path(optimal_k_file) ]
       pattern: "optimal-k.txt"
@@ -29,16 +29,16 @@ input:
       description: |
         Channel containing the tables used to build the report for each group, as emitted by the
         `report_metrics` output of the calculate k module: the per metaprogram metrics for every
-        value of k, the summarized metrics and ranks for every value of k, and the permuted null
-        distributions for the normalized effective library count, the overall gene set specificity,
-        and the coefficient of variation of the cell scores.
+        metaprogram set, the summarized metrics and ranks for every metaprogram set, the permuted
+        metric backgrounds for the normalized effective library count and the overall gene set
+        specificity, and the score background for the CV of cell scores.
         Structure: [ val(meta), path(metaprogram_metrics_file), path(k_metrics_file),
         path(neff_background_file), path(specificity_background_file), path(cv_background_file) ]
       pattern: "all-k_*.{tsv,tsv.gz}"
   - ch_optimal_metaprogram_set:
       type: file
       description: |
-        Channel containing the files for the metaprogram set chosen as the optimal value of k for
+        Channel containing the files for the metaprogram set chosen as the optimal k for
         each group, used to build the individual report: the metaprograms RDS file, the per
         metaprogram metrics, the ORA results, the gene set metrics, and the combined cell scores.
         The gene set metrics file is not read by the individual report and is dropped before it
@@ -65,7 +65,7 @@ output:
       type: file
       description: |
         Channel containing the self contained HTML report evaluating the metaprogram set chosen as
-        the optimal value of k for each group, written to
+        the optimal k for each group, written to
         `<group_id>/individual-metaprogram-evaluation.html`.
         Structure: [ val(meta), path(report) ]
       pattern: "individual-metaprogram-evaluation.html"

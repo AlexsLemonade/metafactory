@@ -18,7 +18,7 @@ process SCORE_METAPROGRAMS {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-    // write scores to the publish directory for the metaprogram set they were scored against
+    // write cell scores to the publish directory for the metaprogram set they were scored against
     output_file = "${meta.metaprograms_publish_dir}/${meta.unique_id}_metaprogram_scores.tsv.gz"
 
     template('score-metaprograms.py')

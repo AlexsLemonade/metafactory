@@ -1,7 +1,7 @@
 name: calculate_metrics_metaprograms
 description: |
   Calculate metrics describing each metaprogram in a single metaprogram set. Covers how distinct
-  each metaprogram is from the others (max correlation), how coherent the spectra assigned to it
+  each metaprogram is from the others (maximum metaprogram correlation), how coherent the spectra assigned to it
   are (the difference in medians between within-metaprogram and between-metaprogram spectra
   correlation), and how evenly the libraries contributing to it are represented (Shannon entropy and
   effective library count). A permutation test, which shuffles the metaprogram assignment of each
@@ -12,7 +12,7 @@ description: |
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
   - metaprograms
   - metrics
@@ -29,7 +29,7 @@ tools:
   - matrixStats:
       description: |
         High-performing functions operating on rows and columns of matrices. Used here to take the
-        maximum correlation of each metaprogram to all other metaprograms.
+        maximum metaprogram correlation of each metaprogram.
       homepage: https://github.com/HenrikBengtsson/matrixStats
       documentation: https://cran.r-project.org/web/packages/matrixStats/matrixStats.pdf
       license: ["Artistic-2.0"]
@@ -41,7 +41,7 @@ input:
           Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
           combination. Required keys:
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the metrics are
+          - `n_metaprograms`: Number of metaprograms in the metaprogram set the metrics are
             calculated for.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form

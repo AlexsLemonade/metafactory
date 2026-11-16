@@ -1,9 +1,8 @@
 #!/usr/bin/env Rscript
 
 # This script renders the report that compares the metaprograms generated for a single group of
-# libraries across every value of k that was tested.
-# Here k refers to the number of clusters specified during hierarchical clustering of spectra to
-# define metaprograms.
+# libraries across every k value (number of metaprograms) that was tested, that is, the number of clusters
+# specified during hierarchical clustering of NMF programs to define each metaprogram set.
 
 # All of the plots and tables in the report are built from the tables written by the calculate k
 # module (`calculate-optimal-k.R`)
@@ -15,7 +14,7 @@
 # directory
 report_rmd <- "${report_rmd}"
 
-# tables and the optimal value of k written by the calculate k module
+# tables and the optimal k written by the calculate k module
 metaprogram_metrics_file    <- "${metaprogram_metrics_file}"
 k_metrics_file              <- "${k_metrics_file}"
 neff_background_file        <- "${neff_background_file}"

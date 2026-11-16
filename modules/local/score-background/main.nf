@@ -18,7 +18,7 @@ process SCORE_BACKGROUND {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-    // write background stats to the publish directory for the metaprogram set they were scored against
+    // write score background stats to the publish directory for the metaprogram set they were scored against
     output_file = "${meta.metaprograms_publish_dir}/${meta.unique_id}_background_score_stats.tsv.gz"
 
     template('score-background.py')

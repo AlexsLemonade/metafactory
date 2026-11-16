@@ -1,43 +1,42 @@
 #!/usr/bin/env Rscript
 
 # This script combines the metrics calculated for every set of metaprograms generated across a
-# range of k for a single group of libraries and uses them to identify the optimal value of k.
-# Here k refers to the number of clusters specified during hierarchical clustering of spectra to
-# define metaprograms.
+# range of k values (numbers of metaprograms) for a single group of libraries and uses them to identify the
+# optimal k. The number of metaprograms is the number of clusters specified during hierarchical
+# clustering of spectra to define metaprograms, not cNMF k.
 
-# Five metrics are used to rank each value of k:
+# Five metrics are used to rank each metaprogram set:
 
 # 1. Normalized effective library count: Proportion of metaprograms with a normalized effective
 # library count significantly greater than the metric background
-# 2. Correlation of gene weights: Proportion of metaprograms with a max correlation to all other
-# metaprograms below the correlation cutoff
-# 3. Coherence: Whether the value of k is at, below, or above the elbow of the median coherence
-# curve, identified with the kneedle algorithm
-# 4. Gene set specificity: Whether the overall gene set specificity for that value of k is
+# 2. Maximum metaprogram correlation: Proportion of metaprograms with a maximum metaprogram
+# correlation below the correlation cutoff
+# 3. Coherence: Whether the k value (number of metaprograms) is at, below, or above the elbow of the median
+# coherence curve, identified with the kneedle algorithm
+# 4. Gene set specificity: Whether the overall gene set specificity for that metaprogram set is
 # significantly greater than the metric background
-# 5. Variation in cell scores: Proportion of metaprograms with a coefficient of variation (CV) of
+# 5. CV of cell scores: Proportion of metaprograms with a coefficient of variation (CV) of
 # cell scores significantly greater than the score background
 
-# Each metric is ranked across all values of k, the ranks are normalized to a 0-1 scale, and the
-# value of k with the highest mean rank is reported as the optimal value of k.
+# Each metric is ranked across all metaprogram sets, the ranks are normalized to a 0-1 scale, and
+# the number of metaprograms with the highest mean rank is reported as the optimal k.
 
-# Outputs the optimal value of k and the TSV files that the companion report
+# Outputs the optimal k and the TSV files that the companion report
 # (`combined-metaprogram-metrics.Rmd`) reads in to make its plots:
 
-# 1. A TSV with one row per metaprogram per value of k, holding every observed metric for that
+# 1. A TSV with one row per metaprogram per metaprogram set, holding every observed metric for that
 # metaprogram and whether it passes each cutoff
-# 2. A TSV with one row per value of k, holding the summarized metrics used for ranking, the
+# 2. A TSV with one row per metaprogram set, holding the summarized metrics used for ranking, the
 # normalized rank of each of those metrics (the `rank_` columns), and the mean rank across all
-# metrics. Values of k that were excluded from the comparison are reported here with `is_excluded`
-# set to TRUE and no metrics
-# 3. Three gzipped TSVs holding the permuted null distributions for effective library count, gene set
-# specificity, and cell score CV, with the values of k that were excluded removed
-# 4. A text file holding the optimal value of k, which is used downstream to pick out the
+# metrics. Excluded metaprogram sets are reported here with `is_excluded` set to TRUE and no metrics
+# 3. Three gzipped TSVs holding the two metric backgrounds (effective library count and gene set
+# specificity) and the score background (cell score CV), with the excluded metaprogram sets removed
+# 4. A text file holding the optimal k, which is used downstream to pick out the
 # metaprograms and metrics that are published as the final result for the group
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
-# all file lists are comma separated with one file per value of k
+# all file lists are comma separated with one file per metaprogram set
 mp_metrics_files             <- stringr::str_split_1("${mp_metrics_files_string}", ",")
 geneset_metrics_files        <- stringr::str_split_1("${geneset_metrics_files_string}", ",")
 mp_background_files          <- stringr::str_split_1("${mp_background_files_string}", ",")
@@ -61,14 +60,14 @@ nreps        <- as.integer(${options.nreps})
 # adjusted pvalue at or below this value is considered significant
 SIG_CUTOFF <- 0.05
 
-# metaprograms with a max correlation of gene weights above this value are considered redundant
+# metaprograms with a maximum metaprogram correlation above this value are considered redundant
 CORRELATION_CUTOFF <- 0.5
 
 # metaprograms with a coherence at or below this value are likely to represent noise
 COHERENCE_CUTOFF <- 0.1
 
-# metrics used to rank each value of k, in the order they are reported
-# the names are the rank columns added to the k metrics table, one for each metric
+# metrics used to rank each metaprogram set, in the order they are reported
+# the names are the rank columns added to the summary metrics table, one for each metric
 METRICS_COLUMNS <- c(
   rank_effective_library_count = "neff_sig_proportion",
   rank_correlation = "proportion_passing_correlation",
@@ -80,10 +79,10 @@ METRICS_COLUMNS <- c(
 # Functions --------------------------------------------------------------------
 
 # helper function to assign names to a list of file names
-# names are the value of k formatted as `k_05` so that values of k sort correctly
+# names are the number of metaprograms taken from the `k-<n>_` file prefix
 assign_k_names <- function(file_list) {
 
-  # since nextflow sometimes changes the order of files, grab the value of k from the filename
+  # since nextflow sometimes changes the order of files, grab the number of metaprograms from the filename
   # directly here
   files_n_metaprograms <- basename(file_list) |>
     stringr::word(1, sep = "_") |>
@@ -91,10 +90,10 @@ assign_k_names <- function(file_list) {
     as.integer()
 
   stopifnot(
-    "Could not pull the value of k out of all file names" = !any(is.na(files_n_metaprograms))
+    "Could not pull the number of metaprograms out of all file names" = !any(is.na(files_n_metaprograms))
   )
 
-  # add k values as the names of the files in the list
+  # add the numbers of metaprograms as the names of the files in the list
   names(file_list) <- files_n_metaprograms
 
   return(file_list)
@@ -102,7 +101,7 @@ assign_k_names <- function(file_list) {
 }
 
 # read a list of TSV files and combine them into a single data frame with a column holding the
-# value of k the file came from
+# number of metaprograms of the metaprogram set the file came from
 # `bind_rows(.id = )` always adds that column as character, so it is converted back to a number here too
 read_k_files <- function(file_list, ...) {
 
@@ -116,11 +115,11 @@ read_k_files <- function(file_list, ...) {
 
 # function to calculate the "kneedle"
 # copied from https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/05-metaprogram-correlation.Rmd
-# returns NA when there is no elbow to find, either because too few values of k are left or
+# returns NA when there is no elbow to find, either because too few metaprogram sets are left or
 # because the curve is flat
 kneedle <- function(k_values, metric_values, concave = TRUE) {
 
-  # smoothing needs at least four unique values of k, and an elbow is not meaningful with fewer
+  # smoothing needs at least four metaprogram sets, and an elbow is not meaningful with fewer
   if (length(unique(k_values)) < 4) {
     return(NA_real_)
   }
@@ -129,7 +128,7 @@ kneedle <- function(k_values, metric_values, concave = TRUE) {
   fit <- smooth.spline(k_values, metric_values)
   metric_values <- predict(fit, k_values)[["y"]]
 
-  # a flat curve has the same value for every k, so normalizing it divides by zero and leaves no
+  # a flat curve has the same value for every metaprogram set, so normalizing it divides by zero and leaves no
   # well defined knee
   if (diff(range(metric_values)) == 0) {
     return(NA_real_)
@@ -156,7 +155,7 @@ kneedle <- function(k_values, metric_values, concave = TRUE) {
 # copied from https://github.com/AlexsLemonade/ews-nf/blob/main/modules/metaprograms/resources/usr/bin/04-metaprogram-metrics.R
 # used here for overall gene set specificity and cell score CV
 # `group_columns` defines the level the pvalue is calculated at, either one pvalue per metaprogram
-# within a value of k, or a single pvalue for each value of k
+# within a metaprogram set, or a single pvalue for each metaprogram set
 # `adjust_columns` defines the family the pvalues are adjusted within
 calculate_permutation_significance <- function(
   stat,
@@ -167,7 +166,7 @@ calculate_permutation_significance <- function(
   adjust_columns = "n_metaprograms"
 ) {
 
-  # combine the observed values with the background
+  # combine the observed values with the metric or score background
   combined_df <- observed_df |>
     dplyr::select(
       dplyr::all_of(group_columns),
@@ -179,7 +178,7 @@ calculate_permutation_significance <- function(
   # calculate the pvalue for the requested stat
   pvalue_df <- combined_df |>
     dplyr::mutate(
-      # indicate which rows have background > or < obs
+      # indicate which rows have background values > or < obs
       greater_than_obs = .data[[stat]] >= obs_value,
       lower_than_obs = .data[[stat]] <= obs_value
     ) |>
@@ -198,7 +197,7 @@ calculate_permutation_significance <- function(
     # depending on the stat will depend on which pvalue we use, either 1 or 2 sided test
     # `summarize(.by = )` returns an ungrouped table, so the adjustment is grouped again here
     # a BH adjusted pvalue depends on the other pvalues it is adjusted with, so adjusting every
-    # value of k together would make each k depend on which other k were run
+    # metaprogram set together would make each one depend on which other metaprogram sets were run
     dplyr::group_by(dplyr::across(dplyr::all_of(adjust_columns))) |>
     dplyr::mutate(
       greater_adj_pvalue = p.adjust(greater_pvalue, method = "BH"),
@@ -217,13 +216,13 @@ calculate_permutation_significance <- function(
 stopifnot(
   "Some or all metaprogram metrics files do not exist" = all(file.exists(mp_metrics_files)),
   "Some or all gene set metrics files do not exist" = all(file.exists(geneset_metrics_files)),
-  "Some or all background metaprogram stats files do not exist" = all(file.exists(mp_background_files)),
-  "Some or all background specificity files do not exist" = all(file.exists(specificity_background_files)),
+  "Some or all metaprogram metric background files do not exist" = all(file.exists(mp_background_files)),
+  "Some or all gene set specificity metric background files do not exist" = all(file.exists(specificity_background_files)),
   "Some or all cell score files do not exist" = all(file.exists(scores_files)),
-  "Some or all background cell score files do not exist" = all(file.exists(background_scores_files)),
+  "Some or all score background files do not exist" = all(file.exists(background_scores_files)),
   "Metaprogram metrics file must end in .tsv" = endsWith(metaprogram_metrics_file, ".tsv"),
-  "K metrics file must end in .tsv" = endsWith(k_metrics_file, ".tsv"),
-  "Background files must end in .tsv.gz" = all(
+  "Summary metrics file must end in .tsv" = endsWith(k_metrics_file, ".tsv"),
+  "Metric and score background files must end in .tsv.gz" = all(
     endsWith(
       c(neff_background_file, specificity_background_file, cv_background_file),
       ".tsv.gz"
@@ -233,13 +232,13 @@ stopifnot(
 
 # define output directories so Nextflow doesn't complain
 # the report tables are written to their own directory, nested inside the directory the optimal
-# value of k is written to
+# k is written to
 dir.create(dirname(optimal_k_file), recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(metaprogram_metrics_file), recursive = TRUE, showWarnings = FALSE)
 
 # Read input files -------------------------------------------------------------
 
-# metrics with one row per metaprogram for each value of k
+# metrics with one row per metaprogram for each metaprogram set
 # the metaprogram metrics and the gene set metrics are calculated by separate modules, so they are
 # joined here into a single table with one row per metaprogram
 mp_metrics_df <- read_k_files(mp_metrics_files) |>
@@ -248,22 +247,22 @@ mp_metrics_df <- read_k_files(mp_metrics_files) |>
     by = c("n_metaprograms", "metaprogram")
   )
 
-# null distributions used to calculate significance of the observed metrics
+# metric backgrounds used to calculate significance of the observed metrics
 neff_background_df <- read_k_files(mp_background_files)
 specificity_background_df <- read_k_files(specificity_background_files)
 
-# cell scores for every library, used to calculate the observed variation in cell scores
+# cell scores for every library, used to calculate the observed CV of cell scores
 scores_df <- scores_files |>
   read_k_files(col_types = list(.default = "c", mp_score = "d"))
 
-# per library summary stats for the shuffled metaprograms, used to build the null distribution for
+# per library summary stats for the shuffled metaprograms, used to build the score background for
 # the cell score CV
 background_scores_df <- background_scores_files |>
   read_k_files(col_types = list(.default = "d", metaprogram = "c", unique_id = "c"))
 
-# Filter values of k -----------------------------------------------------------
+# Filter metaprogram sets ------------------------------------------------------
 
-# check for any k's that have at least one metaprogram with only one spectra in it
+# check for any metaprogram sets that have at least one metaprogram with only one spectrum in it
 # these are not informative, so they are dropped from the comparison
 excluded_k <- mp_metrics_df |>
   dplyr::filter(num_spectra_per_mp == 1) |>
@@ -287,13 +286,13 @@ mp_metrics_df <- mp_metrics_df |>
   dplyr::mutate(
     # the effective library count pvalue is calculated by the metaprogram metrics module
     neff_is_significant = greater_adj_pvalue_eff_number_norm <= SIG_CUTOFF,
-    # metaprograms above the correlation cutoff are redundant with another metaprogram
+    # metaprograms with a maximum metaprogram correlation above the cutoff are redundant with another metaprogram
     correlation_is_passing = max_correlation <= CORRELATION_CUTOFF,
     # metaprograms at or below the coherence cutoff are likely to represent noise
     coherence_is_passing = median_difference > COHERENCE_CUTOFF
   )
 
-# Variation in cell scores -----------------------------------------------------
+# CV of cell scores ------------------------------------------------------------
 
 # calculate CV for each metaprogram across all libraries using Chan's algorithm
 # originally explored in https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/08-cell-scoring-metrics.Rmd
@@ -310,9 +309,9 @@ cv_background_df <- background_scores_df |>
     .by = c("n_metaprograms", "metaprogram", "replicate")
   )
 
-# calculate variance and CV of the observed scores without using Chan's
+# calculate variance and CV of the observed cell scores without using Chan's
 # we confirmed previously that this calculation is equal to the result you get from Chan's
-# so we can use this as the observed value and then compare to the null distribution
+# so we can use this as the observed value and then compare to the score background
 var_df <- scores_df |>
   dplyr::summarize(
     score_var = var(mp_score, na.rm = TRUE),
@@ -322,7 +321,7 @@ var_df <- scores_df |>
 
 # calculate pvalues for each cv
 # the observed values come from `var_df`, so only the pvalues are kept here
-# the default adjustment family is the metaprograms within a value of k, which is the family the
+# the default adjustment family is the metaprograms within a metaprogram set, which is the family the
 # metaprogram metrics module uses for the effective library count pvalues
 cv_pvalue_df <- calculate_permutation_significance(
   "score_cv",
@@ -344,7 +343,7 @@ mp_metrics_df <- mp_metrics_df |>
   dplyr::left_join(var_df, by = c("n_metaprograms", "metaprogram")) |>
   dplyr::left_join(cv_pvalue_df, by = c("n_metaprograms", "metaprogram"))
 
-# Summarize metrics for each value of k ----------------------------------------
+# Summarize metrics for each metaprogram set -----------------------------------
 
 # the total number of libraries is the number of unique IDs represented in the cell scores
 # TODO: as above, every unique ID is treated as a sample here. If more than one library can come
@@ -355,7 +354,7 @@ total_libraries_df <- scores_df |>
     .by = "n_metaprograms"
   )
 
-# collapse the metaprogram metrics into one row per value of k
+# collapse the metaprogram metrics into one row per metaprogram set
 k_metrics_df <- mp_metrics_df |>
   dplyr::summarize(
     num_metaprograms = dplyr::n(),
@@ -372,7 +371,7 @@ k_metrics_df <- mp_metrics_df |>
     num_metaprograms_with_genesets = sum(num_sig_genesets > 0),
     proportion_metaprograms_with_genesets = num_metaprograms_with_genesets / num_metaprograms,
     # the gene set metrics module reports specificity per metaprogram, so the mean is taken here to
-    # get a single observed value for each value of k
+    # get a single observed value for each metaprogram set
     # metaprograms with no identified gene sets have no specificity and are not considered
     overall_geneset_specificity = mean(mean_geneset_specificity, na.rm = TRUE),
     # metaprograms with a significant CV of cell scores
@@ -386,20 +385,20 @@ k_metrics_df <- mp_metrics_df |>
 
 # Coherence elbow --------------------------------------------------------------
 
-# increasing k doesn't improve coherence after a certain value of k, so a modified version of the
-# kneedle algorithm is used to find the elbow of the coherence curve
-# values of k greater than the elbow indicate no substantial gain of coherence over lower values
+# increasing the number of metaprograms doesn't improve coherence after a certain point, so a
+# modified version of the kneedle algorithm is used to find the elbow of the coherence curve
+# numbers of metaprograms greater than the elbow indicate no substantial gain of coherence over lower values
 elbow_value <- kneedle(
   k_metrics_df[["n_metaprograms"]],
   k_metrics_df[["median_coherence"]],
   concave = TRUE
 )
 
-# the value of k at the elbow is prioritized, values below the elbow are preferred over values
-# above it
-# with no elbow every value of k scores the same 0.5, the midpoint of the scale, so that coherence
-# neither prefers nor penalizes any value of k. Ranking ties them all at the top rank, which leaves
-# the optimal value of k to the other four metrics
+# the number of metaprograms at the elbow is prioritized, values below the elbow are preferred over
+# values above it
+# with no elbow every metaprogram set scores the same 0.5, the midpoint of the scale, so that
+# coherence neither prefers nor penalizes any metaprogram set. Ranking ties them all at the top
+# rank, which leaves the optimal k to the other four metrics
 k_metrics_df <- k_metrics_df |>
   dplyr::mutate(
     is_coherence_elbow = !is.na(elbow_value) & n_metaprograms == elbow_value,
@@ -414,17 +413,17 @@ k_metrics_df <- k_metrics_df |>
 # Gene set specificity significance --------------------------------------------
 
 # the metric background is reported per metaprogram, but the overall specificity is already the mean
-# across all metaprograms for each replicate, so there is one value per replicate per k
+# across all metaprograms for each replicate, so there is one value per replicate per metaprogram set
 specificity_background_df <- specificity_background_df |>
   dplyr::select(n_metaprograms, replicate, overall_geneset_specificity) |>
   unique()
 
 # compare the observed overall specificity to the metric background
-# here we are calculating the overall mean pvalue so that we get one pvalue for each k
+# here we are calculating the overall mean pvalue so that we get one pvalue for each metaprogram set
 # this mirrors what we did in: https://github.com/AlexsLemonade/ews-nf/blob/main/exploratory-notebooks/06-gene-set-uniqueness.Rmd
 # the metrics calculation module calculates this per metaprogram so we need to do it separately here
-# there is one test per value of k here, so the values of k are the family and no columns are
-# passed to adjust within
+# there is one test per metaprogram set here, so the metaprogram sets are the family and no columns
+# are passed to adjust within
 geneset_specificity_pvalue_df <- calculate_permutation_significance(
   "overall_geneset_specificity",
   k_metrics_df,
@@ -445,12 +444,12 @@ k_metrics_df <- k_metrics_df |>
     geneset_specificity_significant = as.integer(geneset_specificity_adj_pvalue <= SIG_CUTOFF)
   )
 
-# Rank values of k -------------------------------------------------------------
+# Rank metaprogram sets --------------------------------------------------------
 
-# rank each value of k for each metric, giving the same rank to any values of k with the exact same
-# value for a metric
-# ranks are normalized by the total number of values of k so that the scale is still 0-1, where 1
-# indicates a good metaprogram
+# rank each metaprogram set for each metric, giving the same rank to any metaprogram sets with the
+# exact same value for a metric
+# ranks are normalized by the total number of metaprogram sets so that the scale is still 0-1, where
+# a higher value indicates a better metaprogram set
 # selecting with the named vector copies each metric into its rank column, which is then replaced
 # by the rank, so that every rank sits in the same table as the metric it was calculated from
 rank_columns <- names(METRICS_COLUMNS)
@@ -474,12 +473,12 @@ rank_df <- k_metrics_df |>
 
 k_metrics_df <- dplyr::left_join(k_metrics_df, rank_df, by = "n_metaprograms")
 
-# the optimal value of k is the one with the highest mean rank
+# the optimal k is the number of metaprograms with the highest mean rank
 optimal_k <- k_metrics_df |>
   dplyr::filter(mean_rank == max(mean_rank)) |>
   # account for any ties and take the one with the highest rank in proportion significant cv
-  # ties are not kept so that a single value of k is always reported, and since the ranks are
-  # ordered by k, the smallest value of k wins any remaining tie
+  # ties are not kept so that a single optimal k is always reported, and since the ranks are
+  # ordered by number of metaprograms, the smallest number of metaprograms wins any remaining tie
   dplyr::slice_max(rank_coefficient_of_variation, n = 1, with_ties = FALSE) |>
   dplyr::pull(n_metaprograms)
 
@@ -488,12 +487,12 @@ k_metrics_df <- k_metrics_df |>
     is_optimal_k = n_metaprograms == optimal_k
   )
 
-# add the excluded values of k back in so that they can be reported, with no metrics
+# add the excluded metaprogram sets back in so that they can be reported, with no metrics
 k_metrics_df <- k_metrics_df |>
   dplyr::mutate(is_excluded = FALSE) |>
   dplyr::bind_rows(
     # a tibble is used here rather than a data frame so that the length 1 columns are still
-    # recycled when no values of k were excluded and the table has no rows
+    # recycled when no metaprogram sets were excluded and the table has no rows
     tibble::tibble(
       n_metaprograms = excluded_k,
       is_excluded = TRUE,
@@ -508,7 +507,7 @@ k_metrics_df <- k_metrics_df |>
 readr::write_tsv(mp_metrics_df, metaprogram_metrics_file)
 readr::write_tsv(k_metrics_df, k_metrics_file)
 
-# only the columns needed to plot the null distributions are exported
+# only the columns needed to plot the metric and score backgrounds are exported
 readr::write_tsv(
   dplyr::select(neff_background_df, n_metaprograms, metaprogram, replicate, eff_number_norm),
   neff_background_file
@@ -519,7 +518,7 @@ readr::write_tsv(
   cv_background_file
 )
 
-# export the value of k as a number to match n_metaprograms in nextflow
+# export the optimal k as a number to match n_metaprograms in nextflow
 readr::write_lines(optimal_k, optimal_k_file)
 
 # Versions ----------------------------------------------------------------------

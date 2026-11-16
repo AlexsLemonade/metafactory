@@ -120,12 +120,12 @@ By default, cNMF is skipped for any library that already has results in `checkpo
 
 These control how the spectra from all libraries in a group are clustered into metaprograms.
 
-| Parameter                       | Default       | Description                                                                                                                                  |
-| ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--n_metaprograms`              | `'8,9,10,11'` | Comma-separated values of `k` (numbers of metaprograms) to build and compare. At least four values are required to identify the optimal `k`. |
-| `--n_top_genes`                 | `200`         | Number of top genes per metaprogram used for scoring and ORA.                                                                                |
-| `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra, those with low correlation to spectra from other libraries, prior to clustering.                           |
-| `--metaprograms_orphan_cutoff`  | `0.3`         | Minimum cross-library maximum correlation required to keep a spectrum when filtering is enabled.                                             |
+| Parameter                       | Default       | Description                                                                                                                                                                                            |
+| ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--n_metaprograms`              | `'8,9,10,11'` | Comma-separated k values (numbers of metaprograms) to build and compare; the optimal k is chosen from these. At least four values are required.                                                       |
+| `--n_top_genes`                 | `200`         | Number of top genes per metaprogram used for scoring and ORA.                                                                                                                                          |
+| `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra prior to clustering.                                                                                                                                                  |
+| `--metaprograms_orphan_cutoff`  | `0.3`         | Orphan cutoff used when filtering is enabled. A spectrum is an orphan, and is removed, if its highest correlation with any spectrum from a different library in the same group falls below this value. |
 
 ## Core Nextflow arguments
 
@@ -159,7 +159,7 @@ The following profiles are bundled with the pipeline:
 
 **Test profiles**
 
-- `test` — runs the pipeline on a small set of test libraries with reduced settings (fewer permutation replicates and values of `k`), so it needs no other parameters.
+- `test` — runs the pipeline on a small set of test libraries with reduced settings (fewer permutation replicates and a smaller cNMF k range), so it needs no other parameters.
   Use together with a software profile, for example `-profile test,docker`.
 - `test_full` — runs the pipeline on the same test libraries as `test`, but with the default pipeline parameters.
 - `stub` — runs the pipeline on a placeholder stub dataset; use together with `-stub` (see [Running the pipeline](#running-the-pipeline)).

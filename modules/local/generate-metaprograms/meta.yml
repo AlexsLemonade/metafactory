@@ -2,13 +2,13 @@ name: generate_metaprograms
 description: |
   Cluster cNMF spectra (NMF programs) from all libraries in a group into a specified
   number of metaprograms (MPs) based on spectra correlation. Optionally filters out
-  "orphan" spectra that do not correlate well with spectra from other libraries before
-  clustering. Also generates permuted (gene-shuffled) versions of each metaprogram
+  orphan NMF programs, whose highest correlation with any NMF program from a different
+  library in the same group falls below the orphan cutoff, before clustering. Also generates permuted (gene-shuffled) versions of each metaprogram
   for later use in permutation-based significance testing.
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
   - metaprograms
 tools:
@@ -29,7 +29,7 @@ input:
             subdirectory name.
           - `unique_ids`: List of unique library identifiers whose cNMF results are included in
             this group.
-          - `n_metaprograms`: Number of metaprograms (k) to generate for this group.
+          - `n_metaprograms`: Number of metaprograms to generate for this group.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form
             `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
@@ -45,11 +45,14 @@ input:
           Groovy Map of the options used to generate the metaprograms, supplied as a single value
           rather than one input per option. Required keys:
           - `n_top_genes` (integer): Number of top genes to extract from each metaprogram. Used
-            both for the `top_genes` slot of the RDS file, which downstream modules read rather
-            than recomputing the gene lists themselves, and when generating shuffled metaprograms
-            for permutation testing. Must be at least 1.
-          - `filter_spectra` (boolean): Whether to filter out orphan spectra (spectra that do not
-            correlate well with any spectra from other libraries) before generating metaprograms.
+            both for the `top_genes` slot of the RDS file, which the gene set metrics and
+            individual report read rather than recomputing the gene lists themselves, and when
+            generating shuffled metaprograms for permutation testing. The score metaprograms
+            module does not read this slot; it selects the top `n_top_genes` genes again from the
+            metaprograms TSV. Must be at least 1.
+          - `filter_spectra` (boolean): Whether to filter out orphan NMF programs (NMF programs
+            whose highest correlation with any NMF program from a different library in the same
+            group falls below `orphan_cutoff`) before generating metaprograms.
           - `orphan_cutoff` (double): Minimum cross-library maximum correlation required to keep a
             spectrum when filter_spectra is used.
           - `cnmf_k_lower` (integer): Lower boundary for cNMF k (rank), the number of NMF programs
@@ -79,8 +82,9 @@ output:
             `shuffled_metaprograms`, `gene_universe`, `top_genes`, `n_metaprograms`,
             `n_top_genes`, `cnmf_k_range`, `filter_spectra`, `orphan_cutoff`, `unique_ids` and
             `removed_unique_ids`. `top_genes` holds the top `n_top_genes` gene IDs of each
-            metaprogram, ordered by decreasing weight, and is calculated here so that every
-            downstream consumer uses the same gene lists.
+            metaprogram, ordered by decreasing weight, and is calculated here so that the gene set
+            metrics and individual report use the same gene lists. The score metaprograms module
+            instead selects the top `n_top_genes` genes from the metaprograms TSV.
           pattern: "k-*_metaprograms.rds"
       - "k-*_metaprograms.tsv.gz":
           type: file

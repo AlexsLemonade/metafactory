@@ -42,7 +42,7 @@ nextflow_pipeline {
             def optimal_k_file = file("${group_dir}/optimal-k.txt")
             def optimal_k = optimal_k_file.exists() ? optimal_k_file.text.trim() : null
 
-            // files copied into the group directory for the metaprogram set chosen as the optimal value of k
+            // files copied into the group directory for the metaprogram set chosen as the optimal k
             def published_files = [
                 "k-${optimal_k}_metaprograms.rds",
                 "k-${optimal_k}_mp_metrics.tsv",
@@ -53,7 +53,7 @@ nextflow_pipeline {
 
             assert workflow.success
             assertAll(
-                // the optimal value of k must be one of the values of n_metaprograms set in conf/test.config
+                // the optimal k must be one of the values of n_metaprograms set in conf/test.config
                 { assert optimal_k_file.exists() },
                 { assert optimal_k ==~ /\d+/ },
                 { assert optimal_k.toInteger() in [4, 5, 6, 7] },

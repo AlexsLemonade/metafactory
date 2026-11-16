@@ -2,7 +2,7 @@ name: combine_scores
 description: |
   Combine the per library score tables generated for a single metaprogram set into one table.
   All input files must hold the same columns, so one task is run per score type per metaprogram
-  set (group_id/n_metaprograms combination): once for the per cell metaprogram scores from the
+  set (group_id/n_metaprograms combination): once for the cell scores from the
   score metaprograms module and once for the per shuffled metaprogram score background stats from
   the score background module. The tables are stacked as is, with no columns added or dropped,
   and the combined table is written alongside the metaprograms and per library scores it was
@@ -10,7 +10,7 @@ description: |
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
   - metaprograms
   - scoring
@@ -31,7 +31,7 @@ input:
           Groovy Map containing metaprogram set and score type information, one map per score
           type per metaprogram set. Required keys:
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the scores were
+          - `n_metaprograms`: Number of metaprograms in the metaprogram set the scores were
             calculated against.
           - `score_type`: Type of score being combined, either `metaprogram_scores` or
             `background_score_stats`.
@@ -46,7 +46,7 @@ input:
         type: file
         description: |
           List of gzipped TSVs of scores for individual libraries, all of the same score type and
-          all scored against the same metaprogram set. Either the per cell metaprogram scores
+          all scored against the same metaprogram set. Either the cell scores
           from the score metaprograms module (columns `metaprogram`, `barcodes`, `mp_score`,
           `unique_id`) or the score background stats from the score background module (columns
           `metaprogram`, `replicate`, `num_cells`, `mean_mp_score`, `M2`, `unique_id`).

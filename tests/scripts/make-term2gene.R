@@ -7,12 +7,14 @@
 #   SET_MP02: 20 genes unique to MP02
 #   SET_MP01_MP02: 10 genes unique to MP01 and 10 unique to MP02
 #   SET_BACKGROUND: 200 genes from the gene universe that are not in the top genes of any metaprogram
+# Here "background" means filler genes that only widen the ORA universe. It is not a score
+# background or a metric background in the sense of `docs/GLOSSARY.md`.
 # Every set has at least 10 genes, the default minimum gene set size used by enricher, and at most
 # 500, the default maximum.
-# enricher restricts the universe to genes in at least one gene set. Without the background set the
+# enricher restricts the universe to genes in at least one gene set. Without the filler genes in SET_BACKGROUND the
 # universe would only be the 40 genes unique to MP01 and MP02, and SET_MP01_MP02 would overlap each
-# of them exactly as much as expected by chance, so it would never be significant. The background
-# set is never significant, as it holds none of the top genes.
+# of them exactly as much as expected by chance, so it would never be significant. SET_BACKGROUND
+# is never significant, as it holds none of the top genes.
 
 # Called by update-test-data.sh after it copies the metaprograms RDS into `tests/data/`.
 # It requires the `optparse` and `tidyverse` packages.
@@ -49,7 +51,7 @@ stopifnot(
 # number of genes in a gene set for a single metaprogram, and half of the shared gene set
 N_GENES <- 20
 N_SHARED_GENES <- 10
-# number of genes in the background gene set
+# number of filler genes in SET_BACKGROUND, which only widen the ORA universe
 N_BACKGROUND_GENES <- 200
 
 # Find unique top genes --------------------------------------------------------
@@ -62,7 +64,7 @@ unique_genes <- names(top_genes) |>
   purrr::set_names() |>
   purrr::map(\(mp) setdiff(top_genes[[mp]], unlist(top_genes[names(top_genes) != mp])))
 
-# genes in the universe that are not in the top genes of any metaprogram
+# genes in the universe that are not in the top genes of any metaprogram, used as ORA universe filler
 background_genes <- setdiff(mp_object[["gene_universe"]], unlist(top_genes))
 
 stopifnot(

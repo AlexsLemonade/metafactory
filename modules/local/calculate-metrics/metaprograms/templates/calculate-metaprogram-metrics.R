@@ -6,11 +6,12 @@
 # 1. A TSV with one row per metaprogram holding the metrics described below
 # 2. A gzipped TSV with the metric background values for the metaprogram library diversity stats,
 # with one row per metaprogram per permutation replicate (columns: replicate, then every library
-# diversity stat below). This is the null distribution the `eff_number_norm` p-values are calculated against.
+# diversity stat below). This is the metric background the `eff_number_norm` p-values are calculated against.
 
 # The metaprogram metrics TSV contains the following metrics:
 
-# max_correlation: Max correlation of the specified metaprogram to all other metaprograms
+# max_correlation: Maximum metaprogram correlation, the highest correlation of gene weights between
+# the specified metaprogram and any other metaprogram in the metaprogram set
 # median_difference: Difference in medians between the correlation of spectra
 #  within metaprograms and between metaprograms
 # num_spectra_per_mp: Number of spectra found in that metaprogram
@@ -75,7 +76,7 @@ calculate_library_stats <- function(mp_clusters_df, total_libraries) {
 # reports a pvalue for a specified statistic
 calculate_permutation_significance <- function(stat, observed_df, background_df, nreps) {
 
-  # combine the observed values with the background
+  # combine the observed values with the metric background
   combined_df <- observed_df |>
     dplyr::select(
       metaprogram,
@@ -124,7 +125,7 @@ stopifnot(
   "Number of replicates must be at least 1" = nreps >= 1,
   "Metrics file must end in .tsv or .tsv.gz" =
     endsWith(metrics_file, ".tsv") || endsWith(metrics_file, ".tsv.gz"),
-  "Background stats file must end in .tsv or .tsv.gz" =
+  "Metric background stats file must end in .tsv or .tsv.gz" =
     endsWith(background_file, ".tsv") || endsWith(background_file, ".tsv.gz")
 )
 
@@ -136,7 +137,7 @@ dir.create(dirname(metrics_file), recursive = TRUE, showWarnings = FALSE)
 # signs and nothing needs to be escaped for the template engine
 mp_object <- readr::read_rds(metaprograms_file)
 
-# Max correlation --------------------------------------------------------------
+# Maximum metaprogram correlation ----------------------------------------------
 
 # combine all mps into a matrix and get correlation to each other
 mp_mtx <- do.call(cbind, mp_object[["metaprogram_list"]])

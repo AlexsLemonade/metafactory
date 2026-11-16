@@ -5,10 +5,10 @@ Each (replicate, metaprogram) pair in the shuffled metaprograms file is one gene
 metaprogram, and is scored exactly as a real metaprogram is by the score metaprograms module: the
 dot product of its gene weights and the quantile normalized expression of those genes in a cell.
 
-Per cell scores are never written out. For each shuffled metaprogram only the number of cells,
+Per cell scores for the shuffled metaprograms are never written out. For each shuffled metaprogram only the number of cells,
 the mean score, and the sum of squared deviations from that mean (M2) are kept, because that
 triple is exactly what Chan's parallel variance algorithm needs to pool the mean and variance of
-the null distribution across libraries downstream. Keeping the per cell scores would mean
+the score background across libraries downstream. Keeping the per cell scores would mean
 writing n_replicates x n_metaprograms x n_cells rows per library for no additional information.
 
 The output is a gzipped long format TSV containing the following columns:
@@ -63,7 +63,7 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     anndata.AnnData
         View of the AnnData object containing only the requested cells. The view contains no
         cells if none of them match, which is not an error; a library that does not contain the
-        requested cell types contributes nothing to the null distribution rather than failing
+        requested cell types contributes nothing to the score background rather than failing
         the run.
     """
     if celltype_annotation_column not in adata.obs.columns:
@@ -81,8 +81,8 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
 def normalized_expression(h5ad_file, gene_universe, celltype_annotation_column, analysis_celltypes, n_jobs):
     """Read a library and return its quantile normalized expression for the metaprogram genes.
 
-    This is the same preprocessing the score metaprograms module does, so that the background
-    scores are on the same scale as the real scores.
+    This is the same preprocessing the score metaprograms module does, so that the shuffled
+    metaprogram cell scores are on the same scale as the cell scores for the real metaprograms.
 
     Parameters
     ----------
@@ -261,7 +261,7 @@ def main():
         dtype={"metaprogram": str, "gene_id": str, "weight": numpy.float32},
     )
 
-    # read in the shuffled metaprograms file, which is used to make the background score distribution
+    # read in the shuffled metaprograms file, which is used to make the score background
     shuffled_df = pandas.read_csv(
         shuffled_metaprograms_file,
         sep="\\t",
@@ -275,7 +275,7 @@ def main():
     )
 
     # define the gene universe based on the union of all genes in metaprograms
-    # don't use the shuffled ones since we only save the top 200 genes
+    # don't use the shuffled ones since they only hold the top `n_top_genes` genes of each metaprogram
     gene_universe = mp_df["gene_id"].unique()
 
     # quantile normalize the expression of the metaprogram genes in the cells being scored, and get the
@@ -284,7 +284,7 @@ def main():
         h5ad_file, gene_universe, celltype_annotation_column, analysis_celltypes, n_jobs
     )
 
-    # a library with no cells to score has no background distribution, so write an empty table
+    # a library with no cells to score has no score background distribution, so write an empty table
     # with the expected columns instead of failing the run
     if norm_expr is None:
         pandas.DataFrame(columns=OUTPUT_COLUMNS).to_csv(output_path, sep="\\t", index=False)
@@ -306,10 +306,10 @@ def main():
     background_df = pandas.DataFrame(background_stats).sort_values(
         ["metaprogram", "replicate"], ignore_index=True
     )
-    # add a column with unique id for combining all background files later
+    # add a column with unique id for combining all score background files later
     background_df["unique_id"] = unique_id
 
-    # export summarized background stats
+    # export summarized score background stats
     background_df.to_csv(output_path, sep="\\t", index=False)
 
     write_versions(process_name)

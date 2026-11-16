@@ -16,7 +16,7 @@ params:
   seed: 2026
 ---
 
-This notebook evaluates a single set of metaprograms for a group of libraries.
+This notebook evaluates the set of metaprograms chosen as the optimal k for a group of libraries.
 Metaprograms should be:
 
 * Non-redundant
@@ -150,7 +150,7 @@ stopifnot(
   "Metaprogram object file does not exist" = file.exists(params$metaprograms_object_file),
   "Metaprogram metrics file does not exist" = file.exists(params$metaprograms_metrics_file),
   "ORA results file does not exist" = file.exists(params$ora_results_file),
-  "Metaprogram scores file does not exist" = file.exists(params$combined_scores_file)
+  "Cell scores file does not exist" = file.exists(params$combined_scores_file)
 )
 ```
 
@@ -169,7 +169,7 @@ all_cor_df <- mp_obj$spectra_cor_df
 ```
 
 ```{r}
-# read in tsv with all scores for all libraries
+# read in tsv with all cell scores for all libraries
 score_df <- readr::read_tsv(params$combined_scores_file, col_types = list(.default = "c", mp_score = "d"))
 ```
 
@@ -178,10 +178,10 @@ score_df <- readr::read_tsv(params$combined_scores_file, col_types = list(.defau
 
 This notebook shows results for the following parameters:
 
-* Number of metaprograms (k): `r mp_obj$n_metaprograms`
-* Filtering of orphan spectra: `r mp_obj$filter_spectra`
-* Orphan spectra cutoff (max cross-library correlation): `r mp_obj$orphan_cutoff`
-* Range of cNMF k (rank) values used (`all` indicates 5, 10, 15, 20, and 25 were used): `r mp_obj$cnmf_k_range`
+* Number of metaprograms (optimal k): `r mp_obj$n_metaprograms`
+* Filtering of orphan NMF programs: `r mp_obj$filter_spectra`
+* Orphan cutoff (an NMF program is an orphan if its highest correlation with any NMF program from a different library in the group falls below this value): `r mp_obj$orphan_cutoff`
+* cNMF k values used: `r mp_obj$cnmf_k_range`
 
 Metaprograms were derived from:
 
@@ -197,8 +197,8 @@ if(length(missing_ids) > 0){
     glue::glue("
       <div class=\"alert alert-info\">
 
-      Metaprograms do not contain cNMF spectra from all libraries.
-      All spectra from the following libraries were removed during filtering.
+      Metaprograms do not contain NMF programs from all libraries.
+      All NMF programs from the following libraries were removed during filtering.
 
       {missing_ids_bullets}
 
@@ -210,9 +210,10 @@ if(length(missing_ids) > 0){
 
 ## Redundancy of metaprograms
 
-Here we look at the correlation of all MPs to all other MPs.
+Here we look at how redundant the MPs in the metaprogram set are.
 Ideally, MPs are unique and non-redundant and therefore have low correlation to all other MPs.
-The first plot shows all the spectra that comprise the MPs correlation to all other spectra and the second looks at correlation of each MP to all other MPs.
+The first plot shows the correlation of each NMF program that comprises the MPs to all other NMF programs, annotated by the MP each NMF program belongs to.
+The second plot shows the correlation of gene weights between each MP and all other MPs in the metaprogram set.
 
 ```{r}
 # define colors for the cluster annotations
@@ -239,7 +240,7 @@ ComplexHeatmap::Heatmap(
   cluster_rows = dend,
   cluster_columns = dend,
   top_annotation = annotation,
-  name = "correlation"
+  name = "NMF program correlation"
 )
 ```
 
@@ -258,15 +259,16 @@ annotation <- ComplexHeatmap::HeatmapAnnotation(
 
 ComplexHeatmap::Heatmap(
   mp_cor_matrix,
-  name = "Correlation",
+  name = "Metaprogram correlation",
   top_annotation = annotation
 )
 ```
 
 
-Next we will look at the correlation of each spectrum to all other spectra within the same MP and across MPs.
-Ideally, the spectra within a single MP should have high correlation to each other and low correlation to spectra from other MPs.
-In the top left corner of each panel the difference in the median between the two groups (within and between MPs) is displayed.
+Next we will look at coherence: how much more similar each MP's NMF programs are to each other than to the NMF programs in other MPs of the same metaprogram set.
+For each MP, the correlation of each of its NMF programs to the other NMF programs in the same MP is compared to the correlation with NMF programs in other MPs.
+Ideally, the NMF programs within a single MP should have high correlation to each other and low correlation to NMF programs from other MPs.
+In the top left corner of each panel the coherence, the difference in the median between the two groups (within and between MPs), is displayed.
 
 
 ```{r}
@@ -316,7 +318,7 @@ ggplot(mp_cor_df, aes(x = correlation, color = mp_comparison_group, fill = mp_co
                                 "Between MPs" = "#FFCB05")) +
   scale_fill_manual(values = c("Within MP" = "#00274C",
                                "Between MPs" = "#FFCB05")) +
-  labs(x = "Correlation",
+  labs(x = "NMF program correlation",
        y = "Density",
        fill = "MP comparison group",
        color = "MP comparison group") +
@@ -358,8 +360,8 @@ mp_metrics_df |>
   DT::formatRound(c("shannon_entropy_norm", "eff_number_norm"))
 ```
 
-The chart below shows the proportion of spectra from each metaprogram that are derived from individual libraries.
-Each box represents a unique library, and its length represents that library's proportion of spectra contributing to the metaprogram.
+The chart below shows the proportion of NMF programs in each metaprogram that are derived from individual libraries.
+Each box represents a unique library, and its length represents that library's proportion of NMF programs contributing to the metaprogram.
 
 ```{r}
 # add library Id column to metaprogram/spectra map
@@ -389,7 +391,7 @@ ggplot(mp_prop_df, aes(x = p, y = metaprogram, fill = unique_id)) +
   geom_col(color = "gray70") +
   labs(
     y = "Metaprogram",
-    x = "Proportion of spectra",
+    x = "Proportion of NMF programs",
     fill = "Unique ID"
   ) +
   theme_bw() +
@@ -533,15 +535,15 @@ split(ora_results_df, ora_results_df$metaprogram) |>
 ```
 
 
-## Evaluating metaprogram scores across individual cells
+## Evaluating cell scores across individual cells
 
-Good MPs should show variation in scores for MPs across libraries.
+Good MPs should show differences in cell scores across libraries.
 
-Score were assigned for each cell by getting the dot product between the weights for the top genes in the MP and the normalized gene expression values.
-Before calculating the score, gene expression was quantile normalized within each library.
+Cell scores were assigned for each cell by getting the dot product between the weights for the top genes in the MP and the normalized gene expression values.
+Before calculating the cell scores, gene expression was quantile normalized within each library.
 
-First we look at the score distribution for all libraries for each metaprogram.
-Good MPs will show variability within the dataset, in particular we are looking for a bimodal distribution.
+First we look at the cell score distribution across all libraries in the group for each metaprogram.
+Good MPs will show variability across the cells of the libraries in the group, in particular we are looking for a bimodal distribution.
 
 ```{r}
 #| message: FALSE
@@ -556,16 +558,16 @@ ggplot(score_df,
     legend.position = "none"
   ) +
   labs(
-    x = "Score across all libraries",
+    x = "Cell score across all libraries",
     y = "Metaprogram"
   )
 ```
 
-Good metaprograms should show variation in the scores assigned to cells in the original dataset.
-To measure variation, we will use the coefficient of variation (CV), which reports a score's variance relative to the mean score across all cells.
+Good metaprograms should show variation in the cell scores within each library.
+To measure variation, we will use the coefficient of variation (CV) of cell scores, which is the standard deviation of the cell scores divided by their mean across all cells in a library.
 
 ```{r}
-# calculate the variance for each MP in each library
+# calculate the variance and CV of cell scores for each MP in each library
 mp_var_df <- score_df |>
   dplyr::summarise(
     variance = stats::var(mp_score, na.rm = TRUE),
@@ -583,7 +585,7 @@ ggplot(
   ggforce::geom_sina(size = 1, alpha = 0.8) +
   labs(
     x = "Metaprogram",
-    y = "CV across all cells in a library"
+    y = "CV of cell scores across all cells in a library"
   )
 
 ```
@@ -616,9 +618,9 @@ ggplot(score_df,
     legend.position = "none"
   ) +
   labs(
-    x = "Score",
+    x = "Cell score",
     y = "Metaprogram",
-    title = "MP scores by library"
+    title = "Cell scores by library"
   )
 ```
 

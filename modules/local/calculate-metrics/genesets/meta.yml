@@ -9,13 +9,14 @@ description: |
   test, which reshuffles the gene sets assigned to each metaprogram while holding the number of
   gene sets per metaprogram fixed and weighting gene sets by how often they appear, is used to
   build a metric background distribution for the mean specificity which gets exported to use for calculating
-  overall significance in calculate-k. The top genes and the gene universe
-  are read from the metaprograms RDS object rather than recalculated here, so every module uses the
-  same gene lists.
+  overall significance in calculate-k. The top genes and the gene universe are read from the
+  metaprograms RDS object rather than recalculated here, so gene set annotation uses the same gene
+  lists as the individual report. The score metaprograms module selects its top genes separately,
+  from the metaprograms TSV.
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
   - metaprograms
   - metrics
@@ -47,7 +48,7 @@ input:
           Groovy Map containing metaprogram set information, one map per group_id/n_metaprograms
           combination. Required keys:
           - `group_id`: Group identifier shared by all libraries used to generate the metaprograms.
-          - `n_metaprograms`: Number of metaprograms (k) in the metaprogram set the metrics are
+          - `n_metaprograms`: Number of metaprograms in the metaprogram set the metrics are
             calculated for.
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form
@@ -112,7 +113,7 @@ output:
             with no significant gene sets, which have a `num_sig_genesets` of 0 and a
             `mean_geneset_specificity` of `NaN`. No p-value is reported per metaprogram; the
             metric background below is exported so that the calculate k module can test the mean
-            specificity across all metaprograms for each value of k instead.
+            specificity across all metaprograms for each metaprogram set instead.
           pattern: "k-*_geneset_metrics.tsv"
       - "k-*_background_specificity.tsv.gz":
           type: file
@@ -122,8 +123,8 @@ output:
             the metric background distribution the observed gene set specificity is compared against by
             the calculate k module. One row per metaprogram per permutation replicate (columns: `replicate`,
             `metaprogram`, `mean_geneset_specificity`, `overall_geneset_specificity`). Covers the
-            same metaprograms as the metrics table, so that the observed values and the background
-            are always calculated across the same metaprograms. Gzipped because it holds `nreps`
+            same metaprograms as the metrics table, so that the observed values and the metric
+            background are always calculated across the same metaprograms. Gzipped because it holds `nreps`
             times `n_metaprograms` rows.
           pattern: "k-*_background_specificity.tsv.gz"
   - versions:
