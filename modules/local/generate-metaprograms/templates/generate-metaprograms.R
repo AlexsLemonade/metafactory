@@ -224,6 +224,12 @@ if (do_filter_spectra) {
   spectra_mtx <- spectra_mtx[, keep_spectra, drop = FALSE]
   cor_mtx <- cor_mtx[keep_spectra, keep_spectra, drop = FALSE]
 
+  # remove genes that were only found in orphan spectra
+  # these are NA in every remaining spectrum and would otherwise have NaN weights in every MP
+  # and be included in the gene universe
+  # cor_mtx does not need to be recalculated since these genes only had values in orphan spectra
+  spectra_mtx <- spectra_mtx[rowSums(!is.na(spectra_mtx)) > 0, , drop = FALSE]
+
 }
 
 # make sure there are enough spectra left to build the requested number of metaprograms
