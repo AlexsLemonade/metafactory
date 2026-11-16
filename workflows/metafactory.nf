@@ -100,7 +100,11 @@ workflow METAFACTORY {
         [meta, file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf")]
     }
 
-    def ch_cnmf_results = CNMF.out.results.mix(ch_cnmf_skipped)
+    // each result is tagged with whether cNMF ran in this run, so that metaprograms are rebuilt
+    // for any group with new cNMF results
+    def ch_cnmf_results = CNMF.out.results
+        .map { meta, cnmf_output -> [meta, cnmf_output, true] }
+        .mix(ch_cnmf_skipped.map { meta, cnmf_output -> [meta, cnmf_output, false] })
 
     //
     // MODULE: Generate metaprograms for each group of libraries across all values of n_metaprograms
@@ -108,16 +112,17 @@ workflow METAFACTORY {
 
     // group cNMF results from all unique_ids that share the same group_id
     def ch_cnmf_by_group = ch_cnmf_results
-        .map { meta, cnmf_output ->
-            [meta.group_id, meta.unique_id, cnmf_output]
+        .map { meta, cnmf_output, cnmf_ran ->
+            [meta.group_id, meta.unique_id, cnmf_output, cnmf_ran]
         }
         .groupTuple(by: 0)
         // groupTuple collects results in the order the cNMF tasks finish, which changes between runs
         // the input order sets the spectra order, and with it the metaprogram assignment and the
         // permutations, so results are sorted by unique_id to give the same metaprograms every run
-        .map { group_id, unique_ids, cnmf_output_dirs ->
+        // cnmf_ran is collapsed to a single value that is true if cNMF ran for any library in the group
+        .map { group_id, unique_ids, cnmf_output_dirs, cnmf_ran ->
             def sorted_results = [unique_ids, cnmf_output_dirs].transpose().sort { result -> result[0] }
-            [group_id, sorted_results.collect { result -> result[0] }, sorted_results.collect { result -> result[1] }]
+            [group_id, sorted_results.collect { result -> result[0] }, sorted_results.collect { result -> result[1] }, cnmf_ran.any()]
         }
 
     // labels used to identify the spectra filtering settings the metaprograms were built with
@@ -129,29 +134,68 @@ workflow METAFACTORY {
     // written to, and is passed through meta so that every module writes to the same place
     def ch_metaprogram_input = ch_cnmf_by_group
         .combine(channel.fromList(n_metaprograms_list))
-        .map { group_id, unique_ids, cnmf_output_dirs, n_metaprograms ->
+        .map { group_id, unique_ids, cnmf_output_dirs, cnmf_ran, n_metaprograms ->
             def meta = [
                 group_id: group_id,
                 n_metaprograms: n_metaprograms,
                 unique_ids: unique_ids,
                 metaprograms_publish_dir: "${group_id}/k-${n_metaprograms}_${filter_label}${orphan_label}".toString(),
             ]
-            [meta, cnmf_output_dirs]
+            [meta, cnmf_output_dirs, cnmf_ran]
         }
 
+    // these options are passed to the generate metaprograms module and recorded, along with
+    // n_metaprograms and unique_ids, in the metaprograms-meta.json file of each checkpoint
+    // the cell type options are not used to build metaprograms, but are recorded so that
+    // metaprograms built from cNMF results for a different set of cells are not reused
+    def metaprogram_options = [
+        n_top_genes: params.n_top_genes,
+        filter_spectra: params.metaprograms_filter_spectra,
+        orphan_cutoff: params.metaprograms_orphan_cutoff,
+        cnmf_k_lower: params.cnmf_k_lower,
+        cnmf_k_upper: params.cnmf_k_upper,
+        cnmf_k_step_size: params.cnmf_k_step_size,
+        celltype_annotation_column: params.celltype_annotation_column,
+        analysis_celltypes: params.analysis_celltypes,
+        seed: params.seed,
+        nreps: params.nreps,
+    ]
+
+    // generating metaprograms is skipped for any metaprogram set that already has a complete
+    // checkpoint created with the same options and libraries, as long as cNMF did not run for any
+    // library in the group in this run
+    // --repeat_metaprograms runs this step for every metaprogram set
+    // values are compared as strings, as for cNMF above
+    def repeat_metaprograms = params.repeat_metaprograms.toString().toBoolean()
+    def ch_metaprograms_branch = ch_metaprogram_input.branch { meta, _cnmf_output_dirs, cnmf_ran ->
+        def checkpoint_prefix = "${outdir}/checkpoints/metaprograms/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}"
+        def checkpoint_files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz', 'metaprograms-meta.json']
+            .collect { suffix -> file("${checkpoint_prefix}_${suffix}") }
+        def check_checkpoint = !repeat_metaprograms && !cnmf_ran && checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() }
+        def mp_meta = check_checkpoint ? new groovy.json.JsonSlurper().parseText(checkpoint_files[-1].text) : [:]
+        def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids] + metaprogram_options
+        skip_metaprograms: check_checkpoint && expected_meta.every { key, value -> mp_meta.containsKey(key) && mp_meta[key].toString() == value.toString() }
+        run_metaprograms: true
+    }
+
     GENERATE_METAPROGRAMS(
-        ch_metaprogram_input,
-        [
-            n_top_genes: params.n_top_genes,
-            filter_spectra: params.metaprograms_filter_spectra,
-            orphan_cutoff: params.metaprograms_orphan_cutoff,
-            cnmf_k_lower: params.cnmf_k_lower,
-            cnmf_k_upper: params.cnmf_k_upper,
-            cnmf_k_step_size: params.cnmf_k_step_size,
-            seed: params.seed,
-            nreps: params.nreps,
-        ],
+        ch_metaprograms_branch.run_metaprograms.map { meta, cnmf_output_dirs, _cnmf_ran -> [meta, cnmf_output_dirs] },
+        metaprogram_options,
     )
+
+    // skipped metaprogram sets use the existing checkpoint files, matching the results output of
+    // the GENERATE_METAPROGRAMS process
+    def ch_metaprograms_skipped = ch_metaprograms_branch.skip_metaprograms.map { meta, _cnmf_output_dirs, _cnmf_ran ->
+        def checkpoint_prefix = "${outdir}/checkpoints/metaprograms/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}"
+        [
+            meta,
+            file("${checkpoint_prefix}_metaprograms.rds"),
+            file("${checkpoint_prefix}_metaprograms.tsv.gz"),
+            file("${checkpoint_prefix}_shuffled_metaprograms.tsv.gz"),
+        ]
+    }
+
+    def ch_metaprograms_results = GENERATE_METAPROGRAMS.out.results.mix(ch_metaprograms_skipped)
 
     //
     // SUBWORKFLOW: Calculate metaprogram and gene set metrics for each set of metaprograms
@@ -159,7 +203,7 @@ workflow METAFACTORY {
 
     // only the RDS object is needed to calculate metrics, so the python readable exports are
     // dropped here and left in the generate metaprograms channel for their other consumers
-    def ch_metaprograms_rds = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
+    def ch_metaprograms_rds = ch_metaprograms_results.map { meta, metaprograms_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
         [meta, metaprograms_file]
     }
 
@@ -185,7 +229,7 @@ workflow METAFACTORY {
     //
     CALCULATE_SCORES(
         ch_samplesheet,
-        GENERATE_METAPROGRAMS.out.results,
+        ch_metaprograms_results,
         channel.value(
             [
                 celltype_annotation_column: params.celltype_annotation_column,
@@ -257,7 +301,7 @@ workflow METAFACTORY {
     // pull out files from each of the calculation steps for later joining, reporting and publishing
     // all are keyed on a [group_id, n_metaprograms] tuple, so that joining them against the
     // optimal value of k keeps only the metaprogram set chosen for each group and drops the rest
-    def metaprograms_rds_ch = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_rds_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
+    def metaprograms_rds_ch = ch_metaprograms_results.map { meta, metaprograms_rds_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
         [[meta.group_id, meta.n_metaprograms], metaprograms_rds_file]
     }
 

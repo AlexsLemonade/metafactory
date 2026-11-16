@@ -120,12 +120,16 @@ By default, cNMF is skipped for any library that already has results in `checkpo
 
 These control how the spectra from all libraries in a group are clustered into metaprograms.
 
+By default, generating metaprograms is skipped for any group and value of `k` that already has results in `checkpoints/metaprograms` created with the same options and libraries, and those existing results are used instead.
+Metaprograms are always re-generated for a group if cNMF was run for any library in that group.
+
 | Parameter                       | Default       | Description                                                                                                                                  |
 | ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--n_metaprograms`              | `'8,9,10,11'` | Comma-separated values of `k` (numbers of metaprograms) to build and compare. At least four values are required to identify the optimal `k`. |
 | `--n_top_genes`                 | `200`         | Number of top genes per metaprogram used for scoring and ORA.                                                                                |
 | `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra, those with low correlation to spectra from other libraries, prior to clustering.                           |
 | `--metaprograms_orphan_cutoff`  | `0.3`         | Minimum cross-library maximum correlation required to keep a spectrum when filtering is enabled.                                             |
+| `--repeat_metaprograms`         | `false`       | Re-generate every set of metaprograms, even if existing results were created with the same options and libraries.                            |
 
 ## Core Nextflow arguments
 
