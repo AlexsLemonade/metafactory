@@ -12,12 +12,11 @@ description: |
 keywords:
   - single-cell
   - NMF
-  - NMF programs
+  - gene expression programs
   - cNMF
   - metaprograms
   - scoring
   - permutation
-  - score background
 tools:
   - anndata:
       description: |

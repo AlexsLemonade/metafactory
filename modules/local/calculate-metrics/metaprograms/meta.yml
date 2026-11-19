@@ -12,7 +12,7 @@ description: |
 keywords:
   - single-cell
   - NMF
-  - NMF programs
+  - gene expression programs
   - cNMF
   - metaprograms
   - metrics
@@ -29,7 +29,7 @@ tools:
   - matrixStats:
       description: |
         High-performing functions operating on rows and columns of matrices. Used here to take the
-        maximum metaprogram correlation of each metaprogram.
+        maximum correlation of each metaprogram to another metaprogram.
       homepage: https://github.com/HenrikBengtsson/matrixStats
       documentation: https://cran.r-project.org/web/packages/matrixStats/matrixStats.pdf
       license: ["Artistic-2.0"]
