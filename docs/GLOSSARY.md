@@ -8,7 +8,7 @@ metafactory identifies metaprograms, clusters of NMF programs that recur across 
 
 **Library**:
 The unit of analysis: one filtered and normalized single-cell or single-nuclei dataset, provided as one `.h5ad` file and one samplesheet row.
-Identified by its `unique_id`, a free-form identifier that must be unique to the library. 
+Identified by its `unique_id`, a free-form identifier that must be unique to the library.
 This is often a combination of sample ID and a library ID, but does not need to be.
 _Avoid_: Sample
 
