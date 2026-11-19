@@ -8,7 +8,8 @@ metafactory identifies metaprograms, clusters of NMF programs that recur across 
 
 **Library**:
 The unit of analysis: one filtered and normalized single-cell or single-nuclei dataset, provided as one `.h5ad` file and one samplesheet row.
-Identified by its `unique_id`, a free-form identifier that must be unique to the library; it does not need to combine a sample ID and a library ID.
+Identified by its `unique_id`, a free-form identifier that must be unique to the library. 
+This is often a combination of sample ID and a library ID, but does not need to be.
 _Avoid_: Sample
 
 **Sample**:
@@ -25,7 +26,7 @@ _Avoid_: Cohort
 **NMF program**:
 One set of gene weights found by running non-negative matrix factorization (NMF) on a single library.
 **Spectrum** (plural **spectra**) is an accepted synonym, taken from the cNMF package's own terminology.
-_Avoid_: Program, gene expression program (without the "NMF" qualifier)
+_Avoid_: Program (without the "NMF" qualifier)
 
 **Orphan NMF program**:
 An NMF program whose highest correlation with any NMF program from a different library in the same group falls below the orphan cutoff.
