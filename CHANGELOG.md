@@ -20,14 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The pipeline description in `nextflow.config`, `nextflow_schema.json`, and `.nf-core.yml` now refers to libraries rather than samples.
 - Metaprogram sets with at least one cluster of NMF programs from fewer than two libraries are now excluded when choosing the optimal k.
   Previously only metaprogram sets with a cluster of a single NMF program were excluded.
-- NMF programs are now attributed to the library (`unique_id`) they came from by removing the `_k{k}_CNMF{n}` suffix from their names, rather than by parsing a sample ID out of the name.
-  Library diversity metrics (`num_libraries`, `proportion_of_libraries`, Shannon entropy and effective library count) now count libraries, so values change for groups with more than one library from the same sample.
-  Orphan filtering now also compares libraries correctly when a `unique_id` contains underscores.
 
 ### `Fixed`
 
 - When orphan spectra are removed (`--metaprograms_filter_spectra`), genes found only in orphan spectra are now also removed before metaprograms are built.
   Previously these genes were kept with `NaN` weights in every metaprogram, so they were included in the gene universe used for gene set enrichment, in the genes used for scoring, and in the shuffled metaprograms used to build the score background.
+- NMF programs are now attributed to the library (`unique_id`) they came from by removing the `_k{k}_CNMF{n}` suffix from their names, rather than by parsing a sample ID out of the name.
+  Library diversity metrics (`num_libraries`, `proportion_of_libraries`, Shannon entropy and effective library count) now count libraries, so values change for groups with more than one library from the same sample.
+  Orphan filtering now also compares libraries correctly when a `unique_id` contains underscores.
 
 ## v0.1.0 - [2026-11-02]
 
