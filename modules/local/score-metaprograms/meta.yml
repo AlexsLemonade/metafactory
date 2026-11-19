@@ -61,8 +61,8 @@ input:
           - `metaprograms_publish_dir`: Subdirectory that all output for this metaprogram set is
             written to, of the form
             `<group_id>/k-<n_metaprograms>_<filtered|unfiltered>[_<orphan_cutoff>]`. Defined once
-            in the workflow and shared with the generate metaprograms module so that the scores
-            are written alongside the metaprograms they were scored against.
+            in the workflow and shared with the generate metaprograms module so that the cell
+            scores are written alongside the metaprograms they were scored against.
     - metaprograms_file:
         type: file
         description: |
@@ -89,7 +89,8 @@ input:
             Values must match the annotation exactly. Required when celltype_annotation_column is
             provided.
           - `n_top_genes` (integer): Number of top weighted genes from each metaprogram to use
-            when scoring cells.
+            when scoring cells. The top genes are selected here from the metaprograms TSV rather
+            than read from the `top_genes` slot of the metaprograms RDS file.
           - `seed` (integer): Random seed, set for reproducibility and parity with the other
             modules.
 
@@ -102,8 +103,8 @@ output:
           type: file
           description: |
             Gzipped long format TSV, at
-            `<metaprograms_publish_dir>/<unique_id>_metaprogram_scores.tsv.gz`, with one row per
-            cell per metaprogram (columns: `metaprogram`, `barcodes`, `mp_score`, `unique_id`).
+            `<metaprograms_publish_dir>/<unique_id>_metaprogram_scores.tsv.gz`, holding the cell
+            scores with one row per cell per metaprogram (columns: `metaprogram`, `barcodes`, `mp_score`, `unique_id`).
           pattern: "*_metaprogram_scores.tsv.gz"
   - versions:
       - "versions.yml":

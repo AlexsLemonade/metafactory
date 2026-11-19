@@ -48,7 +48,7 @@ output:
       type: file
       description: |
         Channel containing the full ORA results, the ORA derived gene set metrics, and the
-        permuted metric background gene set specificity for each metaprogram set.
+        permuted metric background for gene set specificity for each metaprogram set.
         Structure: [ val(meta), path(ora_results_file), path(metrics_file), path(background_file) ]
       pattern: "k-*_{ora_results.tsv,geneset_metrics.tsv,background_specificity.tsv.gz}"
 authors:

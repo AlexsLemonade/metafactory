@@ -6,7 +6,7 @@ description: |
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
 tools:
   - cnmf:

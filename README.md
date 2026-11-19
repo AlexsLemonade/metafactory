@@ -19,7 +19,7 @@
 
 NMF programs are first found within each library independently using consensus non-negative matrix factorization (cNMF).
 The NMF programs from every library in a group are then compared to one another and clustered into metaprograms, so that only the NMF programs that recur across multiple libraries are retained.
-Because the number of metaprograms (`k`) present in a group is not known ahead of time, the pipeline builds metaprograms across a range of values of `k`, evaluates each set with a panel of metrics, and reports the optimal value of `k` along with the metaprograms, their gene set annotations, and a score for every cell.
+Because the number of metaprograms (`k`) present in a group is not known ahead of time, the pipeline builds metaprograms across a range of k values (numbers of metaprograms), evaluates each resulting metaprogram set with a panel of metrics, and reports the optimal value of `k`, the k value selected, along with the metaprograms, their gene set annotations, and cell scores for every cell.
 
 ### Pipeline summary
 
@@ -27,23 +27,24 @@ Because the number of metaprograms (`k`) present in a group is not known ahead o
    cNMF is run on the raw counts across a range of cNMF k (rank) values to produce a set of consensus NMF programs (spectra) for each library.
    By default, all cells are used but cells can be optionally subset to the cell types of interest prior to running `cNMF`.
 2. **Build metaprograms for each group of libraries.**
-   The spectra from all libraries in a group are combined and correlated, low-correlation (orphan) spectra are optionally removed, and the remaining spectra are hierarchically clustered into `k` metaprograms.
+   The spectra from all libraries in a group are combined and correlated, orphan spectra (those whose highest correlation with any spectrum from a different library in the same group falls below the orphan cutoff) are optionally removed, and the remaining spectra are hierarchically clustered into metaprograms.
    Each metaprogram is a set of gene weights averaged across the spectra assigned to it.
-   This step is repeated for every value of `k` specified using the `--n_metaprograms` parameter.
+   This step is repeated for every k value (number of metaprograms) specified using the `--n_metaprograms` parameter, producing one metaprogram set for each.
 3. **Annotate metaprograms with gene sets.**
    Overrepresentation analysis (ORA) is run on the top genes of each metaprogram against a set of MSigDB gene sets.
 4. **Score cells against metaprograms.**
    Every cell in every library of a group is scored against each metaprogram built for that group.
-   Scores are calculated by taking the dot product of the gene weights for the top genes in each metaprogram and the quantile-normalized expression of those genes in a given cell.
+   Cell scores are calculated by taking the dot product of the gene weights for the top genes in each metaprogram and the quantile-normalized expression of those genes in a given cell.
 5. **Calculate metaprogram metrics.**
    Metrics describing the interpretability of each metaprogram are calculated.
-   These include: normalized effective library count, correlation, coherence of individual NMF programs within a metaprogram, gene set specificity, and coefficient of variation of cell scores.
+   These include: normalized effective library count, maximum metaprogram correlation, coherence of individual NMF programs within a metaprogram, gene set specificity, and coefficient of variation (CV) of cell scores.
 6. **Choose the optimal value of `k`.**
-   All values of `k` tested for a group are compared using the five metrics described in step 5.
-   Coherence is scored by whether each value of `k` is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
-   Each metric is ranked across values of `k`, the ranks are normalized to a 0-1 scale, and the value of `k` with the highest mean rank is selected.
+   All metaprogram sets built for a group are compared using the five metrics described in step 5.
+   Excluded metaprogram sets, in which clustering produced at least one cluster of NMF programs from fewer than two libraries, are not considered.
+   Coherence is scored by whether each k value is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
+   Each metric is ranked across metaprogram sets, the ranks are normalized to a 0-1 scale, and the k value with the highest mean rank is selected as the optimal k.
 7. **Generate reports.**
-   A metrics report comparing every value of `k` tested for a group and an evaluation report for the metaprograms at the optimal value of `k` are generated.
+   A metrics report comparing every metaprogram set built for a group and an evaluation report for the metaprograms at the optimal value of `k` are generated.
 
 ## Usage
 
@@ -83,16 +84,16 @@ nextflow run AlexsLemonade/metafactory \
 Final results are written to `<OUTDIR>/results/<group_id>/`, with one directory per group.
 For each group, the pipeline produces:
 
-- **Optimal value of `k`** — a text file (`optimal-k.txt`) holding the value of `k` chosen for the group.
+- **Optimal value of `k`** — a text file (`optimal-k.txt`) holding the number of metaprograms chosen for the group.
 - **Metaprograms for the optimal value of `k`** — the metaprograms object holding the gene weights for each metaprogram, the spectra assigned to it, and the parameters used to build it.
-- **Metaprogram and gene set metrics** — tables of the metrics calculated for each metaprogram at the optimal value of `k`, including effective library count, correlation, coherence, and gene set specificity.
+- **Metaprogram and gene set metrics** — tables of the metrics calculated for each metaprogram at the optimal value of `k`, including effective library count, maximum metaprogram correlation, coherence, and gene set specificity.
 - **ORA results** — the gene sets significantly associated with each metaprogram, as identified by overrepresentation analysis of its top genes.
-- **Metaprogram scores** — a table of scores for every cell in every library of the group against each metaprogram.
-- **Metrics report** — a report summarizing the metrics calculated for every value of `k` tested, the metrics used to rank them, and the value of `k` that was selected.
+- **Cell scores** — a table of cell scores for every cell in every library of the group against each metaprogram.
+- **Metrics report** — a report summarizing the metrics calculated for every metaprogram set, the metrics used to rank them, and the optimal value of `k` that was selected.
 - **Individual metaprogram evaluation report** — a report evaluating the metaprograms at the optimal value of `k`, including their redundancy, library diversity, gene set annotations, and cell scores.
-- **Metrics for all values of `k`** — the tables used to build the metrics report, holding the metrics and null distributions for every value of `k` tested, in a `reports/` subdirectory.
+- **Metrics for all metaprogram sets** — the tables used to build the metrics report, holding the metrics, metric backgrounds, and the score background for the CV of cell scores for every metaprogram set, in a `reports/` subdirectory.
 
-Intermediate output from each step, including the results for the values of `k` that were not selected, is written to `<OUTDIR>/checkpoints/`.
+Intermediate output from each step, including the results for the metaprogram sets that were not selected, is written to `<OUTDIR>/checkpoints/`.
 Nextflow execution reports, the parameters used, and the software versions are written to `<OUTDIR>/pipeline_info/`.
 
 See [`docs/output.md`](docs/output.md) for a full description of every output file and its contents.

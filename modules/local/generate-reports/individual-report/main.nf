@@ -22,8 +22,8 @@ process RENDER_INDIVIDUAL_REPORT {
 
     script:
 
-    // the report evaluates the metaprogram set chosen as the optimal value of k, so it is written
-    // alongside the other final results for the group rather than to a per k checkpoint directory
+    // the report evaluates the metaprogram set chosen as the optimal value of k, so it is written alongside
+    // the other final results for the group rather than to a per metaprogram set checkpoint directory
     output_dir = "${meta.group_id}"
     report_file = "${output_dir}/individual-metaprogram-evaluation.html"
 

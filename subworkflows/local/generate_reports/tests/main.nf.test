@@ -2,7 +2,7 @@
 //
 // The tests tagged "stub" check the channel wiring. They run in stub mode, so no report is
 // rendered and the inputs are empty placeholder files. Each of these tests describes its input as a
-// design map of group_id -> [optimal_k: k], where k is the value of k chosen for that group. The
+// design map of group_id -> [optimal_k: k], where k is the optimal k chosen for that group. The
 // helpers below build the subworkflow input and the expected results from the same design.
 //
 // The other tests render both reports from the outputs of a real run of the pipeline with the test
@@ -32,7 +32,7 @@ def optimalSetSuffixes = [
 
 // Nextflow code for the three subworkflow inputs. path inputs must exist to be staged, so an empty
 // placeholder is created for every file in a temporary directory
-// every file name holds its group (and k), so the files staged into each task show which
+// every file name holds its group (and optimal k), so the files staged into each task show which
 // group's inputs that task received.
 // with reverse_optimal_k, the optimal k channel lists the groups in reverse order, so the join
 // can only pair the channels correctly by matching the meta, not by position
@@ -411,7 +411,7 @@ nextflow_workflow {
                 outdir = "$outputDir"
             }
             workflow {
-                // empty the optimal k file, as when no value of k could be chosen for the group
+                // empty the optimal k file, as when no optimal k could be chosen for the group
                 renderReportsInput(SubworkflowTestUtils.dataDir(baseDir), ['optimal-k.txt': { lines -> [] }])
             }
         }
@@ -422,7 +422,7 @@ nextflow_workflow {
             // individual report may or may not finish before the run stops and is not checked
             assert !workflow.trace.succeeded()*.name.any { name -> name.contains('RENDER_METRICS_REPORT') }
             def output = (workflow.stdout + workflow.stderr).join('\n')
-            assert output.contains('The optimal k file must contain a single value of k')
+            assert output.contains('The optimal k file must contain a single number of metaprograms')
         }
     }
 }

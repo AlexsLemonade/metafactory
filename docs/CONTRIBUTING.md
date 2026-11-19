@@ -214,7 +214,7 @@ All modules in this pipeline are local modules in `modules/local/`, each with a 
 
 ### Output directories
 
-- **`metaprograms_publish_dir`:** Every module that runs once per set of metaprograms writes its output inside the directory stored in `meta.metaprograms_publish_dir`, which is set in `workflows/metafactory.nf` as `<group_id>/k-<k>_<filtered_<cutoff>|unfiltered>`.
+- **`metaprograms_publish_dir`:** Every module that runs once per set of metaprograms writes its output inside the directory stored in `meta.metaprograms_publish_dir`, which is set in `workflows/metafactory.nf` as `<group_id>/k-<n>_<filtered_<cutoff>|unfiltered>`, where `<n>` is the number of metaprograms.
   This keeps all output for a set of metaprograms together in each checkpoint directory.
 - **Publishing:** Where output is published is set in `conf/modules.config`, not in the module.
   Intermediate output is published to a subdirectory of `checkpoints/` with a `withName:` selector.

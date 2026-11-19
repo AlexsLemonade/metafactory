@@ -11,7 +11,9 @@ With the local-markdown tracker, the string is the value of the `Status:` line n
 | `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
 | `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
 | `wontfix`                  | `wontfix`            | Will not be actioned                     |
+| (none)                     | `completed`          | Implemented; see the closing comment     |
 
+`completed` is not one of the canonical roles. Use it when an issue was implemented, rather than `wontfix`, which means the request was rejected or already existed before the issue was filed.
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding string from this table.
 
 Edit the "Label in our tracker" column to match whatever vocabulary you actually use.

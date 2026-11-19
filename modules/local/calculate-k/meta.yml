@@ -1,22 +1,23 @@
 name: calculate_k
 description: |
-  Compare the metaprograms generated for a single group across every value of k that was tested and
-  identify the optimal value of k. Five metrics are combined: the proportion of metaprograms with a
-  significant normalized effective library count, the proportion that are not redundant with another
-  metaprogram, where the value of k falls relative to the elbow of the median coherence curve,
-  whether the overall gene set specificity is significantly greater than its permuted metric
-  background, and the proportion of metaprograms whose cell scores are significantly more variable
-  than their permuted score background. Each metric is ranked across all values of k, the ranks are normalized to a
-  0-1 scale, and the value of k with the highest mean rank is reported as the optimal value of k.
-  Values of k with a metaprogram built from a single spectrum are dropped from the comparison and
-  reported in the summary table. Only the optimal value of k and the tables behind it are written
-  here; the metaprograms generated with that value of k are published separately by the publish
-  metaprograms module, which the reported value of k is used to select. The tables written here are
-  the input to the report that plots these metrics; no plots are made by this process.
+  Compare the metaprogram sets generated for a single group across every number of metaprograms
+  that was tested and identify the optimal value of k. Five metrics are combined: the proportion of
+  metaprograms with a significant normalized effective library count, the proportion whose maximum
+  metaprogram correlation is low enough that they are not redundant with another metaprogram, where
+  the number of metaprograms falls relative to the elbow of the median coherence curve, whether the
+  overall gene set specificity is significantly greater than its permuted metric background, and the
+  proportion of metaprograms whose CV of cell scores is significantly greater than their permuted
+  score background. Each metric is ranked across all metaprogram sets, the ranks are normalized to a
+  0-1 scale, and the number of metaprograms with the highest mean rank is reported as the optimal value of k.
+  Metaprogram sets in which clustering produced at least one cluster of NMF programs from fewer than
+  two libraries are excluded from the comparison and reported in the summary table. Only the optimal value of k and the tables behind it are written here; the
+  metaprogram set at the optimal k is published separately by the publish metaprograms module, which
+  the reported optimal k is used to select. The tables written here are the input to the report that
+  plots these metrics; no plots are made by this process.
 keywords:
   - single-cell
   - NMF
-  - gene expression programs
+  - NMF programs
   - cNMF
   - metaprograms
   - metrics
@@ -25,8 +26,9 @@ tools:
   - tidyverse:
       description: |
         The tidyverse is a collection of R packages for data science. The dplyr, purrr, readr,
-        stringr and tibble packages are used here to read the per k metrics, summarize them for
-        each value of k, rank the values of k and write the output tables.
+        stringr and tibble packages are used here to read the metrics for each metaprogram set,
+        summarize them for each metaprogram set, rank the metaprogram sets and write the output
+        tables.
       homepage: https://www.tidyverse.org
       documentation: https://www.tidyverse.org/packages/
       license: ["MIT"]
@@ -40,57 +42,56 @@ input:
             from. Also used as the name of the output directory, so that the final results for
             every group are published side by side.
           Unlike the other metaprogram modules, this process runs once per group rather than once
-          per value of k, so the map holds no `n_metaprograms` or `metaprograms_publish_dir` key.
+          per metaprogram set, so the map holds no `n_metaprograms` or `metaprograms_publish_dir` key.
     - mp_metrics_files:
         type: file
         description: |
-          Metaprogram metrics TSVs, one per value of k, as written by the calculate metrics
+          Metaprogram metrics TSVs, one per metaprogram set, as written by the calculate metrics
           metaprograms module. The `metaprogram`, `max_correlation`, `median_difference`,
-          `num_spectra_per_mp`, `proportion_of_libraries`, `eff_number_norm` and
+          `num_libraries`, `eff_number_norm` and
           `greater_adj_pvalue_eff_number_norm` columns are read.
         pattern: "k-*_mp_metrics.tsv"
     - mp_background_files:
         type: file
         description: |
           Gzipped TSVs of the permuted metric background for the metaprogram library diversity
-          stats, one per value of k, as written by the calculate metrics metaprograms module. Only the
+          stats, one per metaprogram set, as written by the calculate metrics metaprograms module. Only the
           `eff_number_norm` column is kept, and it is re-exported for the report with the excluded
-          values of k removed.
+          metaprogram sets removed.
         pattern: "k-*_background_mp_stats.tsv.gz"
     - geneset_metrics_files:
         type: file
         description: |
-          Gene set metrics TSVs, one per value of k, as written by the calculate metrics gene sets
+          Gene set metrics TSVs, one per metaprogram set, as written by the calculate metrics gene sets
           module. The `num_sig_genesets` and `mean_geneset_specificity` columns are read.
         pattern: "k-*_geneset_metrics.tsv"
     - specificity_background_files:
         type: file
         description: |
-          Gzipped TSVs of the permuted metric background for gene set specificity, one per value of
-          k, as written by the calculate metrics gene sets module. The `overall_geneset_specificity`
-          column holds one value per replicate per value of k and is the null distribution the
-          observed specificity is compared against.
+          Gzipped TSVs of the permuted metric background for gene set specificity, one per
+          metaprogram set, as written by the calculate metrics gene sets module. The
+          `overall_geneset_specificity` column holds one value per replicate per metaprogram set and
+          is the metric background the observed specificity is compared against.
         pattern: "k-*_background_specificity.tsv.gz"
     - scores_files:
         type: file
         description: |
-          Gzipped TSVs of per cell metaprogram scores for every library in the group, one per value
-          of k, as written by the combine scores module. Used to calculate the observed coefficient
-          of variation of the scores for each metaprogram, and to count the libraries represented in
-          the group.
+          Gzipped TSVs of cell scores for every library in the group, one per metaprogram set, as
+          written by the combine scores module. Used to calculate the observed CV of cell scores for
+          each metaprogram, and to count the libraries represented in the group.
         pattern: "k-*_combined_metaprogram_scores.tsv.gz"
     - background_scores_files:
         type: file
         description: |
           Gzipped TSVs of per library score background stats for the shuffled metaprograms, one per
-          value of k, as written by the combine scores module. The per library counts, means and
-          sums of squared deviations are pooled here to build the null distribution the observed
-          coefficient of variation is compared against.
+          metaprogram set, as written by the combine scores module. The per library counts, means and
+          sums of squared deviations are pooled here to build the score background the observed CV of
+          cell scores is compared against.
         pattern: "k-*_combined_background_score_stats.tsv.gz"
   - - options:
         type: map
         description: |
-          Groovy Map of the options used to compare values of k, supplied as a single value rather
+          Groovy Map of the options used to compare metaprogram sets, supplied as a single value rather
           than one input per option. Required keys:
           - `nreps` (integer): Number of replicates used for permutation testing by the metrics
             modules. Used as the denominator when calculating the empirical p-values for gene set
@@ -119,41 +120,41 @@ output:
           type: file
           description: |
             TSV, at `<group_id>/reports/all-k_metaprogram_metrics.tsv`, with one row per metaprogram per
-            value of k. Holds every observed metric for that metaprogram along with whether it
+            metaprogram set. Holds every observed metric for that metaprogram along with whether it
             passes the cutoff for each metric (`neff_is_significant`, `correlation_is_passing`,
-            `coherence_is_passing`, `cv_is_significant`). Values of k dropped from the comparison
-            are not included.
+            `coherence_is_passing`, `cv_is_significant`). Excluded metaprogram sets are not
+            included.
           pattern: "all-k_metaprogram_metrics.tsv"
       - "all-k_summary_metrics.tsv":
           type: file
           description: |
-            TSV, at `<group_id>/reports/all-k_summary_metrics.tsv`, with one row per value of k. Holds the
-            single summarized value for each metric, the normalized rank of each of those metrics
-            (the `rank_` columns), the mean rank across all metrics, and whether that value of k is
-            the optimal one. Values of k dropped from the comparison are reported with
+            TSV, at `<group_id>/reports/all-k_summary_metrics.tsv`, with one row per metaprogram set. Holds
+            the single summarized value for each metric, the normalized rank of each of those metrics
+            (the `rank_` columns), the mean rank across all metrics, and whether that number of
+            metaprograms is the optimal k. Excluded metaprogram sets are reported with
             `is_excluded` set to TRUE and no metrics.
           pattern: "all-k_summary_metrics.tsv"
       - "all-k_background_eff_library_count.tsv.gz":
           type: file
           description: |
             Gzipped TSV, at `<group_id>/reports/all-k_background_eff_library_count.tsv.gz`, holding the
-            permuted null distribution (metric background) for the normalized effective library count (columns:
+            permuted metric background for the normalized effective library count (columns:
             `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`), with the excluded
-            values of k removed.
+            metaprogram sets removed.
           pattern: "all-k_background_eff_library_count.tsv.gz"
       - "all-k_background_geneset_specificity.tsv.gz":
           type: file
           description: |
             Gzipped TSV, at `<group_id>/reports/all-k_background_geneset_specificity.tsv.gz`, holding the
-            permuted null distribution (metric background) for the overall gene set specificity (columns:
+            permuted metric background for the overall gene set specificity (columns:
             `n_metaprograms`, `replicate`, `overall_geneset_specificity`), with one row per
-            replicate per value of k.
+            replicate per metaprogram set.
           pattern: "all-k_background_geneset_specificity.tsv.gz"
       - "all-k_background_cell_score_cv.tsv.gz":
           type: file
           description: |
             Gzipped TSV, at `<group_id>/reports/all-k_background_cell_score_cv.tsv.gz`, holding the
-            null distribution (score background) for the coefficient of variation of the cell scores
+            score background for the CV of cell scores
             (columns: `n_metaprograms`, `metaprogram`, `replicate`, `score_cv`), pooled across all
             libraries in the group.
           pattern: "all-k_background_cell_score_cv.tsv.gz"

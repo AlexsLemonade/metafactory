@@ -11,6 +11,9 @@ This directory replaces the default `.scratch/` location that the skills assume;
 - Implementation issues are one file per ticket at `docs/issues/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
+- When an issue is done, set its `Status:` to `completed` and add a comment under `## Comments` pointing to the commit or CHANGELOG entry that implemented it
+- Once every issue in a feature directory is `completed` or `wontfix`, move the whole directory to `docs/issues/_completed/<feature-slug>/` and update any paths in other issues that point to it
+- Only look in `docs/issues/_completed/` for history; open work is everything else under `docs/issues/`
 
 ## When a skill says "publish to the issue tracker"
 

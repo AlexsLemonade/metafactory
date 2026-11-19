@@ -160,7 +160,7 @@ def main():
         try:
             cnmf_obj.consensus(k=k, density_threshold=DENSITY_THRESHOLD)
         except RuntimeError as e:
-            print(f"WARNING: consensus failed for k={k}: {e}")
+            print(f"WARNING: consensus failed for cNMF k={k}: {e}")
 
     output_dir = pathlib.Path(f"{unique_id}_cnmf")
 

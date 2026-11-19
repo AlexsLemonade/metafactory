@@ -21,7 +21,7 @@ process CALCULATE_K {
     path "versions.yml", emit: versions, topic: versions
 
     script:
-    // define input file strings for the R script, one file per value of k in each list
+    // define input file strings for the R script, one file per metaprogram set in each list
     mp_metrics_files_string = mp_metrics_files.join(',')
     geneset_metrics_files_string = geneset_metrics_files.join(',')
     mp_background_files_string = mp_background_files.join(',')
@@ -41,11 +41,11 @@ process CALCULATE_K {
     // separate from the optimal value of k and the final metaprograms
     reports_dir = "${output_dir}/reports"
 
-    // tables used to build the report, holding the metrics for every value of k
+    // tables used to build the report, holding the metrics for every metaprogram set
     metaprogram_metrics_file = "${reports_dir}/all-k_metaprogram_metrics.tsv"
     k_metrics_file = "${reports_dir}/all-k_summary_metrics.tsv"
 
-    // null distributions the observed metrics are compared against, gzipped because they hold one
+    // metric backgrounds and the score background the observed metrics are compared against, gzipped because they hold one
     // row per permutation replicate
     neff_background_file = "${reports_dir}/all-k_background_eff_library_count.tsv.gz"
     specificity_background_file = "${reports_dir}/all-k_background_geneset_specificity.tsv.gz"
@@ -67,7 +67,7 @@ process CALCULATE_K {
     // staged stands in for it here. file names are sorted because the order of the staged files
     // depends on task completion order, and the stub output needs to be the same on every run
     // tests can set ext.stub_optimal_k to control what is written to the optimal k file, such as
-    // an empty string to check that the pipeline fails when no value of k is chosen
+    // an empty string to check that the pipeline fails when no optimal k is chosen
     stub_k = task.ext.stub_optimal_k != null
         ? task.ext.stub_optimal_k
         : [mp_metrics_files].flatten()*.name.sort().first().tokenize('_')[0].replace('k-', '')

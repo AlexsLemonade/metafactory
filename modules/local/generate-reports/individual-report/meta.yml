@@ -1,7 +1,7 @@
 name: generate_reports
 description: |
-  Render the report that evaluates a single set of metaprograms generated for one group of libraries
-  with one value of k.
+  Render the report that evaluates the set of metaprograms chosen as the optimal k for one group of
+  libraries.
 keywords:
   - single-cell
   - NMF
@@ -29,15 +29,14 @@ tools:
       license: ["MIT"]
   - ggforce:
       description: |
-        ggplot2 extension providing `geom_sina()`, used to plot the per library coefficient of
-        variation of the metaprogram cell scores.
+        ggplot2 extension providing `geom_sina()`, used to plot the per library CV of cell scores.
       homepage: https://ggforce.data-imaginist.com
       documentation: https://ggforce.data-imaginist.com/reference/index.html
       license: ["MIT"]
   - ggridges:
       description: |
         ggplot2 extension providing `geom_density_ridges()`, used to plot the distribution of
-        metaprogram cell scores across all cells and within each library.
+        cell scores across all cells and within each library.
       homepage: https://wilkelab.org/ggridges/
       documentation: https://wilkelab.org/ggridges/reference/index.html
       license: ["GPL-2"]
@@ -58,7 +57,7 @@ tools:
   - ComplexHeatmap:
       description: |
         Bioconductor package for making heatmaps, used with circlize for the color scale to show
-        spectra and metaprogram correlation matrices and the significance of each gene set across
+        NMF program and metaprogram correlation matrices and the significance of each gene set across
         metaprograms.
       homepage: https://jokergoo.github.io/ComplexHeatmap-reference/book/
       documentation: https://jokergoo.github.io/ComplexHeatmap-reference/book/
@@ -96,7 +95,7 @@ input:
     - combined_scores_file:
         type: file
         description: |
-          Gzipped TSV of per cell metaprogram scores for every library in the group, scored
+          Gzipped TSV of cell scores for every library in the group, scored
           against the chosen metaprogram set, as written by the combine scores module.
         pattern: "k-*_combined_metaprogram_scores.tsv.gz"
   - - report_rmd:

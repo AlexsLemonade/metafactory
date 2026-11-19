@@ -8,7 +8,7 @@ All paths are relative to the directory provided with `--outdir`.
 Output is split into three top-level directories:
 
 - [`results/`](#results) - Final results for each group of libraries, including the metaprograms for the optimal value of `k` and the reports
-- [`checkpoints/`](#checkpoints) - Intermediate output from each step of the pipeline, for every value of `k` tested
+- [`checkpoints/`](#checkpoints) - Intermediate output from each step of the pipeline, for every metaprogram set
 - [`pipeline_info/`](#pipeline-information) - Reports and logs describing the pipeline run
 
 ```
@@ -25,32 +25,33 @@ Output is split into three top-level directories:
 └── pipeline_info
 ```
 
-Throughout this document, `<group_id>` and `<unique_id>` refer to the columns of the input samplesheet, and `<k>` refers to the number of metaprograms in a set, one of the values provided with `--n_metaprograms`.
+Throughout this document, `<group_id>` and `<unique_id>` refer to the columns of the input samplesheet, and `<n>` refers to the number of metaprograms in a metaprogram set, one of the k values provided with `--n_metaprograms` from which the optimal k is chosen.
+The `k-<n>_` and `all-k_` file prefixes refer to the number of metaprograms, not cNMF k.
 
 ## Results
 
 The final results are written to `results/<group_id>/`, with one directory for each group of libraries in the samplesheet.
 Only the metaprograms and metrics for the optimal value of `k` chosen for the group are included here.
-The output for all other values of `k` can be found in [`checkpoints/`](#checkpoints).
+The output for all other metaprogram sets can be found in [`checkpoints/`](#checkpoints).
 
 <details markdown="1">
 <summary>Output files</summary>
 
 - `results/<group_id>/`
   - `optimal-k.txt`: A text file holding the optimal value of `k` chosen for the group.
-  - `combined-metaprogram-metrics.html`: The [metrics report](#metrics-report), comparing every value of `k` tested for the group.
+  - `combined-metaprogram-metrics.html`: The [metrics report](#metrics-report), comparing every metaprogram set built for the group.
   - `individual-metaprogram-evaluation.html`: The [individual metaprogram evaluation report](#individual-metaprogram-evaluation-report), evaluating the metaprograms for the optimal value of `k`.
-  - `k-<k>_metaprograms.rds`: The [metaprograms object](#metaprograms-object) for the optimal value of `k`.
-  - `k-<k>_mp_metrics.tsv`: [Metaprogram metrics](#metaprogram-metrics) for the optimal value of `k`.
-  - `k-<k>_geneset_metrics.tsv`: [Gene set metrics](#gene-set-metrics) for the optimal value of `k`.
-  - `k-<k>_ora_results.tsv`: [Overrepresentation analysis (ORA) results](#ora-results) for the optimal value of `k`.
-  - `k-<k>_combined_metaprogram_scores.tsv.gz`: [Metaprogram scores](#metaprogram-scores) for every cell in every library in the group, for the optimal value of `k`.
-  - `reports/`: Tables used to build the metrics report, holding metrics for every value of `k` tested.
-    - `all-k_summary_metrics.tsv`: [Summary metrics](#summary-metrics-for-each-value-of-k) for each value of `k`, used to choose the optimal value of `k`.
-    - `all-k_metaprogram_metrics.tsv`: [Metrics for every metaprogram](#metrics-for-every-metaprogram-across-all-values-of-k) across all values of `k`.
-    - `all-k_background_eff_library_count.tsv.gz`: Null distribution (metric background) of the normalized effective library count (columns: `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`).
-    - `all-k_background_geneset_specificity.tsv.gz`: Null distribution of the overall gene set specificity, with one row per permutation replicate per value of `k` (columns: `n_metaprograms`, `replicate`, `overall_geneset_specificity`).
-    - `all-k_background_cell_score_cv.tsv.gz`: Null distribution of the coefficient of variation (CV) of cell scores (columns: `n_metaprograms`, `metaprogram`, `replicate`, `score_cv`).
+  - `k-<n>_metaprograms.rds`: The [metaprograms object](#metaprograms-object) for the optimal value of `k`.
+  - `k-<n>_mp_metrics.tsv`: [Metaprogram metrics](#metaprogram-metrics) for the optimal value of `k`.
+  - `k-<n>_geneset_metrics.tsv`: [Gene set metrics](#gene-set-metrics) for the optimal value of `k`.
+  - `k-<n>_ora_results.tsv`: [Overrepresentation analysis (ORA) results](#ora-results) for the optimal value of `k`.
+  - `k-<n>_combined_metaprogram_scores.tsv.gz`: [Cell scores](#cell-scores) for every cell in every library in the group, for the optimal value of `k`.
+  - `reports/`: Tables used to build the metrics report, holding metrics for every metaprogram set.
+    - `all-k_summary_metrics.tsv`: [Summary metrics](#summary-metrics-for-each-metaprogram-set) for each metaprogram set, used to choose the optimal value of `k`.
+    - `all-k_metaprogram_metrics.tsv`: [Metrics for every metaprogram](#metrics-for-every-metaprogram-across-all-metaprogram-sets) across all metaprogram sets.
+    - `all-k_background_eff_library_count.tsv.gz`: Metric background of the normalized effective library count (columns: `n_metaprograms`, `metaprogram`, `replicate`, `eff_number_norm`).
+    - `all-k_background_geneset_specificity.tsv.gz`: Metric background of the overall gene set specificity, with one row per permutation replicate per metaprogram set (columns: `n_metaprograms`, `replicate`, `overall_geneset_specificity`).
+    - `all-k_background_cell_score_cv.tsv.gz`: Score background of the coefficient of variation (CV) of cell scores (columns: `n_metaprograms`, `metaprogram`, `replicate`, `score_cv`).
 
 </details>
 
@@ -58,38 +59,38 @@ The output for all other values of `k` can be found in [`checkpoints/`](#checkpo
 
 #### Metrics report
 
-`combined-metaprogram-metrics.html` compares the metrics calculated for every value of `k` tested for a group, and describes how the optimal value of `k` was chosen.
-It includes sections on library diversity (proportion of libraries and normalized effective library count), correlation between metaprograms, coherence, gene set specificity, and variation in cell scores, followed by a heatmap of the normalized rank of each metric for each value of `k`.
-Any values of `k` that were excluded from the comparison are listed at the top of the report.
+`combined-metaprogram-metrics.html` compares the metrics calculated for every metaprogram set built for a group, and describes how the optimal value of `k` was chosen.
+It includes sections on library diversity (proportion of libraries and normalized effective library count), maximum metaprogram correlation, coherence, gene set specificity, and CV of cell scores, followed by a heatmap of the normalized rank of each metric for each metaprogram set.
+Any excluded metaprogram sets are listed at the top of the report.
 
 #### Individual metaprogram evaluation report
 
 `individual-metaprogram-evaluation.html` evaluates the set of metaprograms for the optimal value of `k`.
-It includes the parameters used to build the metaprograms and sections on the redundancy of metaprograms, the diversity of libraries contributing to each metaprogram, biological interpretability based on the top genes and ORA results, and the distribution of metaprogram scores across cells and libraries.
+It includes the parameters used to build the metaprograms and sections on the redundancy of metaprograms, the diversity of libraries contributing to each metaprogram, biological interpretability based on the top genes and ORA results, and the distribution of cell scores across cells and libraries.
 
 ### Choosing the optimal value of `k`
 
-Each value of `k` is evaluated using five metrics.
+Each metaprogram set is evaluated using five metrics.
 Note that any value of `k` with at least one metaprogram made up of a single spectrum is excluded from these comparisons.
 
-1. **Normalized effective library count**: The proportion of metaprograms with a normalized effective library count significantly greater than the metric background null distribution.
-2. **Correlation of gene weights**: The proportion of metaprograms with a maximum correlation to all other metaprograms at or below 0.5.
-3. **Coherence**: Whether the value of `k` is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
-   Values of `k` at the elbow score 1, values below the elbow score 0.5, and values above the elbow score 0.
-   If no elbow can be found, every value of `k` scores 0.5.
-4. **Gene set specificity**: Whether the overall gene set specificity differs significantly from the null distribution, using a two-sided permutation test.
-5. **Variation in cell scores**: The proportion of metaprograms with a CV of cell scores significantly greater than the score background null distribution.
+1. **Normalized effective library count**: The proportion of metaprograms with a normalized effective library count significantly greater than the metric background.
+2. **Maximum metaprogram correlation**: The proportion of metaprograms with a maximum metaprogram correlation at or below 0.5.
+3. **Coherence**: Whether the k value (number of metaprograms) is at, below, or above the elbow of the median coherence curve, identified with the kneedle algorithm.
+   k values at the elbow score 1, those below the elbow score 0.5, and those above the elbow score 0.
+   If no elbow can be found, every metaprogram set scores 0.5.
+4. **Gene set specificity**: Whether the overall gene set specificity differs significantly from its metric background, using a two-sided permutation test.
+5. **CV of cell scores**: The proportion of metaprograms with a CV of cell scores significantly greater than the score background.
 
-Each metric is ranked across all values of `k` and the ranks are normalized to a 0-1 scale.
-The value of `k` with the highest mean rank across all metrics is chosen as the optimal value of `k`.
-Any ties are broken by the rank for variation in cell scores.
-Significance for all metrics is determined using an adjusted p-value cutoff of 0.05, with null distributions built from `--nreps` permutation replicates.
+Each metric is ranked across all metaprogram sets and the ranks are normalized to a 0-1 scale.
+The number of metaprograms with the highest mean rank across all metrics is chosen as the optimal value of `k`.
+Any ties are broken by the rank for CV of cell scores.
+Significance for all metrics is determined using an adjusted p-value cutoff of 0.05, with the metric backgrounds and score background built from `--nreps` permutation replicates.
 
 ### File formats
 
 #### Metaprograms object
 
-`k-<k>_metaprograms.rds` is an RDS file holding a list with the following items:
+`k-<n>_metaprograms.rds` is an RDS file holding a list with the following items:
 
 <!-- prettier-ignore -->
 | Item                    | Description  
@@ -100,25 +101,25 @@ Significance for all metrics is determined using an adjusted p-value cutoff of 0
 | `cor_matrix`            | Correlation matrix of all spectra  
 | `spectra_cor_df`        | Data frame with correlation information for all spectra  
 | `shuffled_metaprograms` | Shuffled metaprograms (top genes only) for each permutation replicate, used to build the score background  
-| `gene_universe`         | All genes used to calculate metaprograms  
+| `gene_universe`         | All genes used to calculate metaprograms; genes found only in orphan spectra are excluded when spectra are filtered  
 | `top_genes`             | The top `--n_top_genes` gene IDs for each metaprogram, ordered by decreasing weight  
 | `n_metaprograms`        | Number of metaprograms (`k`)  
 | `n_top_genes`           | Number of top genes kept for each metaprogram  
 | `cnmf_k_range`          | Values of cNMF k (rank) used with cNMF  
 | `filter_spectra`        | Whether orphan spectra were removed  
-| `orphan_cutoff`         | Minimum cross-library correlation required to keep a spectrum if orphan spectra were removed, or `-1` if they were not
+| `orphan_cutoff`         | Orphan cutoff used to remove orphan spectra, or `-1` if they were not removed
 | `unique_ids`            | Unique IDs of the libraries used to build the metaprograms  
 | `removed_unique_ids`    | Unique IDs of the libraries removed when filtering spectra
 
 #### Metaprogram metrics
 
-`k-<k>_mp_metrics.tsv` has one row per metaprogram with the following columns:
+`k-<n>_mp_metrics.tsv` has one row per metaprogram with the following columns:
 
 <!-- prettier-ignore -->
 | Column                               | Description  
 | ------------------------------------ | --------------------------------------------------------------------------------------------------
 | `metaprogram`                        | Metaprogram identifier  
-| `max_correlation`                    | Maximum correlation of the metaprogram's gene weights to all other metaprograms  
+| `max_correlation`                    | Maximum metaprogram correlation  
 | `median_difference`                  | Coherence, the difference in median correlation of spectra within and between metaprograms  
 | `num_spectra_per_mp`                 | Number of spectra in the metaprogram  
 | `num_libraries`                        | Number of libraries represented in the metaprogram  
@@ -132,7 +133,7 @@ Significance for all metrics is determined using an adjusted p-value cutoff of 0
 
 #### Gene set metrics
 
-`k-<k>_geneset_metrics.tsv` has one row per metaprogram with the following columns:
+`k-<n>_geneset_metrics.tsv` has one row per metaprogram with the following columns:
 
 <!-- prettier-ignore -->
 | Column                     | Description  
@@ -143,47 +144,47 @@ Significance for all metrics is determined using an adjusted p-value cutoff of 0
 
 #### ORA results
 
-`k-<k>_ora_results.tsv` has one row per significant gene set per metaprogram (adjusted p-value ≤ 0.05).
+`k-<n>_ora_results.tsv` has one row per significant gene set per metaprogram (adjusted p-value ≤ 0.05).
 ORA is performed on the top `--n_top_genes` genes of each metaprogram against the gene sets provided with `--msigdb_gene_sets`, using [`clusterProfiler::enricher()`](https://yulab-smu.top/biomedical-knowledge-mining-book/universal-api.html).
 The table holds the full results returned by `enricher()`, including the `geneID` column listing the genes in each gene set that overlap the metaprogram's top genes.
 
-#### Metaprogram scores
+#### Cell scores
 
-`k-<k>_combined_metaprogram_scores.tsv.gz` is a long format table with one row per cell per metaprogram, with the following columns:
+`k-<n>_combined_metaprogram_scores.tsv.gz` is a long format table with one row per cell per metaprogram, with the following columns:
 
 <!-- prettier-ignore -->
 | Column        | Description  
 | ------------- | -------------------------------------------
 | `metaprogram` | Metaprogram identifier  
 | `barcodes`    | Cell barcode  
-| `mp_score`    | Score for the cell against the metaprogram  
+| `mp_score`    | Cell score for the cell against the metaprogram  
 | `unique_id`   | Unique ID of the library the cell came from
 
-Scores are calculated as the dot product of the gene weights for the top genes in each metaprogram and the quantile-normalized expression of those genes in each cell.
+Cell scores are calculated as the dot product of the gene weights for the top genes in each metaprogram and the quantile-normalized expression of those genes in each cell.
 If `--celltype_annotation_column` and `--analysis_celltypes` are provided, only cells of the selected cell types are scored.
 
-#### Summary metrics for each value of `k`
+#### Summary metrics for each metaprogram set
 
-`reports/all-k_summary_metrics.tsv` has one row per value of `k` with the following columns:
+`reports/all-k_summary_metrics.tsv` has one row per metaprogram set with the following columns:
 
 <!-- prettier-ignore -->
 | Column                                                                    | Description  
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------
-| `n_metaprograms`                                                          | Value of `k`  
-| `is_excluded`                                                             | Whether the value of `k` was excluded from the comparison. Excluded values of `k` have no metrics.  
-| `is_optimal_k`                                                            | Whether this value of `k` was chosen as the optimal value of `k`  
+| `n_metaprograms`                                                          | Number of metaprograms in the metaprogram set  
+| `is_excluded`                                                             | Whether the metaprogram set is an excluded metaprogram set. Excluded metaprogram sets have no metrics.  
+| `is_optimal_k`                                                            | Whether this number of metaprograms was chosen as the optimal value of `k`  
 | `num_metaprograms`                                                        | Number of metaprograms  
 | `neff_sig_number`, `neff_sig_proportion`                                  | Number and proportion of metaprograms with a significant normalized effective library count  
-| `num_passing_correlation`, `proportion_passing_correlation`               | Number and proportion of metaprograms with a maximum correlation at or below 0.5  
+| `num_passing_correlation`, `proportion_passing_correlation`               | Number and proportion of metaprograms with a maximum metaprogram correlation at or below 0.5  
 | `num_passing_coherence`                                                   | Number of metaprograms with a coherence greater than 0.1  
 | `median_coherence`                                                        | Median coherence across all metaprograms  
 | `num_metaprograms_with_genesets`, `proportion_metaprograms_with_genesets` | Number and proportion of metaprograms with at least one significant gene set  
 | `overall_geneset_specificity`                                             | Mean gene set specificity across all metaprograms with at least one significant gene set  
 | `num_significant_cv`, `proportion_significant_cv`                         | Number and proportion of metaprograms with a significant CV of cell scores  
 | `total_libraries`                                                           | Number of libraries with cell scores  
-| `is_coherence_elbow`                                                      | Whether this value of `k` is the elbow of the median coherence curve  
+| `is_coherence_elbow`                                                      | Whether this number of metaprograms is the elbow of the median coherence curve  
 | `coherence_elbow_passing`                                                 | Coherence score used for ranking: 1 at the elbow, 0.5 below the elbow or if there is no elbow, 0 above  
-| `geneset_specificity_pvalue`, `geneset_specificity_adj_pvalue`            | P-value and adjusted p-value for the overall gene set specificity being significantly different compared to the null distribution using a two-sided permutation test
+| `geneset_specificity_pvalue`, `geneset_specificity_adj_pvalue`            | P-value and adjusted p-value for the overall gene set specificity being significantly different compared to the metric background using a two-sided permutation test
 | `geneset_specificity_significant`                                         | Whether the overall gene set specificity is significant (1) or not (0)  
 | `rank_effective_library_count`                                              | Normalized rank of `neff_sig_proportion`  
 | `rank_correlation`                                                        | Normalized rank of `proportion_passing_correlation`  
@@ -192,30 +193,30 @@ If `--celltype_annotation_column` and `--analysis_celltypes` are provided, only 
 | `rank_coefficient_of_variation`                                           | Normalized rank of `proportion_significant_cv`  
 | `mean_rank`                                                               | Mean of the five normalized ranks
 
-#### Metrics for every metaprogram across all values of `k`
+#### Metrics for every metaprogram across all metaprogram sets
 
-`reports/all-k_metaprogram_metrics.tsv` has one row per metaprogram per value of `k`, for every value of `k` that was not excluded.
-It holds an `n_metaprograms` column with the value of `k`, all columns of the [metaprogram metrics](#metaprogram-metrics) and [gene set metrics](#gene-set-metrics) tables, and the following additional columns:
+`reports/all-k_metaprogram_metrics.tsv` has one row per metaprogram per metaprogram set, for every metaprogram set that was not excluded.
+It holds an `n_metaprograms` column with the number of metaprograms, all columns of the [metaprogram metrics](#metaprogram-metrics) and [gene set metrics](#gene-set-metrics) tables, and the following additional columns:
 
 <!-- prettier-ignore -->
 | Column                                                   | Description  
 | -------------------------------------------------------- | --------------------------------------------------------------------------------
 | `neff_is_significant`                                    | Whether the normalized effective library count is significant  
-| `correlation_is_passing`                                 | Whether `max_correlation` is at or below 0.5  
+| `correlation_is_passing`                                 | Whether the maximum metaprogram correlation (`max_correlation`) is at or below 0.5  
 | `coherence_is_passing`                                   | Whether coherence (`median_difference`) is greater than 0.1  
-| `score_var`, `score_cv`                                  | Variance and CV of the metaprogram scores across all cells  
-| `greater_pvalue_score_cv`, `greater_adj_pvalue_score_cv` | P-value and adjusted p-value for the CV being greater than the score background
+| `score_var`, `score_cv`                                  | Variance and CV of the cell scores across all cells  
+| `greater_pvalue_score_cv`, `greater_adj_pvalue_score_cv` | P-value and adjusted p-value for the CV of cell scores being greater than the score background
 | `cv_is_significant`                                      | Whether the CV of cell scores is significant
 
 ## Checkpoints
 
 Intermediate output from each step of the pipeline is written to `checkpoints/`.
-Unlike `results/`, these directories hold the output for every value of `k` tested, not only the optimal value of `k`.
+Unlike `results/`, these directories hold the output for every metaprogram set, not only the one for the optimal value of `k`.
 
-Output for each set of metaprograms is written to a subdirectory named for the group, the value of `k`, and the spectra filtering settings used to build the metaprograms:
+Output for each set of metaprograms is written to a subdirectory named for the group, the number of metaprograms, and the spectra filtering settings used to build the metaprograms:
 
-- `<group_id>/k-<k>_filtered_<cutoff>/` if orphan spectra were removed (`--metaprograms_filter_spectra true`), where `<cutoff>` is the value of `--metaprograms_orphan_cutoff`
-- `<group_id>/k-<k>_unfiltered/` if orphan spectra were not removed
+- `<group_id>/k-<n>_filtered_<cutoff>/` if orphan spectra were removed (`--metaprograms_filter_spectra true`), where `<cutoff>` is the value of `--metaprograms_orphan_cutoff`
+- `<group_id>/k-<n>_unfiltered/` if orphan spectra were not removed
 
 Below, this subdirectory is referred to as `<group_id>/<metaprogram_set>/`.
 
@@ -226,22 +227,22 @@ Below, this subdirectory is referred to as `<group_id>/<metaprogram_set>/`.
   - `*.gene_spectra_score.k_*.dt_*.txt`: Consensus NMF programs (spectra) from cNMF, one file for each value of cNMF k (rank) tested.
   - `cnmf-meta.json`: The cNMF options used for this library.
 - `checkpoints/metaprograms/<group_id>/<metaprogram_set>/`
-  - `k-<k>_metaprograms.rds`: The [metaprograms object](#metaprograms-object).
-  - `k-<k>_metaprograms.tsv.gz`: The gene weights for each metaprogram in long format (columns: `metaprogram`, `gene_id`, `weight`).
-  - `k-<k>_shuffled_metaprograms.tsv.gz`: The gene weights for the top genes of each shuffled metaprogram for each permutation replicate (columns: `replicate`, `metaprogram`, `gene_id`, `weight`).
+  - `k-<n>_metaprograms.rds`: The [metaprograms object](#metaprograms-object).
+  - `k-<n>_metaprograms.tsv.gz`: The gene weights for each metaprogram in long format (columns: `metaprogram`, `gene_id`, `weight`).
+  - `k-<n>_shuffled_metaprograms.tsv.gz`: The gene weights for the top genes of each shuffled metaprogram for each permutation replicate (columns: `replicate`, `metaprogram`, `gene_id`, `weight`).
 - `checkpoints/metrics/<group_id>/<metaprogram_set>/`
-  - `k-<k>_mp_metrics.tsv`: [Metaprogram metrics](#metaprogram-metrics).
-  - `k-<k>_background_mp_stats.tsv.gz`: Null distribution (metric background) of the metaprogram library diversity stats, with one row per metaprogram per permutation replicate.
-  - `k-<k>_geneset_metrics.tsv`: [Gene set metrics](#gene-set-metrics).
-  - `k-<k>_background_specificity.tsv.gz`: Null distribution of the gene set specificity, with one row per metaprogram per permutation replicate (columns: `replicate`, `metaprogram`, `mean_geneset_specificity`, `overall_geneset_specificity`).
-  - `k-<k>_ora_results.tsv`: [ORA results](#ora-results).
+  - `k-<n>_mp_metrics.tsv`: [Metaprogram metrics](#metaprogram-metrics).
+  - `k-<n>_background_mp_stats.tsv.gz`: Metric background of the metaprogram library diversity stats, with one row per metaprogram per permutation replicate.
+  - `k-<n>_geneset_metrics.tsv`: [Gene set metrics](#gene-set-metrics).
+  - `k-<n>_background_specificity.tsv.gz`: Metric background of the gene set specificity, with one row per metaprogram per permutation replicate (columns: `replicate`, `metaprogram`, `mean_geneset_specificity`, `overall_geneset_specificity`).
+  - `k-<n>_ora_results.tsv`: [ORA results](#ora-results).
 - `checkpoints/metaprogram_scores/<group_id>/<metaprogram_set>/`
-  - `<unique_id>_metaprogram_scores.tsv.gz`: [Metaprogram scores](#metaprogram-scores) for each cell in a single library.
+  - `<unique_id>_metaprogram_scores.tsv.gz`: [Cell scores](#cell-scores) for each cell in a single library.
 - `checkpoints/background_scores/<group_id>/<metaprogram_set>/`
-  - `<unique_id>_background_score_stats.tsv.gz`: Summary statistics of the scores for each shuffled metaprogram in a single library, used to build the null distribution of the CV of cell scores (columns: `metaprogram`, `replicate`, `num_cells`, `mean_mp_score`, `M2`, `unique_id`).
+  - `<unique_id>_background_score_stats.tsv.gz`: Summary statistics of the cell scores for each shuffled metaprogram in a single library, used to build the score background of the CV of cell scores (columns: `metaprogram`, `replicate`, `num_cells`, `mean_mp_score`, `M2`, `unique_id`).
 - `checkpoints/combined_scores/<group_id>/<metaprogram_set>/`
-  - `k-<k>_combined_metaprogram_scores.tsv.gz`: [Metaprogram scores](#metaprogram-scores) for all libraries in the group.
-  - `k-<k>_combined_background_score_stats.tsv.gz`: Score background statistics for all libraries in the group.
+  - `k-<n>_combined_metaprogram_scores.tsv.gz`: [Cell scores](#cell-scores) for all libraries in the group.
+  - `k-<n>_combined_background_score_stats.tsv.gz`: Score background statistics for all libraries in the group.
 
 </details>
 

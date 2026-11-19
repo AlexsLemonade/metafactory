@@ -33,8 +33,8 @@ workflow GENERATE_REPORTS {
     )
 
     // the individual report evaluates the metaprogram set chosen as the optimal value of k, so it
-    // is built from the per metaprogram set files for that k rather than from the metrics
-    // summarized across every value of k
+    // is built from the files for that metaprogram set rather than from the metrics
+    // summarized across every metaprogram set
     // the individual report does not use n_top_genes, so only the seed is passed on
     def individual_report_options = options.map { opts -> opts.subMap(['seed']) }
 

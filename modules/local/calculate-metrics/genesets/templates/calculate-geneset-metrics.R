@@ -18,9 +18,9 @@
 # mean_geneset_specificity: Mean specificity of all gene sets assigned to a metaprogram through ORA
 
 # Metaprograms that have no significant gene sets are still reported, with a
-# `mean_geneset_specificity` of NaN, since there is nothing to average over. The permuted
-# background covers the same set of metaprograms so that the observed values and the background
-# are always calculated across the same metaprograms.
+# `mean_geneset_specificity` of NaN, since there is nothing to average over. The permuted metric
+# background covers the same set of metaprograms so that the observed values and the metric
+# background are always calculated across the same metaprograms.
 
 # Input variables --------------------------------------------------------------
 # Nextflow input variables — values are interpolated by the template engine before execution
@@ -198,7 +198,7 @@ stopifnot(
     endsWith(ora_results_file, ".tsv"),
   "Metrics file must end in .tsv" =
     endsWith(metrics_file, ".tsv"),
-  "Background specificity file must end in .tsv or .tsv.gz" =
+  "Metric background specificity file must end in .tsv or .tsv.gz" =
     endsWith(background_file, ".tsv") || endsWith(background_file, ".tsv.gz")
 )
 
@@ -221,7 +221,7 @@ gene_universe <- mp_object[["gene_universe"]]
 
 # take the metaprogram names from a single source and pass them explicitly everywhere they are
 # needed, so that the set of metaprograms is identical across the gene set counts, the observed
-# specificity and the permuted background
+# specificity and the permuted metric background
 mp_names <- names(mp_object[["metaprogram_list"]])
 n_metaprograms <- length(mp_names)
 

@@ -53,7 +53,7 @@ def subset_cells(adata, celltype_annotation_column, analysis_celltypes):
     anndata.AnnData
         View of the AnnData object containing only the requested cells. The view contains no
         cells if none of them match, which is not an error; a library that does not contain the
-        requested cell types has no scores rather than a failed run.
+        requested cell types has no cell scores rather than a failed run.
     """
     if celltype_annotation_column not in adata.obs.columns:
         raise KeyError(
@@ -160,11 +160,11 @@ def main():
     if celltype_annotation_column:
         adata = subset_cells(adata, celltype_annotation_column, analysis_celltypes)
 
-    # a library with none of the cells the metaprograms were generated from has no scores, so
+    # a library with none of the cells the metaprograms were generated from has no cell scores, so
     # write an empty table with the expected columns instead of failing the run
     if adata.n_obs == 0:
         print(
-            f"No cells to score in '{h5ad_file}' after subsetting; writing an empty scores file.",
+            f"No cells to score in '{h5ad_file}' after subsetting; writing an empty cell scores file.",
             file=sys.stderr,
         )
         del adata

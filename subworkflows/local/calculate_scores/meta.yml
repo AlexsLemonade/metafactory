@@ -3,7 +3,7 @@ name: "calculate_scores"
 description: |
   Score every library in a group against each set of metaprograms generated for that group,
   calculate a score background distribution from shuffled metaprograms for each library, and
-  combine the scores from all libraries for each metaprogram set.
+  combine the cell scores from all libraries for each metaprogram set.
 keywords:
   - single-cell
   - NMF
@@ -42,7 +42,7 @@ output:
   - metaprogram_scores:
       type: file
       description: |
-        Channel containing the metaprogram scores for every library combined into a single table
+        Channel containing the cell scores for every library combined into a single table
         for each metaprogram set.
         Structure: [ val(meta), path(combined_scores_file) ]
       pattern: "k-*_combined_metaprogram_scores.tsv.gz"
@@ -56,7 +56,7 @@ output:
   - library_metaprogram_scores:
       type: file
       description: |
-        Channel containing the metaprogram scores for a single library against a single
+        Channel containing the cell scores for a single library against a single
         metaprogram set, before they are combined.
         `meta` contains `unique_id`, `group_id`, `n_metaprograms`, and `metaprograms_publish_dir` keys.
         Structure: [ val(meta), path(scores_file) ]

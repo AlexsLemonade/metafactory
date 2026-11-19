@@ -2,8 +2,8 @@
 
 # This script combines a list of TSV files holding scores for individual libraries into a single
 # table.
-# All input files must have the same columns, so one task is run per score type: either the per
-# cell metaprogram scores from the score metaprograms module or the per shuffled metaprogram
+# All input files must have the same columns, so one task is run per score type: either the cell
+# scores from the score metaprograms module or the per shuffled metaprogram
 # score background stats from the score background module.
 # Output is a single gzipped TSV with all rows from all input files, written to the publish
 # directory for the metaprogram set the scores were calculated against.

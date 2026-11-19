@@ -8,7 +8,8 @@ metafactory identifies metaprograms, clusters of NMF programs that recur across 
 
 **Library**:
 The unit of analysis: one filtered and normalized single-cell or single-nuclei dataset, provided as one `.h5ad` file and one samplesheet row.
-Identified by its `unique_id`, the unique combination of its sample ID and library ID.
+Identified by its `unique_id`, a free-form identifier that must be unique to the library.
+This is often a combination of sample ID and a library ID, but does not need to be.
 _Avoid_: Sample
 
 **Sample**:
@@ -25,7 +26,7 @@ _Avoid_: Cohort
 **NMF program**:
 One set of gene weights found by running non-negative matrix factorization (NMF) on a single library.
 **Spectrum** (plural **spectra**) is an accepted synonym, taken from the cNMF package's own terminology.
-_Avoid_: Program, gene expression program (without the "NMF" qualifier)
+_Avoid_: Program (without the "NMF" qualifier)
 
 **Orphan NMF program**:
 An NMF program whose highest correlation with any NMF program from a different library in the same group falls below the orphan cutoff.
@@ -54,16 +55,21 @@ _Avoid_: k (on its own), components
 
 **Number of metaprograms**:
 How many metaprograms the NMF programs of a group are clustered into; the pipeline builds metaprograms at several values.
-_Avoid_: k (on its own)
+`n_metaprograms`, the parameter and column name that holds this value, is an accepted synonym.
+The values tested for a group are its range of k values, and the one selected is the optimal k, so text that refers to numbers of metaprograms should make clear they are the k values the optimal k is chosen from.
+It may be followed by `k` in parentheses, as in "number of metaprograms (`k`)"; this is one of the few places `k` can appear on its own.
+_Avoid_: k (on its own, without saying it is the number of metaprograms)
 
 **Metaprogram set**:
 All the metaprograms built for one group at one number of metaprograms.
+**Set of metaprograms** is an accepted synonym.
 
 **Excluded metaprogram set**:
 A metaprogram set in which clustering produced at least one cluster of NMF programs from fewer than two libraries; it is not considered when choosing the optimal k.
 
 **Optimal k**:
-The number of metaprograms the pipeline selects for a group from the values it tested, among the metaprogram sets that are not excluded.
+The number of metaprograms the pipeline selects for a group from the range of k values (numbers of metaprograms) it tested, among the metaprogram sets that are not excluded.
+**Optimal value of k** is an accepted synonym.
 
 ### Scores
 
@@ -75,12 +81,14 @@ A metaprogram whose gene labels have been randomly permuted.
 
 **Score background**:
 The cell scores for shuffled metaprograms, pooled across all libraries in a group; the null distribution that cell scores are compared against.
+**Score background distribution** is an accepted synonym.
 _Avoid_: Background (on its own)
 
 ### Metrics
 
 **Metric background**:
 A null distribution for a metaprogram metric, built by randomly reassigning NMF programs or gene sets to metaprograms.
+**Metric background distribution** is an accepted synonym.
 _Avoid_: Background (on its own)
 
 **Maximum metaprogram correlation**:

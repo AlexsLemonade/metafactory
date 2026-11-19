@@ -1,7 +1,7 @@
 name: calculate_metrics_metaprograms
 description: |
   Calculate metrics describing each metaprogram in a single metaprogram set. Covers how distinct
-  each metaprogram is from the others (max correlation), how coherent the spectra assigned to it
+  each metaprogram is from the others (maximum metaprogram correlation), how coherent the spectra assigned to it
   are (the difference in medians between within-metaprogram and between-metaprogram spectra
   correlation), and how evenly the libraries contributing to it are represented (Shannon entropy and
   effective library count). A permutation test, which shuffles the metaprogram assignment of each
@@ -29,7 +29,7 @@ tools:
   - matrixStats:
       description: |
         High-performing functions operating on rows and columns of matrices. Used here to take the
-        maximum correlation of each metaprogram to all other metaprograms.
+        maximum correlation of each metaprogram to another metaprogram.
       homepage: https://github.com/HenrikBengtsson/matrixStats
       documentation: https://cran.r-project.org/web/packages/matrixStats/matrixStats.pdf
       license: ["Artistic-2.0"]
