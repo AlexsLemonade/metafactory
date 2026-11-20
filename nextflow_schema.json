@@ -200,7 +200,7 @@
                     "pattern": "^([Tt]rue|[Ff]alse)$",
                     "default": false,
                     "description": "Re-generate metaprograms for every group and value of k, even if a checkpoint created with the same options already exists.",
-                    "help_text": "Metaprograms are always re-generated for a group if cNMF was run for any library in that group.",
+                    "help_text": "Metaprograms are always re-generated for a group if cNMF has been run again for any library in that group since they were built.",
                     "fa_icon": "fas fa-redo"
                 }
             }

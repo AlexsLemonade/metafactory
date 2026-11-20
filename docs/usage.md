@@ -121,7 +121,7 @@ By default, cNMF is skipped for any library that already has results in `checkpo
 These control how the spectra from all libraries in a group are clustered into metaprograms.
 
 By default, generating metaprograms is skipped for any metaprogram set that already has results in `checkpoints/metaprograms` created with the same options and libraries, and those existing results are used instead.
-Metaprograms are always re-generated for a group if cNMF was run for any library in that group.
+Metaprograms are always re-generated for a group if cNMF has been run again for any library in that group since they were built.
 
 | Parameter                       | Default       | Description                                                                                                                                                                                            |
 | ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

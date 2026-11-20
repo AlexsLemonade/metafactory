@@ -39,6 +39,14 @@ input:
         type: directory
         description: List of per-library cNMF output directories (one per unique_id in the group) containing gene spectra score files.
         pattern: "*/"
+    - cnmf_run_ids:
+        type: list
+        description: |
+          List of the `cnmf_run_id` values from the `cnmf-meta.json` file in each cNMF output
+          directory, in the same order as `unique_ids`. Not used to build metaprograms, only
+          recorded in the meta JSON, so that metaprograms built from an earlier cNMF run are not
+          reused. Missing for cNMF results created before run IDs were recorded, in which case the
+          value is null.
   - - options:
         type: map
         description: |
@@ -117,7 +125,7 @@ output:
           type: file
           description: |
             JSON file, written alongside the RDS file, recording `n_metaprograms`, `unique_ids`,
-            and every key of the `options` input. The workflow compares this to the current run
+            `cnmf_run_ids`, and every key of the `options` input. The workflow compares this to the current run
             to decide whether an existing metaprogram set can be reused instead of running this
             module. Written last, so it only exists if every other output was written.
           pattern: "k-*_metaprograms-meta.json"

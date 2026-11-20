@@ -296,10 +296,6 @@
                 "results/SCPCP000001/reports/all-k_summary_metrics.tsv"
             ],
             [
-                "checkpoints/metaprograms/SCPCP000001/k-4_filtered_0.3/k-4_metaprograms-meta.json:md5,8000576aa376ce265e2da8dbb5653046",
-                "checkpoints/metaprograms/SCPCP000001/k-5_filtered_0.3/k-5_metaprograms-meta.json:md5,5fd99a65c1c97e95208973721c03b76a",
-                "checkpoints/metaprograms/SCPCP000001/k-6_filtered_0.3/k-6_metaprograms-meta.json:md5,b3e04b08841243f8f962a18ba84acffa",
-                "checkpoints/metaprograms/SCPCP000001/k-7_filtered_0.3/k-7_metaprograms-meta.json:md5,0f71cb67dc98eed090dc9b996ddb4912",
                 "checkpoints/metrics/SCPCP000001/k-4_filtered_0.3/k-4_geneset_metrics.tsv:md5,febea77eea0a79398fe9c6f8848c1472",
                 "checkpoints/metrics/SCPCP000001/k-4_filtered_0.3/k-4_ora_results.tsv:md5,dc5fe327f0ee8437f95ba2713862a725",
                 "checkpoints/metrics/SCPCP000001/k-5_filtered_0.3/k-5_geneset_metrics.tsv:md5,7d27bff5b4d0c1d0145b643706586e09",
@@ -322,7 +318,7 @@
                 "results/SCPCP000001/reports/all-k_summary_metrics.tsv:rows=4,columns=n_metaprograms,is_excluded,is_optimal_k,num_metaprograms,neff_sig_number,neff_sig_proportion,num_passing_correlation,proportion_passing_correlation,num_passing_coherence,median_coherence,num_metaprograms_with_genesets,proportion_metaprograms_with_genesets,overall_geneset_specificity,num_significant_cv,proportion_significant_cv,total_libraries,is_coherence_elbow,coherence_elbow_passing,geneset_specificity_pvalue,geneset_specificity_adj_pvalue,geneset_specificity_significant,rank_effective_library_count,rank_correlation,rank_coherence,rank_gene_set_specificity,rank_coefficient_of_variation,mean_rank"
             ]
         ],
-        "timestamp": "2026-11-20T14:28:36.614509",
+        "timestamp": "2026-11-20T15:45:12.131576",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.10.3"
