@@ -84,9 +84,7 @@ workflow METAFACTORY {
     // or "false" rather than a boolean and is converted here
     def repeat_cnmf = params.repeat_cnmf.toString().toBoolean()
     def ch_cnmf_input = ch_samplesheet.branch { meta, _h5ad_file ->
-        def cnmf_meta_file = file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json")
-        def cnmf_meta = !repeat_cnmf && cnmf_meta_file.exists() ? new groovy.json.JsonSlurper().parseText(cnmf_meta_file.text) : [:]
-        skip_cnmf: !repeat_cnmf && cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
+        skip_cnmf: !repeat_cnmf && checkpointMatches(file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json"), cnmf_options)
         run_cnmf: true
     }
 
@@ -167,32 +165,32 @@ workflow METAFACTORY {
     // --repeat_metaprograms runs this step for every metaprogram set
     // values are compared as strings, as for cNMF above
     def repeat_metaprograms = params.repeat_metaprograms.toString().toBoolean()
-    def ch_metaprograms_branch = ch_metaprogram_input.branch { meta, _cnmf_output_dirs, cnmf_ran ->
-        def checkpoint_prefix = "${outdir}/checkpoints/metaprograms/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}"
-        def checkpoint_files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz', 'metaprograms-meta.json']
-            .collect { suffix -> file("${checkpoint_prefix}_${suffix}") }
-        def check_checkpoint = !repeat_metaprograms && !cnmf_ran && checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() }
-        def mp_meta = check_checkpoint ? new groovy.json.JsonSlurper().parseText(checkpoint_files[-1].text) : [:]
-        def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids] + metaprogram_options
-        skip_metaprograms: check_checkpoint && expected_meta.every { key, value -> mp_meta.containsKey(key) && mp_meta[key].toString() == value.toString() }
-        run_metaprograms: true
-    }
+    // the checkpoint files are listed in the same order as the results output of the
+    // GENERATE_METAPROGRAMS process, so skipped sets can be passed on in their place
+    def ch_metaprograms_branch = ch_metaprogram_input
+        .map { meta, cnmf_output_dirs, cnmf_ran ->
+            def checkpoint_prefix = "${outdir}/checkpoints/metaprograms/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}"
+            def checkpoint_files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz']
+                .collect { suffix -> file("${checkpoint_prefix}_${suffix}") }
+            def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids] + metaprogram_options
+            def use_checkpoint = !repeat_metaprograms &&
+                !cnmf_ran &&
+                checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() } &&
+                checkpointMatches(file("${checkpoint_prefix}_metaprograms-meta.json"), expected_meta)
+            [meta, cnmf_output_dirs, checkpoint_files, use_checkpoint]
+        }
+        .branch { _meta, _cnmf_output_dirs, _checkpoint_files, use_checkpoint ->
+            skip_metaprograms: use_checkpoint
+            run_metaprograms: true
+        }
 
     GENERATE_METAPROGRAMS(
-        ch_metaprograms_branch.run_metaprograms.map { meta, cnmf_output_dirs, _cnmf_ran -> [meta, cnmf_output_dirs] },
+        ch_metaprograms_branch.run_metaprograms.map { meta, cnmf_output_dirs, _checkpoint_files, _use_checkpoint -> [meta, cnmf_output_dirs] },
         metaprogram_options,
     )
 
-    // skipped metaprogram sets use the existing checkpoint files, matching the results output of
-    // the GENERATE_METAPROGRAMS process
-    def ch_metaprograms_skipped = ch_metaprograms_branch.skip_metaprograms.map { meta, _cnmf_output_dirs, _cnmf_ran ->
-        def checkpoint_prefix = "${outdir}/checkpoints/metaprograms/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}"
-        [
-            meta,
-            file("${checkpoint_prefix}_metaprograms.rds"),
-            file("${checkpoint_prefix}_metaprograms.tsv.gz"),
-            file("${checkpoint_prefix}_shuffled_metaprograms.tsv.gz"),
-        ]
+    def ch_metaprograms_skipped = ch_metaprograms_branch.skip_metaprograms.map { meta, _cnmf_output_dirs, checkpoint_files, _use_checkpoint ->
+        [meta] + checkpoint_files
     }
 
     def ch_metaprograms_results = GENERATE_METAPROGRAMS.out.results.mix(ch_metaprograms_skipped)
@@ -388,4 +386,21 @@ workflow METAFACTORY {
     emit:
     optimal_k = ch_optimal_k
     versions  = ch_collated_versions
+}
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FUNCTIONS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+// returns true if the JSON file recording the options a checkpoint was created with exists and
+// contains every expected key with a matching value
+// values are compared as strings so that numbers read from JSON match numbers set in params
+def checkpointMatches(meta_file, expected) {
+    if (!meta_file.exists()) {
+        return false
+    }
+    def recorded = new groovy.json.JsonSlurper().parseText(meta_file.text)
+    return expected.every { key, value -> recorded.containsKey(key) && recorded[key].toString() == value.toString() }
 }
