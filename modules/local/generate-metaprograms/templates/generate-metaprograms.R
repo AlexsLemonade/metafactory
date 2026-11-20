@@ -112,8 +112,10 @@ build_spectra_cor_df <- function(cor_matrix){
       # add the library each spectrum came from to distinguish between/within library comparisons
       # spectra are named `{unique_id}_k{k_value}_CNMF{nmf_number}`, and `unique_id` itself may
       # contain underscores, so the library is found by removing the known suffix
-      library1 = stringr::str_remove(spectra1, "_k[0-9]+_CNMF[0-9]+$"),
-      library2 = stringr::str_remove(spectra2, "_k[0-9]+_CNMF[0-9]+$"),
+      # the dollar sign end anchor is escaped with a backslash because nextflow renders this file
+      # as a template and would otherwise read it as the start of a variable
+      library1 = stringr::str_remove(spectra1, "_k[0-9]+_CNMF[0-9]+\$"),
+      library2 = stringr::str_remove(spectra2, "_k[0-9]+_CNMF[0-9]+\$"),
       pair_type = dplyr::if_else(library1 == library2, "within_library", "between_library")
     )
 
