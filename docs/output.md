@@ -230,6 +230,7 @@ Below, this subdirectory is referred to as `<group_id>/<metaprogram_set>/`.
   - `k-<n>_metaprograms.rds`: The [metaprograms object](#metaprograms-object).
   - `k-<n>_metaprograms.tsv.gz`: The gene weights for each metaprogram in long format (columns: `metaprogram`, `gene_id`, `weight`).
   - `k-<n>_shuffled_metaprograms.tsv.gz`: The gene weights for the top genes of each shuffled metaprogram for each permutation replicate (columns: `replicate`, `metaprogram`, `gene_id`, `weight`).
+  - `k-<n>_metaprograms-meta.json`: The options and libraries (`unique_ids`) used to build this metaprogram set.
 - `checkpoints/metrics/<group_id>/<metaprogram_set>/`
   - `k-<n>_mp_metrics.tsv`: [Metaprogram metrics](#metaprogram-metrics).
   - `k-<n>_background_mp_stats.tsv.gz`: Metric background of the metaprogram library diversity stats, with one row per metaprogram per permutation replicate.
@@ -263,7 +264,7 @@ Generating metaprograms is skipped for a group and value of `k` and the existing
 - All of the options in `k-<k>_metaprograms-meta.json`, including the libraries in the group, match the current run.
 - cNMF was skipped for every library in the group.
 
-Use `--repeat_metaprograms` to generate every set of metaprograms, even if existing results were created with the same options.
+Use `--repeat_metaprograms` to generate every set of metaprograms, even if existing results were created with the same options and libraries.
 
 ## Pipeline information
 
