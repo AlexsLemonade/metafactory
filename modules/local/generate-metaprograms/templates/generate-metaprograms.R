@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # This script is used to generate metaprograms using cNMF results across all libraries in a group
-# Outputs three files:
+# Outputs four files:
 
 # 1. An RDS file with a list of the items described below
 # 2. A gzipped long format TSV with one row per gene per metaprogram
@@ -12,6 +12,9 @@
 # `shuffled_metaprograms` in the RDS file, but in a format that can be read by python modules.
 # Only the top genes of each shuffled metaprogram are included, so the union of its gene ids is
 # a subset of the gene universe and not the gene universe itself.
+# 4. A JSON file recording the options used to build the metaprograms. The workflow compares this
+# to the current run to decide whether metaprograms can be reused. It is written last, so it
+# only exists if every other output was written successfully.
 
 # Items in the RDS file:
 
@@ -45,6 +48,7 @@ n_top_genes             <- as.integer(${options.n_top_genes})
 output_file             <- "${output_file}"
 mp_export_file          <- "${mp_export_file}"
 shuffled_mp_export_file <- "${shuffled_mp_export_file}"
+metaprograms_meta_file  <- "${metaprograms_meta_file}"
 process_name            <- "${task.process}"
 cnmf_k_lower            <- as.integer(${options.cnmf_k_lower})
 cnmf_k_upper            <- as.integer(${options.cnmf_k_upper})
@@ -380,6 +384,13 @@ shuffled_mp_export_df <- shuffled_mps |>
   purrr::list_rbind()
 
 readr::write_tsv(shuffled_mp_export_df, shuffled_mp_export_file)
+
+# record the options used to build these metaprograms
+# the JSON is built by the Nextflow process, so it is written as is using a raw string
+writeLines(
+  r"---(${metaprograms_meta_json})---",
+  metaprograms_meta_file
+)
 
 # Versions ----------------------------------------------------------------------
 

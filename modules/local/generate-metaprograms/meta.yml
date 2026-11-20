@@ -63,6 +63,10 @@ input:
             metaprograms.
           - `cnmf_k_step_size` (integer): Step size for the range of cNMF k (rank) values tested.
             Used to restrict which cNMF k values are considered when generating metaprograms.
+          - `celltype_annotation_column` (string): Cell type annotation column used to subset cells
+            before running cNMF. Not used to build metaprograms, only recorded in the meta JSON.
+          - `analysis_celltypes` (string): Cell types kept before running cNMF. Not used to build
+            metaprograms, only recorded in the meta JSON.
           - `seed` (integer): Random seed used when clustering and shuffling metaprograms, for
             reproducibility.
           - `nreps` (integer): Number of permutation replicates, and so the number of gene shuffled
@@ -105,6 +109,18 @@ output:
             union of the gene IDs is a subset of the gene universe and not the gene universe
             itself.
           pattern: "k-*_shuffled_metaprograms.tsv.gz"
+  - metaprograms_meta:
+      - meta:
+          type: map
+          description: Groovy Map of metaprogram set information, passed through unchanged from the input channel.
+      - "k-*_metaprograms-meta.json":
+          type: file
+          description: |
+            JSON file, written alongside the RDS file, recording `n_metaprograms`, `unique_ids`,
+            and every key of the `options` input. The workflow compares this to the current run
+            to decide whether an existing metaprogram set can be reused instead of running this
+            module. Written last, so it only exists if every other output was written.
+          pattern: "k-*_metaprograms-meta.json"
   - versions:
       - "versions.yml":
           type: file
