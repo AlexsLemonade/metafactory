@@ -100,4 +100,122 @@ nextflow_pipeline {
             assert !workflow.trace.succeeded()*.name.any { name -> name.contains('RENDER_INDIVIDUAL_REPORT') }
         }
     }
+
+    // the tests below check when existing cNMF and metaprogram checkpoints are reused. each writes
+    // checkpoints into its output directory before the pipeline starts, as an earlier run with the
+    // same --outdir would have, and checks which CNMF and GENERATE_METAPROGRAMS tasks ran. the
+    // helpers, and the options the checkpoints are written with, are in
+    // tests/lib/CheckpointTestUtils.groovy. existing cNMF checkpoints record the cnmf_run_id
+    // `previous-run` and the CNMF stub writes `stub`, so any library whose cNMF runs gets a new run id
+
+    test("-profile test -stub reuses matching checkpoints and rebuilds the rest") {
+
+        when {
+            def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
+
+            params {
+                outdir = "$outputDir"
+                input  = stub_samplesheet.toString()
+            }
+
+            CheckpointTestUtils.writeAllCheckpoints(outputDir)
+            // GROUP01: cNMF matches for both libraries. k-4 matches, k-5 was built from an earlier
+            // cNMF run (e.g. a --repeat_cnmf run that stopped before rebuilding it), k-6 is missing a
+            // results file, and k-7 was built with different options
+            CheckpointTestUtils.writeMetaprogramCheckpoint(outputDir, 'GROUP01', 5, [cnmf_run_ids: ['older-run', 'older-run']])
+            CheckpointTestUtils.writeMetaprogramCheckpoint(outputDir, 'GROUP01', 6, [:], ['shuffled_metaprograms.tsv.gz'])
+            CheckpointTestUtils.writeMetaprogramCheckpoint(outputDir, 'GROUP01', 7, [nreps: 1000])
+            // GROUP02: STUB03 was run with a different seed, so its cNMF runs again with a new run id
+            CheckpointTestUtils.writeCnmfCheckpoint(outputDir, 'STUB03', [seed: 1])
+        }
+
+        then {
+            assert workflow.success
+            assertAll(
+                { assert CheckpointTestUtils.tasksRun(workflow, 'CNMF') == ['STUB03'] },
+                // every GROUP02 set is rebuilt because STUB03 has a new cNMF run id
+                { assert CheckpointTestUtils.tasksRun(workflow, 'GENERATE_METAPROGRAMS') == ['GROUP01-k5', 'GROUP01-k6', 'GROUP01-k7'] + CheckpointTestUtils.allMetaprogramTasks('GROUP02') },
+                // the reused checkpoints are passed on to the rest of the pipeline
+                { assert CheckpointTestUtils.tasksRun(workflow, 'CALCULATE_K') == ['GROUP01', 'GROUP02'] },
+            )
+        }
+    }
+
+    test("-profile test -stub reuses metaprograms built from cNMF results without a run id until cNMF runs again") {
+
+        when {
+            def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
+
+            params {
+                outdir = "$outputDir"
+                input  = stub_samplesheet.toString()
+            }
+
+            // checkpoints from before run ids were recorded: no cNMF checkpoint has a cnmf_run_id
+            CheckpointTestUtils.GROUPS.values().flatten().each { unique_id ->
+                CheckpointTestUtils.writeCnmfCheckpoint(outputDir, unique_id, [cnmf_run_id: null])
+            }
+            // GROUP01 metaprograms were rebuilt after run ids were added, so they record null run ids
+            // GROUP02 metaprograms were built before, so they have no cnmf_run_ids at all
+            CheckpointTestUtils.N_METAPROGRAMS.each { n_metaprograms ->
+                CheckpointTestUtils.writeMetaprogramCheckpoint(outputDir, 'GROUP01', n_metaprograms, [cnmf_run_ids: [null, null]])
+                CheckpointTestUtils.writeMetaprogramCheckpoint(outputDir, 'GROUP02', n_metaprograms, [cnmf_run_ids: null])
+            }
+        }
+
+        then {
+            assert workflow.success
+            assertAll(
+                // a missing cnmf_run_id is not compared when deciding whether to run cNMF
+                { assert CheckpointTestUtils.tasksRun(workflow, 'CNMF') == [] },
+                { assert CheckpointTestUtils.tasksRun(workflow, 'GENERATE_METAPROGRAMS') == CheckpointTestUtils.allMetaprogramTasks('GROUP02') },
+            )
+        }
+    }
+
+    test("-profile test -stub --repeat_cnmf runs cNMF and rebuilds metaprograms for every library") {
+
+        when {
+            def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
+
+            params {
+                outdir      = "$outputDir"
+                input       = stub_samplesheet.toString()
+                repeat_cnmf = true
+            }
+
+            CheckpointTestUtils.writeAllCheckpoints(outputDir)
+        }
+
+        then {
+            assert workflow.success
+            assertAll(
+                { assert CheckpointTestUtils.tasksRun(workflow, 'CNMF') == ['STUB01', 'STUB02', 'STUB03', 'STUB04'] },
+                { assert CheckpointTestUtils.tasksRun(workflow, 'GENERATE_METAPROGRAMS') == CheckpointTestUtils.allMetaprogramTasks('GROUP01') + CheckpointTestUtils.allMetaprogramTasks('GROUP02') },
+            )
+        }
+    }
+
+    test("-profile test -stub --repeat_metaprograms rebuilds every metaprogram set without running cNMF") {
+
+        when {
+            def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
+
+            params {
+                outdir              = "$outputDir"
+                input               = stub_samplesheet.toString()
+                repeat_metaprograms = true
+            }
+
+            CheckpointTestUtils.writeAllCheckpoints(outputDir)
+        }
+
+        then {
+            assert workflow.success
+            assertAll(
+                { assert CheckpointTestUtils.tasksRun(workflow, 'CNMF') == [] },
+                { assert CheckpointTestUtils.tasksRun(workflow, 'GENERATE_METAPROGRAMS') == CheckpointTestUtils.allMetaprogramTasks('GROUP01') + CheckpointTestUtils.allMetaprogramTasks('GROUP02') },
+            )
+        }
+    }
 }

@@ -120,12 +120,16 @@ By default, cNMF is skipped for any library that already has results in `checkpo
 
 These control how the spectra from all libraries in a group are clustered into metaprograms.
 
+By default, generating metaprograms is skipped for any metaprogram set that already has results in `checkpoints/metaprograms` created with the same options and libraries, and those existing results are used instead.
+Metaprograms are always re-generated for a group if cNMF has been run again for any library in that group since they were built.
+
 | Parameter                       | Default       | Description                                                                                                                                                                                            |
 | ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `--n_metaprograms`              | `'8,9,10,11'` | Comma-separated k values (numbers of metaprograms) to build and compare; the optimal k is chosen from these. At least four values are required.                                                        |
 | `--n_top_genes`                 | `200`         | Number of top genes per metaprogram used for scoring and ORA.                                                                                                                                          |
 | `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra prior to clustering.                                                                                                                                                  |
 | `--metaprograms_orphan_cutoff`  | `0.3`         | Orphan cutoff used when filtering is enabled. A spectrum is an orphan, and is removed, if its highest correlation with any spectrum from a different library in the same group falls below this value. |
+| `--repeat_metaprograms`         | `false`       | Re-generate every set of metaprograms, even if existing results were created with the same options and libraries.                                                                                      |
 
 ## Core Nextflow arguments
 

@@ -84,9 +84,7 @@ workflow METAFACTORY {
     // or "false" rather than a boolean and is converted here
     def repeat_cnmf = params.repeat_cnmf.toString().toBoolean()
     def ch_cnmf_input = ch_samplesheet.branch { meta, _h5ad_file ->
-        def cnmf_meta_file = file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json")
-        def cnmf_meta = !repeat_cnmf && cnmf_meta_file.exists() ? new groovy.json.JsonSlurper().parseText(cnmf_meta_file.text) : [:]
-        skip_cnmf: !repeat_cnmf && cnmf_options.every { key, value -> cnmf_meta.containsKey(key) && cnmf_meta[key].toString() == value.toString() }
+        skip_cnmf: !repeat_cnmf && checkpointMatches(file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json"), cnmf_options)
         run_cnmf: true
     }
 
@@ -100,7 +98,11 @@ workflow METAFACTORY {
         [meta, file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf")]
     }
 
-    def ch_cnmf_results = CNMF.out.results.mix(ch_cnmf_skipped)
+    // each result is tagged with the cnmf_run_id from its cnmf-meta.json, which is new every time
+    // cNMF runs, so that metaprograms built from an earlier cNMF run for any library are not reused
+    def ch_cnmf_results = CNMF.out.results
+        .mix(ch_cnmf_skipped)
+        .map { meta, cnmf_output -> [meta, cnmf_output, readCheckpointMeta(cnmf_output.resolve('cnmf-meta.json')).cnmf_run_id] }
 
     //
     // MODULE: Generate metaprograms for each group of libraries across all values of n_metaprograms
@@ -108,16 +110,16 @@ workflow METAFACTORY {
 
     // group cNMF results from all unique_ids that share the same group_id
     def ch_cnmf_by_group = ch_cnmf_results
-        .map { meta, cnmf_output ->
-            [meta.group_id, meta.unique_id, cnmf_output]
+        .map { meta, cnmf_output, cnmf_run_id ->
+            [meta.group_id, meta.unique_id, cnmf_output, cnmf_run_id]
         }
         .groupTuple(by: 0)
         // groupTuple collects results in the order the cNMF tasks finish, which changes between runs
         // the input order sets the spectra order, and with it the metaprogram assignment and the
         // permutations, so results are sorted by unique_id to give the same metaprograms every run
-        .map { group_id, unique_ids, cnmf_output_dirs ->
-            def sorted_results = [unique_ids, cnmf_output_dirs].transpose().sort { result -> result[0] }
-            [group_id, sorted_results.collect { result -> result[0] }, sorted_results.collect { result -> result[1] }]
+        .map { group_id, unique_ids, cnmf_output_dirs, cnmf_run_ids ->
+            def sorted_results = [unique_ids, cnmf_output_dirs, cnmf_run_ids].transpose().sort { result -> result[0] }
+            [group_id] + sorted_results.transpose()
         }
 
     // labels used to identify the spectra filtering settings the metaprograms were built with
@@ -129,29 +131,69 @@ workflow METAFACTORY {
     // written to, and is passed through meta so that every module writes to the same place
     def ch_metaprogram_input = ch_cnmf_by_group
         .combine(channel.fromList(n_metaprograms_list))
-        .map { group_id, unique_ids, cnmf_output_dirs, n_metaprograms ->
+        .map { group_id, unique_ids, cnmf_output_dirs, cnmf_run_ids, n_metaprograms ->
             def meta = [
                 group_id: group_id,
                 n_metaprograms: n_metaprograms,
                 unique_ids: unique_ids,
                 metaprograms_publish_dir: "${group_id}/k-${n_metaprograms}_${filter_label}${orphan_label}".toString(),
             ]
-            [meta, cnmf_output_dirs]
+            [meta, cnmf_output_dirs, cnmf_run_ids]
+        }
+
+    // these options are passed to the generate metaprograms module and recorded, along with
+    // n_metaprograms, unique_ids and cnmf_run_ids, in the metaprograms-meta.json file of each checkpoint
+    // the cell type options are not used to build metaprograms, but are recorded so that
+    // metaprograms built from cNMF results for a different set of cells are not reused
+    def metaprogram_options = [
+        n_top_genes: params.n_top_genes,
+        filter_spectra: params.metaprograms_filter_spectra,
+        orphan_cutoff: params.metaprograms_orphan_cutoff,
+        cnmf_k_lower: params.cnmf_k_lower,
+        cnmf_k_upper: params.cnmf_k_upper,
+        cnmf_k_step_size: params.cnmf_k_step_size,
+        celltype_annotation_column: params.celltype_annotation_column,
+        analysis_celltypes: params.analysis_celltypes,
+        seed: params.seed,
+        nreps: params.nreps,
+    ]
+
+    // generating metaprograms is skipped for any metaprogram set that already has a complete
+    // checkpoint created with the same options and libraries, from the same cNMF run for every
+    // library in the group
+    // cNMF results created before run IDs were recorded have no cnmf_run_id, which is recorded as
+    // null, so metaprograms built from them are reused only until cNMF runs again
+    // --repeat_metaprograms runs this step for every metaprogram set
+    // values are compared as strings, as for cNMF above
+    def repeat_metaprograms = params.repeat_metaprograms.toString().toBoolean()
+    // the checkpoint files are listed in the same order as the results output of the
+    // GENERATE_METAPROGRAMS process, so skipped sets can be passed on in their place
+    def ch_metaprograms_branch = ch_metaprogram_input
+        .map { meta, cnmf_output_dirs, cnmf_run_ids ->
+            def checkpoint_prefix = "${outdir}/checkpoints/metaprograms/${meta.metaprograms_publish_dir}/k-${meta.n_metaprograms}"
+            def checkpoint_files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz']
+                .collect { suffix -> file("${checkpoint_prefix}_${suffix}") }
+            def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids, cnmf_run_ids: cnmf_run_ids] + metaprogram_options
+            def use_checkpoint = !repeat_metaprograms &&
+                checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() } &&
+                checkpointMatches(file("${checkpoint_prefix}_metaprograms-meta.json"), expected_meta)
+            [meta, cnmf_output_dirs, cnmf_run_ids, checkpoint_files, use_checkpoint]
+        }
+        .branch { _meta, _cnmf_output_dirs, _cnmf_run_ids, _checkpoint_files, use_checkpoint ->
+            skip_metaprograms: use_checkpoint
+            run_metaprograms: true
         }
 
     GENERATE_METAPROGRAMS(
-        ch_metaprogram_input,
-        [
-            n_top_genes: params.n_top_genes,
-            filter_spectra: params.metaprograms_filter_spectra,
-            orphan_cutoff: params.metaprograms_orphan_cutoff,
-            cnmf_k_lower: params.cnmf_k_lower,
-            cnmf_k_upper: params.cnmf_k_upper,
-            cnmf_k_step_size: params.cnmf_k_step_size,
-            seed: params.seed,
-            nreps: params.nreps,
-        ],
+        ch_metaprograms_branch.run_metaprograms.map { meta, cnmf_output_dirs, cnmf_run_ids, _checkpoint_files, _use_checkpoint -> [meta, cnmf_output_dirs, cnmf_run_ids] },
+        metaprogram_options,
     )
+
+    def ch_metaprograms_skipped = ch_metaprograms_branch.skip_metaprograms.map { meta, _cnmf_output_dirs, _cnmf_run_ids, checkpoint_files, _use_checkpoint ->
+        [meta] + checkpoint_files
+    }
+
+    def ch_metaprograms_results = GENERATE_METAPROGRAMS.out.results.mix(ch_metaprograms_skipped)
 
     //
     // SUBWORKFLOW: Calculate metaprogram and gene set metrics for each set of metaprograms
@@ -159,7 +201,7 @@ workflow METAFACTORY {
 
     // only the RDS object is needed to calculate metrics, so the python readable exports are
     // dropped here and left in the generate metaprograms channel for their other consumers
-    def ch_metaprograms_rds = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
+    def ch_metaprograms_rds = ch_metaprograms_results.map { meta, metaprograms_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
         [meta, metaprograms_file]
     }
 
@@ -185,7 +227,7 @@ workflow METAFACTORY {
     //
     CALCULATE_SCORES(
         ch_samplesheet,
-        GENERATE_METAPROGRAMS.out.results,
+        ch_metaprograms_results,
         channel.value(
             [
                 celltype_annotation_column: params.celltype_annotation_column,
@@ -257,7 +299,7 @@ workflow METAFACTORY {
     // pull out files from each of the calculation steps for later joining, reporting and publishing
     // all are keyed on a [group_id, n_metaprograms] tuple, so that joining them against the
     // optimal value of k keeps only the metaprogram set chosen for each group and drops the rest
-    def metaprograms_rds_ch = GENERATE_METAPROGRAMS.out.results.map { meta, metaprograms_rds_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
+    def metaprograms_rds_ch = ch_metaprograms_results.map { meta, metaprograms_rds_file, _metaprograms_export_file, _shuffled_metaprograms_file ->
         [[meta.group_id, meta.n_metaprograms], metaprograms_rds_file]
     }
 
@@ -344,4 +386,24 @@ workflow METAFACTORY {
     emit:
     optimal_k = ch_optimal_k
     versions  = ch_collated_versions
+}
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FUNCTIONS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+
+// returns the contents of the JSON file recording the options a checkpoint was created with,
+// or an empty map if the file does not exist
+def readCheckpointMeta(meta_file) {
+    return meta_file.exists() ? new groovy.json.JsonSlurper().parseText(meta_file.text) : [:]
+}
+
+// returns true if the JSON file recording the options a checkpoint was created with exists and
+// contains every expected key with a matching value
+// values are compared as strings so that numbers read from JSON match numbers set in params
+def checkpointMatches(meta_file, expected) {
+    def recorded = readCheckpointMeta(meta_file)
+    return expected.every { key, value -> recorded.containsKey(key) && recorded[key].toString() == value.toString() }
 }

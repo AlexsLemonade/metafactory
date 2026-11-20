@@ -21,6 +21,7 @@ process CNMF {
     template('cnmf.py')
 
     stub:
+    // the stub writes a fixed cnmf_run_id so that the stub output is the same on every run
     """
     mkdir -p "${meta.unique_id}_cnmf"
 
@@ -36,7 +37,8 @@ process CNMF {
       "cnmf_k_step_size": ${options.cnmf_k_step_size},
       "celltype_annotation_column": "${options.celltype_annotation_column}",
       "analysis_celltypes": "${options.analysis_celltypes}",
-      "seed": ${options.seed}
+      "seed": ${options.seed},
+      "cnmf_run_id": "stub"
     }
     END_META
 
