@@ -175,7 +175,7 @@ workflow METAFACTORY {
             def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids] + metaprogram_options
             def use_checkpoint = !repeat_metaprograms &&
                 !cnmf_ran &&
-                checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() } &&
+                checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() && checkpoint_file.size() > 0 } &&
                 checkpointMatches(file("${checkpoint_prefix}_metaprograms-meta.json"), expected_meta)
             [meta, cnmf_output_dirs, checkpoint_files, use_checkpoint]
         }
