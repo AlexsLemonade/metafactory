@@ -397,7 +397,7 @@ FUNCTIONS
 // returns the contents of the JSON file recording the options a checkpoint was created with,
 // or an empty map if the file does not exist
 def readCheckpointMeta(meta_file) {
-    return meta_file.exists() ? new groovy.json.JsonSlurper().parseText(meta_file.text) : [:]
+    return meta_file.exists() ? new groovy.json.JsonSlurper().parse(meta_file) : [:]
 }
 
 // returns true if the JSON file recording the options a checkpoint was created with exists and

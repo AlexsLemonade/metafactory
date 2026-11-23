@@ -48,6 +48,7 @@ n_top_genes             <- as.integer(${options.n_top_genes})
 output_file             <- "${output_file}"
 mp_export_file          <- "${mp_export_file}"
 shuffled_mp_export_file <- "${shuffled_mp_export_file}"
+metaprograms_meta_json <- r"---(${metaprograms_meta_json})---"
 metaprograms_meta_file  <- "${metaprograms_meta_file}"
 process_name            <- "${task.process}"
 cnmf_k_lower            <- as.integer(${options.cnmf_k_lower})
@@ -390,7 +391,7 @@ readr::write_tsv(shuffled_mp_export_df, shuffled_mp_export_file)
 # record the options used to build these metaprograms
 # the JSON is built by the Nextflow process, so it is written as is using a raw string
 writeLines(
-  r"---(${metaprograms_meta_json})---",
+  metaprograms_meta_json,
   metaprograms_meta_file
 )
 
