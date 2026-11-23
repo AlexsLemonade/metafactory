@@ -195,11 +195,11 @@
                     "description": "Orphan cutoff used when --metaprograms_filter_spectra is used. An NMF program is removed as an orphan if its highest correlation with any NMF program from a different library in the same group falls below this value. Only used by the generate metaprograms module.",
                     "fa_icon": "fas fa-hashtag"
                 },
-                "repeat_metaprograms": {
+                "reuse_metaprograms": {
                     "type": ["boolean", "string"],
                     "pattern": "^([Tt]rue|[Ff]alse)$",
                     "default": false,
-                    "description": "Re-generate metaprograms for every group and value of k, even if a checkpoint created with the same options already exists.",
+                    "description": "Reuse existing metaprograms for any group and value of k with a checkpoint created with the same options, instead of re-generating them.",
                     "help_text": "Metaprograms are always re-generated for a group if cNMF has been run again for any library in that group since they were built.",
                     "fa_icon": "fas fa-redo"
                 }

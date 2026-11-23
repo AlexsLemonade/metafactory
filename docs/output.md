@@ -258,16 +258,15 @@ Use `--repeat_cnmf` to run cNMF for every library, even if existing results were
 
 ### Reusing metaprograms
 
-Existing metaprograms are also reused when the pipeline is run again with the same `--outdir`.
+By default, every set of metaprograms is re-generated each time the pipeline is run.
+Use `--reuse_metaprograms` to reuse existing metaprograms when the pipeline is run again with the same `--outdir`.
 `k-<k>_metaprograms-meta.json` records the options used to build each set of metaprograms (`n_metaprograms`, `unique_ids`, `cnmf_run_ids`, `n_top_genes`, `filter_spectra`, `orphan_cutoff`, `cnmf_k_lower`, `cnmf_k_upper`, `cnmf_k_step_size`, `celltype_annotation_column`, `analysis_celltypes`, `seed`, and `nreps`).
-Generating metaprograms is skipped for a group and value of `k` and the existing results are used if all of the following are true:
+With `--reuse_metaprograms`, generating metaprograms is skipped for a group and value of `k` and the existing results are used if all of the following are true:
 
 - The `.rds`, `.tsv.gz`, and `-meta.json` files for that set of metaprograms all exist in `checkpoints/metaprograms/<group_id>/<metaprogram_set>/`.
 - All of the options in `k-<k>_metaprograms-meta.json`, including the libraries in the group, match the current run.
 - The metaprograms were built from the current cNMF results for every library in the group, so the `cnmf_run_ids` recorded in `k-<k>_metaprograms-meta.json` match the `cnmf_run_id` in each library's `cnmf-meta.json`.
   If cNMF is run again for any library in the group, including with `--repeat_cnmf`, every metaprogram set for that group is re-generated the next time it is requested, even if an earlier run stopped before re-generating it.
-
-Use `--repeat_metaprograms` to generate every set of metaprograms, even if existing results were created with the same options and libraries.
 
 ## Pipeline information
 

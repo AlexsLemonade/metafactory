@@ -158,14 +158,14 @@ workflow METAFACTORY {
         nreps: params.nreps,
     ]
 
-    // generating metaprograms is skipped for any metaprogram set that already has a complete
-    // checkpoint created with the same options and libraries, from the same cNMF run for every
-    // library in the group
+    // metaprograms are re-generated for every metaprogram set by default
+    // with --reuse_metaprograms, generating metaprograms is skipped for any metaprogram set that
+    // already has a complete checkpoint created with the same options and libraries, from the same
+    // cNMF run for every library in the group
     // cNMF results created before run IDs were recorded have no cnmf_run_id, which is recorded as
     // null, so metaprograms built from them are reused only until cNMF runs again
-    // --repeat_metaprograms runs this step for every metaprogram set
     // values are compared as strings, as for cNMF above
-    def repeat_metaprograms = params.repeat_metaprograms.toString().toBoolean()
+    def reuse_metaprograms = params.reuse_metaprograms.toString().toBoolean()
     // the checkpoint files are listed in the same order as the results output of the
     // GENERATE_METAPROGRAMS process, so skipped sets can be passed on in their place
     def ch_metaprograms_branch = ch_metaprogram_input
@@ -174,7 +174,7 @@ workflow METAFACTORY {
             def checkpoint_files = ['metaprograms.rds', 'metaprograms.tsv.gz', 'shuffled_metaprograms.tsv.gz']
                 .collect { suffix -> file("${checkpoint_prefix}_${suffix}") }
             def expected_meta = [n_metaprograms: meta.n_metaprograms, unique_ids: meta.unique_ids, cnmf_run_ids: cnmf_run_ids] + metaprogram_options
-            def use_checkpoint = !repeat_metaprograms &&
+            def use_checkpoint = reuse_metaprograms &&
                 checkpoint_files.every { checkpoint_file -> checkpoint_file.exists() } &&
                 checkpointMatches(file("${checkpoint_prefix}_metaprograms-meta.json"), expected_meta)
             [meta, cnmf_output_dirs, cnmf_run_ids, checkpoint_files, use_checkpoint]

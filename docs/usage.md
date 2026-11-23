@@ -120,8 +120,9 @@ By default, cNMF is skipped for any library that already has results in `checkpo
 
 These control how the spectra from all libraries in a group are clustered into metaprograms.
 
-By default, generating metaprograms is skipped for any metaprogram set that already has results in `checkpoints/metaprograms` created with the same options and libraries, and those existing results are used instead.
-Metaprograms are always re-generated for a group if cNMF has been run again for any library in that group since they were built.
+By default, every set of metaprograms is re-generated each time the pipeline is run.
+With `--reuse_metaprograms`, generating metaprograms is skipped for any metaprogram set that already has results in `checkpoints/metaprograms` created with the same options and libraries, and those existing results are used instead.
+Even with `--reuse_metaprograms`, metaprograms are always re-generated for a group if cNMF has been run again for any library in that group since they were built.
 
 | Parameter                       | Default       | Description                                                                                                                                                                                            |
 | ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -129,7 +130,7 @@ Metaprograms are always re-generated for a group if cNMF has been run again for 
 | `--n_top_genes`                 | `200`         | Number of top genes per metaprogram used for scoring and ORA.                                                                                                                                          |
 | `--metaprograms_filter_spectra` | `true`        | Whether to remove orphan spectra prior to clustering.                                                                                                                                                  |
 | `--metaprograms_orphan_cutoff`  | `0.3`         | Orphan cutoff used when filtering is enabled. A spectrum is an orphan, and is removed, if its highest correlation with any spectrum from a different library in the same group falls below this value. |
-| `--repeat_metaprograms`         | `false`       | Re-generate every set of metaprograms, even if existing results were created with the same options and libraries.                                                                                      |
+| `--reuse_metaprograms`          | `false`       | Reuse existing metaprograms that were created with the same options and libraries, instead of re-generating every set of metaprograms.                                                                 |
 
 ## Core Nextflow arguments
 

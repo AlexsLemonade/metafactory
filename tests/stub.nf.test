@@ -108,14 +108,15 @@ nextflow_pipeline {
     // tests/lib/CheckpointTestUtils.groovy. existing cNMF checkpoints record the cnmf_run_id
     // `previous-run` and the CNMF stub writes `stub`, so any library whose cNMF runs gets a new run id
 
-    test("-profile test -stub reuses matching checkpoints and rebuilds the rest") {
+    test("-profile test -stub --reuse_metaprograms reuses matching checkpoints and rebuilds the rest") {
 
         when {
             def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
 
             params {
-                outdir = "$outputDir"
-                input  = stub_samplesheet.toString()
+                outdir             = "$outputDir"
+                input              = stub_samplesheet.toString()
+                reuse_metaprograms = true
             }
 
             CheckpointTestUtils.writeAllCheckpoints(outputDir)
@@ -141,14 +142,15 @@ nextflow_pipeline {
         }
     }
 
-    test("-profile test -stub reuses metaprograms built from cNMF results without a run id until cNMF runs again") {
+    test("-profile test -stub --reuse_metaprograms reuses metaprograms built from cNMF results without a run id until cNMF runs again") {
 
         when {
             def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
 
             params {
-                outdir = "$outputDir"
-                input  = stub_samplesheet.toString()
+                outdir             = "$outputDir"
+                input              = stub_samplesheet.toString()
+                reuse_metaprograms = true
             }
 
             // checkpoints from before run ids were recorded: no cNMF checkpoint has a cnmf_run_id
@@ -173,15 +175,16 @@ nextflow_pipeline {
         }
     }
 
-    test("-profile test -stub --repeat_cnmf runs cNMF and rebuilds metaprograms for every library") {
+    test("-profile test -stub --repeat_cnmf --reuse_metaprograms runs cNMF and rebuilds metaprograms for every library") {
 
         when {
             def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
 
             params {
-                outdir      = "$outputDir"
-                input       = stub_samplesheet.toString()
-                repeat_cnmf = true
+                outdir             = "$outputDir"
+                input              = stub_samplesheet.toString()
+                repeat_cnmf        = true
+                reuse_metaprograms = true
             }
 
             CheckpointTestUtils.writeAllCheckpoints(outputDir)
@@ -196,15 +199,14 @@ nextflow_pipeline {
         }
     }
 
-    test("-profile test -stub --repeat_metaprograms rebuilds every metaprogram set without running cNMF") {
+    test("-profile test -stub rebuilds every metaprogram set without running cNMF by default") {
 
         when {
             def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
 
             params {
-                outdir              = "$outputDir"
-                input               = stub_samplesheet.toString()
-                repeat_metaprograms = true
+                outdir = "$outputDir"
+                input  = stub_samplesheet.toString()
             }
 
             CheckpointTestUtils.writeAllCheckpoints(outputDir)
