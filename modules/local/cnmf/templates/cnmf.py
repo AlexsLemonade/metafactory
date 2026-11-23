@@ -6,6 +6,7 @@ import json
 import pathlib
 import shutil
 import sys
+import uuid
 
 import anndata
 import cnmf
@@ -71,6 +72,9 @@ def write_cnmf_meta(output_dir):
     """Write a cnmf-meta.json file recording the parameters used to run cNMF.
 
     The workflow compares these parameters to the current run to decide whether cNMF can be skipped.
+    A new random cnmf_run_id is also written every time cNMF runs. It is not compared when deciding
+    whether to skip cNMF, but is recorded by each metaprogram set built from these results, so that
+    metaprograms built from an earlier cNMF run are not reused.
 
     Parameters
     ----------
@@ -84,6 +88,7 @@ def write_cnmf_meta(output_dir):
         "celltype_annotation_column": celltype_annotation_column,
         "analysis_celltypes": analysis_celltypes,
         "seed": SEED,
+        "cnmf_run_id": uuid.uuid4().hex,
     }
     with open(output_dir / "cnmf-meta.json", "w") as fh:
         json.dump(cnmf_meta, fh, indent=2)

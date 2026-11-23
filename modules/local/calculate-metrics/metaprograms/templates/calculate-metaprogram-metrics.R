@@ -195,8 +195,10 @@ total_libraries <- length(mp_object[["unique_ids"]])
 mp_clusters_df <- mp_lookup |>
   # spectra are named `{unique_id}_k{k_value}_CNMF{nmf_number}`, and `unique_id` itself may contain
   # underscores, so the library is found by removing the known suffix
+  # the dollar sign end anchor is escaped with a backslash because nextflow renders this file as a
+  # template and would otherwise read it as the start of a variable
   dplyr::mutate(
-    unique_id = stringr::str_remove(spectra, "_k[0-9]+_CNMF[0-9]+$")
+    unique_id = stringr::str_remove(spectra, "_k[0-9]+_CNMF[0-9]+\$")
   )
 
 # get observed stats

@@ -225,11 +225,12 @@ Below, this subdirectory is referred to as `<group_id>/<metaprogram_set>/`.
 
 - `checkpoints/cnmf/<unique_id>_cnmf/`
   - `*.gene_spectra_score.k_*.dt_*.txt`: Consensus NMF programs (spectra) from cNMF, one file for each value of cNMF k (rank) tested.
-  - `cnmf-meta.json`: The cNMF options used for this library.
+  - `cnmf-meta.json`: The cNMF options used for this library, and a `cnmf_run_id` that identifies this cNMF run.
 - `checkpoints/metaprograms/<group_id>/<metaprogram_set>/`
   - `k-<n>_metaprograms.rds`: The [metaprograms object](#metaprograms-object).
   - `k-<n>_metaprograms.tsv.gz`: The gene weights for each metaprogram in long format (columns: `metaprogram`, `gene_id`, `weight`).
   - `k-<n>_shuffled_metaprograms.tsv.gz`: The gene weights for the top genes of each shuffled metaprogram for each permutation replicate (columns: `replicate`, `metaprogram`, `gene_id`, `weight`).
+  - `k-<n>_metaprograms-meta.json`: The options and libraries (`unique_ids`) used to build this metaprogram set.
 - `checkpoints/metrics/<group_id>/<metaprogram_set>/`
   - `k-<n>_mp_metrics.tsv`: [Metaprogram metrics](#metaprogram-metrics).
   - `k-<n>_background_mp_stats.tsv.gz`: Metric background of the metaprogram library diversity stats, with one row per metaprogram per permutation replicate.
@@ -250,8 +251,22 @@ Below, this subdirectory is referred to as `<group_id>/<metaprogram_set>/`.
 
 cNMF is the most time consuming step of the pipeline, so existing cNMF results are reused when the pipeline is run again with the same `--outdir` and same cNMF parameters.
 `cnmf-meta.json` records the options used to run cNMF for each library (`cnmf_k_lower`, `cnmf_k_upper`, `cnmf_k_step_size`, `celltype_annotation_column`, `analysis_celltypes`, and `seed`).
-If `checkpoints/cnmf/<unique_id>_cnmf/cnmf-meta.json` exists and all of these options match the current run, cNMF is skipped for that library and the existing results are used.
+If `checkpoints/cnmf/<unique_id>_cnmf/cnmf-meta.json` exists, all of these options match the current run, and it records no other options, cNMF is skipped for that library and the existing results are used.
+`cnmf-meta.json` also records a `cnmf_run_id`, a random identifier that is new every time cNMF runs.
+It is not compared when deciding whether to skip cNMF, but is used to check whether existing metaprograms were built from the current cNMF results.
 Use `--repeat_cnmf` to run cNMF for every library, even if existing results were created with the same options.
+
+### Reusing metaprograms
+
+By default, every set of metaprograms is re-generated each time the pipeline is run.
+Use `--reuse_metaprograms` to reuse existing metaprograms when the pipeline is run again with the same `--outdir`.
+`k-<k>_metaprograms-meta.json` records the options used to build each set of metaprograms (`n_metaprograms`, `unique_ids`, `cnmf_run_ids`, `n_top_genes`, `filter_spectra`, `orphan_cutoff`, `cnmf_k_lower`, `cnmf_k_upper`, `cnmf_k_step_size`, `celltype_annotation_column`, `analysis_celltypes`, `seed`, and `nreps`).
+With `--reuse_metaprograms`, generating metaprograms is skipped for a group and value of `k` and the existing results are used if all of the following are true:
+
+- The `.rds`, `.tsv.gz`, and `-meta.json` files for that set of metaprograms all exist in `checkpoints/metaprograms/<group_id>/<metaprogram_set>/`.
+- All of the options in `k-<k>_metaprograms-meta.json`, including the libraries in the group, match the current run, and it records no other options.
+- The metaprograms were built from the current cNMF results for every library in the group, so the `cnmf_run_ids` recorded in `k-<k>_metaprograms-meta.json` match the `cnmf_run_id` in each library's `cnmf-meta.json`.
+  If cNMF is run again for any library in the group, including with `--repeat_cnmf`, every metaprogram set for that group is re-generated the next time it is requested, even if an earlier run stopped before re-generating it.
 
 ## Pipeline information
 

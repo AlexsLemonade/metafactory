@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `--group_id` parameter to run a subset of groups from the samplesheet, given as a comma separated list of `group_id` values (default: `All`).
 - Parameter validation that every value provided to `--group_id` is either `All` or present in the `group_id` column of the samplesheet.
+- `--reuse_metaprograms` parameter to reuse existing metaprograms when the pipeline is run again with the same `--outdir` (default: `false`).
+  With `--reuse_metaprograms`, generating metaprograms is skipped for a metaprogram set if its checkpoint files exist, the options and libraries recorded in `k-<k>_metaprograms-meta.json` match the current run, and the metaprograms were built from the current cNMF results for every library in the group.
+- `cnmf-meta.json` records a `cnmf_run_id` that is new every time cNMF runs, which is recorded in `k-<k>_metaprograms-meta.json` and used to check that existing metaprograms were built from the current cNMF results.
 
 ### `Changed`
 
+- Existing cNMF results are now only reused if `cnmf-meta.json` records exactly the options of the current run, so results from a run with an option that has since been removed are no longer reused.
 - Output columns and files that counted libraries were renamed from "sample" to "library" to match the glossary:
   - `num_samples` → `num_libraries` and `proportion_of_samples` → `proportion_of_libraries` in the `*_mp_metrics.tsv` and `all-k_metaprogram_metrics.tsv` tables.
   - `total_samples` → `total_libraries` and `rank_effective_sample_size` → `rank_effective_library_count` in `all-k_summary_metrics.tsv`.
