@@ -142,6 +142,34 @@ nextflow_pipeline {
         }
     }
 
+    test("-profile test -stub --reuse_metaprograms reruns checkpoints that record an option the current run does not set") {
+
+        when {
+            def stub_samplesheet = writeStubSamplesheet(outputDir, projectDir)
+
+            params {
+                outdir             = "$outputDir"
+                input              = stub_samplesheet.toString()
+                reuse_metaprograms = true
+            }
+
+            CheckpointTestUtils.writeAllCheckpoints(outputDir)
+            // as if each checkpoint was created by a version of the pipeline with an option that has
+            // since been removed: cNMF for STUB01, and the GROUP02 k-4 metaprograms
+            CheckpointTestUtils.writeCnmfCheckpoint(outputDir, 'STUB01', [removed_option: 1])
+            CheckpointTestUtils.writeMetaprogramCheckpoint(outputDir, 'GROUP02', 4, [removed_option: 1])
+        }
+
+        then {
+            assert workflow.success
+            assertAll(
+                { assert CheckpointTestUtils.tasksRun(workflow, 'CNMF') == ['STUB01'] },
+                // every GROUP01 set is rebuilt because STUB01 has a new cNMF run id
+                { assert CheckpointTestUtils.tasksRun(workflow, 'GENERATE_METAPROGRAMS') == CheckpointTestUtils.allMetaprogramTasks('GROUP01') + ['GROUP02-k4'] },
+            )
+        }
+    }
+
     test("-profile test -stub --reuse_metaprograms reuses metaprograms built from cNMF results without a run id until cNMF runs again") {
 
         when {

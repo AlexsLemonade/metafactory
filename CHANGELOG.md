@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Changed`
 
+- Existing cNMF results are now only reused if `cnmf-meta.json` records exactly the options of the current run, so results from a run with an option that has since been removed are no longer reused.
 - Output columns and files that counted libraries were renamed from "sample" to "library" to match the glossary:
   - `num_samples` → `num_libraries` and `proportion_of_samples` → `proportion_of_libraries` in the `*_mp_metrics.tsv` and `all-k_metaprogram_metrics.tsv` tables.
   - `total_samples` → `total_libraries` and `rank_effective_sample_size` → `rank_effective_library_count` in `all-k_summary_metrics.tsv`.

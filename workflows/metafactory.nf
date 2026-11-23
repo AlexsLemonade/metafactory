@@ -79,12 +79,18 @@ workflow METAFACTORY {
 
     // cNMF is skipped for any library that already has a checkpoint created with the same options,
     // unless --repeat_cnmf is set, in which case cNMF is run for every library
+    // cnmf_run_id is recorded in every checkpoint but is not compared here, as it is new every
+    // time cNMF runs. it is compared when deciding whether to reuse metaprograms instead
     // values are compared as strings so that numbers read from JSON match numbers set in params
     // the strict syntax parser passes command line values as strings, so repeat_cnmf may be "true"
     // or "false" rather than a boolean and is converted here
     def repeat_cnmf = params.repeat_cnmf.toString().toBoolean()
     def ch_cnmf_input = ch_samplesheet.branch { meta, _h5ad_file ->
-        skip_cnmf: !repeat_cnmf && checkpointMatches(file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json"), cnmf_options)
+        skip_cnmf: !repeat_cnmf && checkpointMatches(
+            file("${outdir}/checkpoints/cnmf/${meta.unique_id}_cnmf/cnmf-meta.json"),
+            cnmf_options,
+            ['cnmf_run_id'],
+        )
         run_cnmf: true
     }
 
@@ -400,10 +406,15 @@ def readCheckpointMeta(meta_file) {
     return meta_file.exists() ? new groovy.json.JsonSlurper().parse(meta_file) : [:]
 }
 
-// returns true if the JSON file recording the options a checkpoint was created with exists and
-// contains every expected key with a matching value
+// returns true if the JSON file recording the options a checkpoint was created with exists,
+// records exactly the expected keys, and each has a matching value
+// a checkpoint that records a key the current run does not expect, e.g. an option that has since
+// been removed, does not match
+// keys in `ignored` may be recorded but are not compared, e.g. cnmf_run_id, which is new every
+// time cNMF runs and so has no expected value before cNMF runs
 // values are compared as strings so that numbers read from JSON match numbers set in params
-def checkpointMatches(meta_file, expected) {
+def checkpointMatches(meta_file, expected, ignored = []) {
     def recorded = readCheckpointMeta(meta_file)
-    return expected.every { key, value -> recorded.containsKey(key) && recorded[key].toString() == value.toString() }
+    return (recorded.keySet() - ignored) == expected.keySet() &&
+        expected.every { key, value -> recorded[key].toString() == value.toString() }
 }
