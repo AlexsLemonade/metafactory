@@ -68,10 +68,7 @@ output:
             (`*.gene_spectra_score.k_*.dt_*.txt`) and a `cnmf-meta.json` file recording the
             parameters used to run cNMF (`cnmf_k_lower`, `cnmf_k_upper`, `cnmf_k_step_size`,
             `celltype_annotation_column`, `analysis_celltypes`, and `seed`) and a
-            `cnmf_run_id`, a random identifier that is new every time cNMF runs. The workflow
-            compares the parameters to decide whether cNMF can be skipped, and records the
-            `cnmf_run_id` in each metaprogram set so that metaprograms built from an earlier cNMF
-            run are not reused.
+            `cnmf_run_id`, a random identifier that is new every time cNMF runs. 
           pattern: "*/"
   - versions:
       - "versions.yml":
